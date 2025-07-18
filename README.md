@@ -1,0 +1,1 @@
+# farert-pwa
