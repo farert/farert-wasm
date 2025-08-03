@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Farert WASM Test</title>
+    <meta charset="utf-8">
+</head>
+<body>
+    <h1>Farert WebAssembly Migration Test</h1>
+    
+    <div id="status">Loading...</div>
+    
+    <div id="tests">
+        <h2>Basic Tests</h2>
+        <button onclick="testSimple()">Test Simple Function</button>
+        <button onclick="testAdd()">Test Add Function</button>
+        
+        <div id="results"></div>
+    </div>
+
+    <script src="test_simple.js"></script>
+    <script>
+        let wasmModule = null;
+        
+        // Wait for module to load
+        Module.onRuntimeInitialized = function() {
+            document.getElementById('status').textContent = 'WASM Module Loaded Successfully!';
+            wasmModule = Module;
+            
+            // Test functions are available via Module.cwrap
+            window.testSimpleFunc = Module.cwrap('test_simple', 'number', []);
+            window.addNumbersFunc = Module.cwrap('add_numbers', 'number', ['number', 'number']);
+        };
+        
+        function testSimple() {
+            if (!wasmModule) {
+                addResult('Module not loaded yet');
+                return;
+            }
+            
+            try {
+                const result = testSimpleFunc();
+                addResult(`Simple test result: ${result}`);
+            } catch (e) {
+                addResult(`Error: ${e.message}`);
+            }
+        }
+        
+        function testAdd() {
+            if (!wasmModule) {
+                addResult('Module not loaded yet');
+                return;
+            }
+            
+            try {
+                const result = addNumbersFunc(15, 27);
+                addResult(`Add test: 15 + 27 = ${result}`);
+            } catch (e) {
+                addResult(`Error: ${e.message}`);
+            }
+        }
+        
+        function addResult(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            document.getElementById('results').appendChild(div);
+        }
+    </script>
+</body>
+</html>

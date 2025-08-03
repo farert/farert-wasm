@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <title>Farert WebAssembly Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            border: 1px solid #ccc;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        button {
+            background: #007cba;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            margin: 5px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #005a87;
+        }
+        .result {
+            background: #f5f5f5;
+            padding: 10px;
+            margin: 10px 0;
+            border-left: 4px solid #007cba;
+            font-family: monospace;
+        }
+        .error {
+            background: #ffebee;
+            border-left-color: #f44336;
+            color: #c62828;
+        }
+        .success {
+            background: #e8f5e8;
+            border-left-color: #4caf50;
+            color: #2e7d32;
+        }
+        #status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .loading {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+        .loaded {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚊 Farert WebAssembly Test</h1>
+    <p>日本の鉄道運賃計算システムのWebAssembly移植版のテストページです。</p>
+    
+    <div id="status" class="loading">WebAssemblyモジュールを読み込み中...</div>
+    
+    <div class="test-section">
+        <h2>基本機能テスト</h2>
+        <button onclick="testDatabase()">データベース接続テスト</button>
+        <button onclick="testSimpleRoute()">簡単な経路テスト</button>
+        <button onclick="testStationSearch()">駅名検索テスト</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>経路計算テスト</h2>
+        <button onclick="testBasicRoute()">基本経路作成</button>
+        <button onclick="testFareCalculation()">運賃計算</button>
+        <button onclick="testRouteReversal()">経路逆転</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>詳細機能テスト</h2>
+        <button onclick="testComplexRoute()">複雑な経路</button>
+        <button onclick="testSpecialFares()">特殊運賃</button>
+        <button onclick="debugModule()">モジュールデバッグ</button>
+        <button onclick="clearResults()">結果をクリア</button>
+    </div>
+    
+    <div id="results"></div>
+
+    <script>
+        let FarertModule = null;
+        let moduleReady = false;
+        
+        // ユーティリティ関数を最初に定義
+        function addResult(text, type = '') {
+            const div = document.createElement('div');
+            div.className = 'result ' + type;
+            div.textContent = new Date().toLocaleTimeString() + ' - ' + text;
+            document.getElementById('results').appendChild(div);
+            div.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function checkModule() {
+            if (!moduleReady || !FarertModule) {
+                addResult('⚠️ WebAssemblyモジュールがまだ読み込まれていません', 'error');
+                return false;
+            }
+            return true;
+        }
+        
+        // WebAssemblyモジュールの読み込み（動的インポート）
+        async function loadModule() {
+            try {
+                const module = await import('./dist/farert.js');
+                FarertModule = await module.default();
+                moduleReady = true;
+                
+                document.getElementById('status').textContent = 'WebAssemblyモジュールが正常に読み込まれました！';
+                document.getElementById('status').className = 'loaded';
+                
+                addResult('🎉 FarertモジュールがWebAssemblyで動作開始しました！', 'success');
+                
+                // グローバルに公開
+                window.FarertModule = FarertModule;
+                window.moduleReady = moduleReady;
+                
+            } catch (error) {
+                document.getElementById('status').textContent = 'エラー: ' + error.message;
+                document.getElementById('status').className = 'error';
+                addResult('❌ モジュールの読み込みに失敗: ' + error.message, 'error');
+            }
+        }
+        
+        // ページ読み込み後にモジュールを読み込み
+        document.addEventListener('DOMContentLoaded', loadModule);
+        
+        // テスト関数をグローバルに公開
+        window.testDatabase = function() {
+            if (!checkModule()) return;
+            
+            try {
+                const result = FarertModule.openDatabase();
+                if (result) {
+                    addResult('✅ データベース接続成功', 'success');
+                    addResult('📊 データベースが正常に開かれました', 'success');
+                } else {
+                    addResult('❌ データベース接続失敗', 'error');
+                }
+            } catch (error) {
+                addResult('❌ データベーステストエラー: ' + error.message, 'error');
+            }
+        };
+        
+        window.testSimpleRoute = function() {
+            if (!checkModule()) return;
+            
+            try {
+                const result = FarertModule.test();
+                addResult('🧪 基本テスト結果: ' + result + ' (期待値: 42)', result === 42 ? 'success' : 'error');
+            } catch (error) {
+                addResult('❌ 簡単テストエラー: ' + error.message, 'error');
+            }
+        };
+        
+        window.testStationSearch = function() {
+            if (!checkModule()) return;
+            
+            try {
+                // 有名な駅名でテスト
+                const stationNames = ['東京', '新宿', '大阪'];
+                
+                for (const name of stationNames) {
+                    const stationId = FarertModule.getStationId(name);
+                    if (stationId > 0) {
+                        const retrievedName = FarertModule.getStationName(stationId);
+                        addResult(`🚉 駅検索: ${name} → ID:${stationId} → 名前:${retrievedName}`, 'success');
+                    } else {
+                        addResult(`⚠️ 駅が見つかりません: ${name}`, 'error');
+                    }
+                }
+            } catch (error) {
+                addResult('❌ 駅検索エラー: ' + error.message, 'error');
+            }
+        };
+        
+        window.testBasicRoute = function() {
+            if (!checkModule()) return;
+            
+            try {
+                const result = FarertModule.createRoute();
+                if (result) {
+                    addResult('✅ 経路オブジェクト作成成功', 'success');
+                    
+                    // 試しに駅を追加
+                    const addStationResult = FarertModule.addStation(1); // 仮のID
+                    addResult('📍 駅追加テスト結果: ' + addStationResult, 'success');
+                } else {
+                    addResult('❌ 経路作成失敗', 'error');
+                }
+            } catch (error) {
+                addResult('❌ 経路作成エラー: ' + error.message, 'error');
+            }
+        };
+        
+        window.testFareCalculation = function() {
+            if (!checkModule()) return;
+            
+            try {
+                const result = FarertModule.calculateFare();
+                addResult('💰 運賃計算テスト結果: ' + (result ? '成功' : '失敗'), result ? 'success' : 'error');
+                
+                if (result) {
+                    const fareString = FarertModule.getFareString();
+                    addResult('💴 運賃情報: ' + fareString, 'success');
+                }
+            } catch (error) {
+                addResult('❌ 運賃計算エラー: ' + error.message, 'error');
+            }
+        };
+        
+        window.testRouteReversal = function() {
+            if (!checkModule()) return;
+            
+            try {
+                const result = FarertModule.reverseRoute();
+                addResult('🔄 経路逆転テスト結果: ' + result, 'success');
+            } catch (error) {
+                addResult('❌ 経路逆転エラー: ' + error.message, 'error');
+            }
+        };
+        
+        window.testComplexRoute = function() {
+            addResult('🚧 複雑な経路テストは今後実装予定', 'success');
+        };
+        
+        window.testSpecialFares = function() {
+            addResult('🎫 特殊運賃テストは今後実装予定', 'success');
+        };
+        
+        window.debugModule = function() {
+            addResult('🔍 WebAssemblyモジュールの状態:', 'success');
+            addResult(`  - moduleReady: ${moduleReady}`, '');
+            addResult(`  - FarertModule存在: ${!!FarertModule}`, '');
+            
+            if (FarertModule) {
+                addResult('📋 利用可能な関数:', 'success');
+                const functions = [
+                    'test', 'openDatabase', 'createRoute', 'addStation', 
+                    'getStationId', 'getStationName', 'calculateFare', 'debugStations'
+                ];
+                
+                functions.forEach(func => {
+                    const exists = typeof FarertModule[func] === 'function';
+                    addResult(`  - ${func}: ${exists ? '✅' : '❌'}`, exists ? 'success' : 'error');
+                });
+                
+                // 基本テスト
+                try {
+                    const testResult = FarertModule.test();
+                    addResult(`🧪 基本テスト: ${testResult} (期待値: 42)`, testResult === 42 ? 'success' : 'error');
+                } catch (e) {
+                    addResult(`❌ 基本テスト失敗: ${e.message}`, 'error');
+                }
+                
+                // データベースの中身をチェック
+                try {
+                    const dbResult = FarertModule.debugStations();
+                    addResult('🗃️ データベース内容 (最初の10駅):', 'success');
+                    addResult(dbResult, '');
+                } catch (e) {
+                    addResult(`❌ データベースデバッグ失敗: ${e.message}`, 'error');
+                }
+            }
+        };
+        
+        window.clearResults = function() {
+            document.getElementById('results').innerHTML = '';
+        };
+    </script>
+</body>
+</html>

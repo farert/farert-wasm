@@ -1,84 +1,152 @@
-# C/C++ WebAssembly Project
+# Farert WebAssembly Project
 
-A simple C/C++ WebAssembly development environment using Emscripten.
+日本の鉄道運賃計算システムのWebAssembly移植版です。
 
-## Project Structure
+## プロジェクト概要
+
+このプロジェクトは、C/C++で実装された鉄道運賃計算システム「Farert」をWebAssemblyに移植し、ブラウザで動作させるものです。
+
+## プロジェクト構造
 
 ```
 farert-wasm/
 ├── src/
-│   └── main.c          # C source code with exported functions
-├── build/              # Build artifacts (created during build)
-├── dist/               # Output WASM files (created during build)
-├── index.html          # Test page with interactive demos
-├── Makefile            # Build configuration
-├── package.json        # NPM scripts
-└── README.md           # This file
+│   ├── core/               # コアロジック（alpdb.cpp等）
+│   ├── db/                 # データベース操作（SQLite3）
+│   ├── include/            # ヘッダファイル
+│   └── farert_wasm.cpp     # WebAssembly エクスポート関数
+├── migration_source/       # 移植元のソースファイル
+├── data/
+│   └── jrdbnewest.db      # 鉄道データベース（読み取り専用）
+├── third_party/
+│   └── sqlite3.c          # SQLite3ライブラリ
+├── build/                 # ビルド成果物
+├── dist/                  # 出力されるWASMファイル
+├── farert_test.html       # テストページ
+├── Makefile              # ビルド設定
+├── package.json          # NPMスクリプト
+├── setup_env.sh          # Emscripten環境設定
+└── CLAUDE.md             # 開発者向け詳細ドキュメント
 ```
 
-## Prerequisites
+## 前提条件
 
-Emscripten SDK is installed at `~/priv/farert.repos/emsdk/`
+- Emscripten SDK が `~/priv/farert.repos/emsdk/` にインストール済み
+- Python 3.x（開発サーバー用）
 
-## Setup
+## セットアップ
 
-1. **Activate Emscripten environment:**
+1. **Emscripten環境の設定:**
    ```bash
-   source ~/priv/farert.repos/emsdk/emsdk_env.sh
+   source setup_env.sh
    ```
 
-2. **Build the project:**
+2. **プロジェクトのビルド:**
    ```bash
    make
-   # or
+   # または
    npm run build
    ```
 
-3. **Start development server:**
+3. **開発サーバーの起動:**
    ```bash
    make serve
-   # or
+   # または
    npm run dev
    ```
 
-4. **Open browser:**
-   Navigate to `http://localhost:8080` to test the WASM functions
+4. **ブラウザでテスト:**
+   `http://localhost:8080/farert_test.html` を開いてWebAssemblyモジュールをテスト
 
-## Available Functions
+## 利用可能な機能
 
-The C code exports the following functions to WebAssembly:
+WebAssemblyモジュールは以下の機能を提供します：
 
-- `add(a, b)` - Add two integers
-- `multiply(a, b)` - Multiply two integers  
-- `hello_world()` - Print hello message to console
-- `calculate_pi_approximation(iterations)` - Calculate π using Leibniz formula
+### データベース機能
+- `openDatabase()` - データベース接続
+- `closeDatabase()` - データベース切断
 
-## Make Commands
+### 経路管理機能  
+- `createRoute()` - 経路オブジェクト作成
+- `destroyRoute()` - 経路オブジェクト破棄
+- `addStation(stationId)` - 駅を経路に追加
+- `addRoute(lineId, stationId)` - 路線と駅を経路に追加
+- `reverseRoute()` - 経路を逆転
 
-- `make` - Build WASM module
-- `make clean` - Remove build artifacts
-- `make serve` - Start development server on port 8080
-- `make help` - Show available targets
+### 駅・路線検索機能
+- `getStationId(name)` - 駅名からIDを取得
+- `getStationName(id)` - IDから駅名を取得
+- `getLineName(id)` - IDから路線名を取得
 
-## NPM Scripts
+### 運賃計算機能
+- `calculateFare()` - 運賃計算実行
+- `getFareString()` - 運賃情報の文字列取得
 
-- `npm run build` - Build the project
-- `npm run clean` - Clean build artifacts
-- `npm run serve` - Start development server
-- `npm run dev` - Build and serve
+### デバッグ機能
+- `test()` - 基本動作テスト
+- `debugStations()` - データベース内容確認
 
-## Development
+## Makeコマンド
 
-1. Edit C code in `src/main.c`
-2. Rebuild with `make`
-3. Refresh browser to test changes
+- `make` - WebAssemblyモジュールをビルド
+- `make clean` - ビルド成果物を削除
+- `make serve` - 開発サーバーを起動（自動ポート選択）
+- `make status` - プロジェクトの状況を表示
+- `make help` - 利用可能なコマンド一覧
 
-## Example Usage
+## NPMスクリプト
+
+- `npm run build` - プロジェクトをビルド
+- `npm run clean` - ビルド成果物を削除
+- `npm run serve` - 開発サーバーを起動
+- `npm run dev` - ビルドして開発サーバーを起動
+
+## 開発方法
+
+1. C/C++コードを `src/` ディレクトリで編集
+2. `make` でリビルド
+3. ブラウザでテストページを再読み込みして動作確認
+
+## 使用例
 
 ```javascript
-// In browser console after loading the page
-const result = addFunction(5, 3);        // Returns 8
-const product = multiplyFunction(4, 7);  // Returns 28
-helloWorldFunction();                    // Prints to console
-const pi = piFunction(1000000);          // Approximates π
+// ブラウザのコンソールで実行例
+const result = FarertModule.test();                    // 42が返される
+const isOpen = FarertModule.openDatabase();           // データベース接続
+const stationId = FarertModule.getStationId("東京");   // 駅IDを取得
+const stationName = FarertModule.getStationName(1);   // 駅名を取得
+const routeCreated = FarertModule.createRoute();      // 経路作成
+const fareCalculated = FarertModule.calculateFare();  // 運賃計算
 ```
+
+## 技術仕様
+
+- **言語**: C/C++17
+- **WebAssembly**: Emscripten
+- **データベース**: SQLite3 (MEMFS)
+- **文字エンコーディング**: UTF-8
+- **ターゲット**: モダンブラウザ（ES6対応）
+
+## トラブルシューティング
+
+### よくある問題
+
+1. **`em++: No such file or directory`**
+   ```bash
+   source setup_env.sh
+   ```
+
+2. **ポートが使用中**
+   - Makefileが自動で別ポートを選択します
+
+3. **WebAssemblyモジュールが読み込めない**
+   - ブラウザの開発者ツールでエラーを確認
+   - `make status` でビルド状況を確認
+
+## ライセンス
+
+MIT License
+
+## 開発者向け詳細情報
+
+詳細な開発情報については `CLAUDE.md` を参照してください。

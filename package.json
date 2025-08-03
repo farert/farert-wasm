@@ -4,10 +4,11 @@
   "description": "C/C++ WebAssembly development environment",
   "main": "dist/main.js",
   "scripts": {
-    "build": "make",
+    "build": "source setup_env.sh && make",
     "clean": "make clean",
     "serve": "make serve",
-    "dev": "make && make serve"
+    "dev": "source setup_env.sh && make && make serve",
+    "setup": "source setup_env.sh"
   },
   "keywords": [
     "webassembly",
