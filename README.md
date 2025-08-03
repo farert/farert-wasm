@@ -145,7 +145,7 @@ const fareCalculated = FarertModule.calculateFare();  // 運賃計算
 
 ## ライセンス
 
-MIT License
+GPL-3.0 License
 
 ## 開発者向け詳細情報
 
