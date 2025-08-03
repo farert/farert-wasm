@@ -15,7 +15,6 @@ farert-wasm/
 │   ├── db/                 # データベース操作（SQLite3）
 │   ├── include/            # ヘッダファイル
 │   └── farert_wasm.cpp     # WebAssembly エクスポート関数
-├── migration_source/       # 移植元のソースファイル
 ├── data/
 │   └── jrdbnewest.db      # 鉄道データベース（読み取り専用）
 ├── third_party/
