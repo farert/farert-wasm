@@ -41,12 +41,12 @@ q../- コミットメッセージは conventional commits 形式で書いてく�
 
 ## Core Architecture
 
-### Migration Source Files (`migration_source/`)
-- **`alpdb.cpp/alpdb.h`** - Core railway fare calculation logic (C++)
-- **`c_route.h/c_route.mm`** - Objective-C++ application interface (needs conversion)
-- **`db.cpp/db.h`** - SQLite3 database operations
-- **`jrdbnewest.db`** - Railway database (read-only, use MEMFS)
-- **`stdafx.h/stdafx.cpp`** - Windows-specific headers (needs cleanup/removal)
+### Migration Source Files (`migration_source/`) - ✅ COMPLETED
+- **`alpdb.cpp/alpdb.h`** - Core railway fare calculation logic (✅ migrated to `src/core/`)
+- **~~`c_route.h/c_route.mm`~~** - ✅ **FULLY MIGRATED** to `route_interface.h/cpp` (Objective-C++ → C++)
+- **`db.cpp/db.h`** - SQLite3 database operations (✅ migrated to `src/core/`)
+- **`jrdbnewest.db`** - Railway database (✅ integrated with MEMFS)
+- **~~`stdafx.h/stdafx.cpp`~~** - ✅ Windows headers removed (WebAssembly compatible)
 
 ### Key Classes and Components
 - `Route` - Main route building class with junction logic
@@ -67,13 +67,20 @@ q../- コミットメッセージは conventional commits 形式で書いてく�
 - Remove database switching logic from original code
 - Use MEMFS for WebAssembly deployment
 
-## Migration Guidelines
+## Migration Status - ✅ COMPLETED
 
-1. **Platform Optimization**: Remove Windows-specific code, optimize for WebAssembly
-2. **Character Encoding**: Use UTF-8 exclusively
-3. **Objective-C++ Conversion**: Convert `c_route.mm` to pure C++ or evaluate direct WASM usage
-4. **File Organization**: Place migrated files in appropriate `src/` subdirectories
-5. **Dependencies**: Integrate SQLite3 library for database operations
+### ✅ Completed Migration Tasks
+1. **Platform Optimization**: ✅ Windows-specific code removed, WebAssembly optimized
+2. **Character Encoding**: ✅ UTF-8 exclusively implemented  
+3. **Objective-C++ Conversion**: ✅ `c_route.mm` → `route_interface.cpp` (pure C++)
+4. **File Organization**: ✅ All files organized in `src/core/`, `src/include/` structure
+5. **Dependencies**: ✅ SQLite3 integrated with WebAssembly MEMFS
+
+### 🚀 WebAssembly API Status
+- **Total APIs**: 39 functions (27 basic + 12 extended)
+- **All original c_route.h functionality**: ✅ Fully implemented in route_interface.h
+- **WebAssembly bindings**: ✅ Complete with JSON array support
+- **Test coverage**: ✅ Comprehensive test suites implemented
 
 ## Testing
 The project includes a test HTML file (`index.html`) for validating WASM functions in the browser.
