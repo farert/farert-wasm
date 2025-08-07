@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1200" height="800" viewBox="0 0 1200 800">
+  <style>
+    .title { font-family: Arial, sans-serif; font-size: 20px; font-weight: bold; text-anchor: middle; }
+    .component { fill: #E8F4F8; stroke: #2E86AB; stroke-width: 2; }
+    .database { fill: #F8E6E0; stroke: #D63447; stroke-width: 2; }
+    .interface { fill: #E8F5E8; stroke: #43AA8B; stroke-width: 2; }
+    .wasm { fill: #FFF3CD; stroke: #856404; stroke-width: 2; }
+    .text { font-family: Arial, sans-serif; font-size: 12px; text-anchor: middle; }
+    .header { font-family: Arial, sans-serif; font-size: 14px; font-weight: bold; text-anchor: middle; }
+    .arrow { stroke: #333; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+    .data-flow { stroke: #D63447; stroke-width: 2; stroke-dasharray: 5,5; fill: none; marker-end: url(#arrowhead-red); }
+  </style>
+  
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#333" />
+    </marker>
+    <marker id="arrowhead-red" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#D63447" />
+    </marker>
+  </defs>
+
+  <!-- Title -->
+  <text x="600" y="30" class="title">Farert WebAssembly Architecture</text>
+  <text x="600" y="50" class="text">Japanese Railway Fare Calculation System</text>
+
+  <!-- JavaScript/TypeScript Layer -->
+  <rect x="50" y="80" width="1100" height="100" class="interface" />
+  <text x="600" y="100" class="header">JavaScript/TypeScript Application Layer</text>
+  <text x="200" y="125" class="text">Web Browser</text>
+  <text x="400" y="125" class="text">Node.js</text>
+  <text x="600" y="125" class="text">Frontend UI</text>
+  <text x="800" y="125" class="text">API Integration</text>
+  <text x="1000" y="125" class="text">Testing Framework</text>
+
+  <!-- WASM Interface Layer -->
+  <rect x="200" y="220" width="800" height="80" class="wasm" />
+  <text x="600" y="240" class="header">WebAssembly Interface (farert_wasm.cpp)</text>
+  <text x="300" y="265" class="text">farert_open_database()</text>
+  <text x="500" y="265" class="text">farert_create_route()</text>
+  <text x="700" y="265" class="text">farert_calculate_fare()</text>
+  <text x="900" y="265" class="text">farert_get_station_name()</text>
+
+  <!-- Core C++ Components -->
+  <g>
+    <!-- Route Management -->
+    <rect x="80" y="340" width="200" height="120" class="component" />
+    <text x="180" y="365" class="header">Route Management</text>
+    <text x="180" y="385" class="text">Route (Core Class)</text>
+    <text x="180" y="405" class="text">RouteList</text>
+    <text x="180" y="425" class="text">RouteItem</text>
+    <text x="180" y="445" class="text">RouteFlag</text>
+    
+    <!-- Route Calculation -->
+    <rect x="320" y="340" width="200" height="120" class="component" />
+    <text x="420" y="365" class="header">Route Calculation</text>
+    <text x="420" y="385" class="text">CalcRoute</text>
+    <text x="420" y="405" class="text">FARE_INFO</text>
+    <text x="420" y="425" class="text">FareResult</text>
+    <text x="420" y="445" class="text">CompanyFare</text>
+    
+    <!-- Fare Rules Engine -->
+    <rect x="560" y="340" width="200" height="120" class="component" />
+    <text x="660" y="365" class="header">Fare Rules Engine</text>
+    <text x="660" y="385" class="text">Rule114 (Distance)</text>
+    <text x="660" y="405" class="text">Rule86/87 (Urban)</text>
+    <text x="660" y="425" class="text">Rule69/70 (Special)</text>
+    <text x="660" y="445" class="text">Junction Logic</text>
+    
+    <!-- Utilities & Interface -->
+    <rect x="800" y="340" width="200" height="120" class="component" />
+    <text x="900" y="365" class="header">Utilities & Interface</text>
+    <text x="900" y="385" class="text">RouteUtil</text>
+    <text x="900" y="405" class="text">RouteWrapper</text>
+    <text x="900" y="425" class="text">CalcRouteWrapper</text>
+    <text x="900" y="445" class="text">String Utils</text>
+  </g>
+
+  <!-- Database Layer -->
+  <g>
+    <rect x="200" y="500" width="300" height="100" class="database" />
+    <text x="350" y="525" class="header">Database Abstraction (db.h/db.cpp)</text>
+    <text x="280" y="545" class="text">DBS (Database System)</text>
+    <text x="420" y="545" class="text">DBO (Database Object)</text>
+    <text x="280" y="565" class="text">SQLite3 Wrapper</text>
+    <text x="420" y="565" class="text">Statement Caching</text>
+    <text x="350" y="585" class="text">Connection Management</text>
+    
+    <!-- SQLite Database -->
+    <rect x="600" y="500" width="200" height="100" class="database" />
+    <text x="700" y="525" class="header">SQLite Database</text>
+    <text x="700" y="545" class="text">jrdbnewest.db</text>
+    <text x="700" y="565" class="text">Railway Network Data</text>
+    <text x="700" y="585" class="text">Fare Tables</text>
+  </g>
+
+  <!-- External Dependencies -->
+  <rect x="900" y="500" width="200" height="100" class="database" />
+  <text x="1000" y="525" class="header">External Libraries</text>
+  <text x="1000" y="545" class="text">SQLite3 (third_party/)</text>
+  <text x="1000" y="565" class="text">Emscripten SDK</text>
+  <text x="1000" y="585" class="text">MEMFS (Database)</text>
+
+  <!-- Build System -->
+  <rect x="50" y="640" width="300" height="80" class="interface" />
+  <text x="200" y="665" class="header">Build System</text>
+  <text x="120" y="685" class="text">Makefile</text>
+  <text x="200" y="685" class="text">setup_env.sh</text>
+  <text x="280" y="685" class="text">npm scripts</text>
+  <text x="200" y="705" class="text">Emscripten Compilation</text>
+
+  <!-- Testing -->
+  <rect x="400" y="640" width="200" height="80" class="interface" />
+  <text x="500" y="665" class="header">Testing & Validation</text>
+  <text x="500" y="685" class="text">farert_test.html</text>
+  <text x="500" y="705" class="text">Browser Testing</text>
+
+  <!-- Output -->
+  <rect x="650" y="640" width="200" height="80" class="wasm" />
+  <text x="750" y="665" class="header">Build Output</text>
+  <text x="750" y="685" class="text">dist/farert.js</text>
+  <text x="750" y="705" class="text">dist/farert.wasm</text>
+
+  <!-- Performance Monitoring -->
+  <rect x="900" y="640" width="200" height="80" class="interface" />
+  <text x="1000" y="665" class="header">Performance</text>
+  <text x="1000" y="685" class="text">Memory Management</text>
+  <text x="1000" y="705" class="text">Cache Optimization</text>
+
+  <!-- Arrows showing data flow -->
+  <!-- JS to WASM Interface -->
+  <line x1="600" y1="180" x2="600" y2="220" class="arrow" />
+  
+  <!-- WASM to Core Components -->
+  <line x1="350" y1="300" x2="180" y2="340" class="arrow" />
+  <line x1="450" y1="300" x2="420" y2="340" class="arrow" />
+  <line x1="600" y1="300" x2="660" y2="340" class="arrow" />
+  <line x1="750" y1="300" x2="900" y2="340" class="arrow" />
+  
+  <!-- Core to Database -->
+  <line x1="180" y1="460" x2="280" y2="500" class="arrow" />
+  <line x1="420" y1="460" x2="400" y2="500" class="arrow" />
+  <line x1="660" y1="460" x2="480" y2="500" class="arrow" />
+  
+  <!-- Database connections -->
+  <line x1="500" y1="550" x2="600" y2="550" class="data-flow" />
+  <line x1="800" y1="550" x2="900" y2="550" class="arrow" />
+  
+  <!-- Build system connections -->
+  <line x1="200" y1="640" x2="350" y2="600" class="arrow" />
+  <line x1="500" y1="640" x2="600" y2="300" class="arrow" />
+  <line x1="600" y1="720" x2="750" y2="720" class="arrow" />
+
+  <!-- Legend -->
+  <g transform="translate(850, 750)">
+    <rect x="0" y="0" width="15" height="15" class="component" />
+    <text x="20" y="12" class="text">Core Components</text>
+    <rect x="120" y="0" width="15" height="15" class="database" />
+    <text x="140" y="12" class="text">Database/Storage</text>
+    <rect x="240" y="0" width="15" height="15" class="interface" />
+    <text x="260" y="12" class="text">Interface/Build</text>
+  </g>
+
+</svg>
