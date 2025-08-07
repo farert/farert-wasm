@@ -50,13 +50,25 @@ OBJECTS = $(SOURCES:%.cpp=$(BUILD_DIR)/%.o)
 OBJECTS := $(OBJECTS:%.c=$(BUILD_DIR)/%.o)
 
 TARGET = $(DIST_DIR)/farert
+NODE_TARGET = $(DIST_DIR)/farert_node
 
-.PHONY: all clean serve install-deps test kill-server status
+.PHONY: all clean serve install-deps test kill-server status node
 
 all: check_emsdk $(TARGET).js $(TARGET).wasm
 
+# Node.js compatible build
+node: check_emsdk $(NODE_TARGET).js $(NODE_TARGET).wasm
+
 $(TARGET).js $(TARGET).wasm: $(OBJECTS) | $(DIST_DIR)
 	$(CXX) $(CXXFLAGS) $(OBJECTS) -o $(TARGET).js $(LDFLAGS)
+
+# Node.js compatible build (CommonJS)
+$(NODE_TARGET).js $(NODE_TARGET).wasm: $(OBJECTS) | $(DIST_DIR)
+	$(CXX) $(CXXFLAGS) $(OBJECTS) -o $(NODE_TARGET).js \
+		-O3 -s WASM=1 -s EXPORTED_RUNTIME_METHODS='["cwrap","ccall"]' -s ALLOW_MEMORY_GROWTH=1 \
+		-s MODULARIZE=1 -s EXPORT_NAME="'FarertModule'" \
+		--embed-file data/jrdbnewest.db@/data/jrdbnewest.db \
+		--bind
 
 # C++ object files
 $(BUILD_DIR)/%.o: %.cpp | $(BUILD_DIR)

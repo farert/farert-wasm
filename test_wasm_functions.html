@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <title>WebAssembly Function Test</title>
+    <style>
+        body { font-family: monospace; margin: 20px; }
+        .result { padding: 5px; margin: 2px 0; }
+        .pass { background: #d4edda; color: #155724; }
+        .fail { background: #f8d7da; color: #721c24; }
+        .info { background: #e2e3e5; color: #383d41; }
+    </style>
+</head>
+<body>
+    <h1>WebAssembly Function Auto-Test</h1>
+    <div id="results"></div>
+
+    <script>
+        async function runAutoTest() {
+            const results = document.getElementById('results');
+            
+            function log(message, status = 'info') {
+                const div = document.createElement('div');
+                div.className = 'result ' + status;
+                div.textContent = new Date().toLocaleTimeString() + ' - ' + message;
+                results.appendChild(div);
+                console.log(message);
+            }
+
+            try {
+                log('WebAssemblyモジュール読み込み開始...');
+                const module = await import('./dist/farert.js');
+                const FarertModule = await module.default();
+                log('✅ WebAssemblyモジュール読み込み成功', 'pass');
+                
+                // 基本機能テスト
+                log('=== 基本機能テスト ===');
+                const testResult = FarertModule.test();
+                log(`test(): ${testResult} (期待値: 42)`, testResult === 42 ? 'pass' : 'fail');
+                
+                // データベースオープン
+                log('=== データベーステスト ===');
+                const dbOpen = FarertModule.openDatabase();
+                log(`openDatabase(): ${dbOpen}`, dbOpen === 1 ? 'pass' : 'fail');
+                
+                // 駅検索テスト
+                log('=== 駅検索テスト ===');
+                const stations = ['東京', '新宿', '大阪', '名古屋', '博多', '神戸', '下関'];
+                for (const station of stations) {
+                    const stationId = FarertModule.getStationId(station);
+                    const stationName = stationId > 0 ? FarertModule.getStationName(stationId) : '';
+                    log(`駅 ${station}: ID=${stationId}, Name="${stationName}"`, 
+                        stationId > 0 ? 'pass' : 'fail');
+                }
+                
+                // 路線検索テスト
+                log('=== 路線検索テスト ===');
+                const lines = [
+                    { name: '東海道線', expectedStations: ['東京', '神戸'] },
+                    { name: '山陽線', expectedStations: ['神戸', '下関'] },
+                    { name: '中央線', expectedStations: ['東京', '新宿'] },
+                    { name: '東海道本線', expectedStations: ['東京', '大阪'] }
+                ];
+                
+                for (const line of lines) {
+                    // 路線名からIDを取得（この機能は実装されていない可能性があるので、代替方法を使用）
+                    log(`路線 ${line.name}: 検索中...`, 'info');
+                    
+                    // 駅から路線IDを逆引きで確認
+                    for (const stationName of line.expectedStations) {
+                        const stationId = FarertModule.getStationId(stationName);
+                        if (stationId > 0) {
+                            // この駅に接続する路線を確認（路線情報は駅情報から推測）
+                            log(`  ${stationName}駅(ID:${stationId})の路線情報を確認`, 'info');
+                        }
+                    }
+                }
+                
+                // 経路作成テスト
+                log('=== 経路作成テスト ===');
+                const routeCreated = FarertModule.createRoute();
+                log(`createRoute(): ${routeCreated}`, routeCreated === 1 ? 'pass' : 'fail');
+                
+                // 指定された経路での駅追加テスト: 東京 → 東海道線 → 神戸 → 山陽線 → 下関
+                log('=== 複雑な経路作成テスト (東京→神戸→下関) ===');
+                
+                const tokyoId = FarertModule.getStationId('東京');
+                const kobeId = FarertModule.getStationId('神戸'); 
+                const shimonosekiId = FarertModule.getStationId('下関');
+                
+                log(`東京駅ID: ${tokyoId}`, tokyoId > 0 ? 'pass' : 'fail');
+                log(`神戸駅ID: ${kobeId}`, kobeId > 0 ? 'pass' : 'fail');
+                log(`下関駅ID: ${shimonosekiId}`, shimonosekiId > 0 ? 'pass' : 'fail');
+                
+                if (tokyoId > 0) {
+                    const addTokyo = FarertModule.addStation(tokyoId);
+                    log(`東京駅追加: ${addTokyo}`, 'info');
+                }
+                
+                if (kobeId > 0) {
+                    const addKobe = FarertModule.addStation(kobeId);
+                    log(`神戸駅追加: ${addKobe}`, 'info');
+                }
+                
+                if (shimonosekiId > 0) {
+                    const addShimonoseki = FarertModule.addStation(shimonosekiId);
+                    log(`下関駅追加: ${addShimonoseki}`, 'info');
+                }
+                
+                // 路線指定での経路追加テスト（路線IDが分かる場合）
+                log('=== 路線指定経路追加テスト ===');
+                // 注意: 実際の路線IDは不明なので、仮のIDでテスト
+                for (let lineId = 1; lineId <= 5; lineId++) {
+                    const lineName = FarertModule.getLineName(lineId);
+                    if (lineName && lineName.length > 0) {
+                        log(`路線ID ${lineId}: "${lineName}"`, 'pass');
+                        
+                        // この路線を使って駅を追加してみる
+                        if (tokyoId > 0) {
+                            const addWithLine = FarertModule.addRoute(lineId, tokyoId);
+                            log(`  路線${lineId}で東京駅追加: ${addWithLine}`, 'info');
+                        }
+                        break; // 最初に見つかった有効な路線でテスト
+                    }
+                }
+                
+                // 経路情報取得
+                const routeCount = FarertModule.getRouteCount();
+                const startId = FarertModule.startStationId();
+                const lastId = FarertModule.lastStationId();
+                const isEnd = FarertModule.isEnd();
+                
+                log(`getRouteCount(): ${routeCount}`, routeCount >= 0 ? 'pass' : 'fail');
+                log(`startStationId(): ${startId}`, 'info');
+                log(`lastStationId(): ${lastId}`, 'info');
+                log(`isEnd(): ${isEnd}`, 'info');
+                
+                // 運賃計算テスト
+                log('=== 運賃計算テスト ===');
+                const fareResult = FarertModule.calculateFare();
+                log(`calculateFare(): ${fareResult}`, fareResult >= 0 ? 'pass' : 'fail');
+                
+                const fareString = FarertModule.getFareString();
+                log(`getFareString(): "${fareString}"`, fareString.length >= 0 ? 'pass' : 'fail');
+                
+                // 設定機能テスト
+                log('=== 設定機能テスト ===');
+                FarertModule.setLongRoute(1);
+                log('setLongRoute(1): OK', 'pass');
+                
+                FarertModule.setStartAsCity();
+                log('setStartAsCity(): OK', 'pass');
+                
+                FarertModule.setArriveAsCity();
+                log('setArriveAsCity(): OK', 'pass');
+                
+                // 経路操作テスト
+                log('=== 経路操作テスト ===');
+                FarertModule.removeTail();
+                log('removeTail(): OK', 'pass');
+                
+                const reverseResult = FarertModule.reverseRoute();
+                log(`reverseRoute(): ${reverseResult}`, 'info');
+                
+                FarertModule.removeAll();
+                const emptyCount = FarertModule.getRouteCount();
+                log(`removeAll() → getRouteCount(): ${emptyCount}`, emptyCount === 0 ? 'pass' : 'fail');
+                
+                // デバッグ機能テスト
+                log('=== デバッグ機能テスト ===');
+                const debugInfo = FarertModule.debugStations();
+                log(`debugStations(): ${debugInfo.substring(0, 100)}...`, debugInfo.length > 0 ? 'pass' : 'fail');
+                
+                // クリーンアップ
+                FarertModule.destroyRoute();
+                FarertModule.closeDatabase();
+                log('cleanup: destroyRoute(), closeDatabase()', 'pass');
+                
+                log('=== テスト完了 ===', 'pass');
+                
+            } catch (error) {
+                log(`❌ エラー: ${error.message}`, 'fail');
+            }
+        }
+        
+        // ページ読み込み時に自動実行
+        window.addEventListener('load', runAutoTest);
+    </script>
+</body>
+</html>

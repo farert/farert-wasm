@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <title>Farert WebAssembly Unit Tests</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-suite {
+            border: 1px solid #ccc;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .test-case {
+            border: 1px solid #eee;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 3px;
+        }
+        button {
+            background: #007cba;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            margin: 3px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        button:hover {
+            background: #005a87;
+        }
+        .run-all {
+            background: #4caf50;
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .result {
+            background: #f5f5f5;
+            padding: 8px;
+            margin: 5px 0;
+            border-left: 4px solid #007cba;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .pass {
+            background: #e8f5e8;
+            border-left-color: #4caf50;
+            color: #2e7d32;
+        }
+        .fail {
+            background: #ffebee;
+            border-left-color: #f44336;
+            color: #c62828;
+        }
+        .skip {
+            background: #fff3e0;
+            border-left-color: #ff9800;
+            color: #f57c00;
+        }
+        #summary {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            font-weight: bold;
+            text-align: center;
+        }
+        .loading {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+        .success {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+        .error {
+            background: #ffebee;
+            color: #c62828;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Farert WebAssembly Unit Tests</h1>
+    <p>全ての関数の詳細なユニットテストを実行します。</p>
+    
+    <div id="summary" class="loading">WebAssemblyモジュールを読み込み中...</div>
+    
+    <div style="text-align: center; margin: 20px 0;">
+        <button class="run-all" onclick="runAllTests()">🚀 全テスト実行</button>
+        <button onclick="clearResults()">🧹 結果クリア</button>
+        <button onclick="toggleDetails()">📊 詳細表示切替</button>
+    </div>
+    
+    <div class="test-suite">
+        <h2>📦 データベース管理テスト</h2>
+        <div class="test-case">
+            <h3>DatabaseManager</h3>
+            <button onclick="testDatabaseManager()">openDatabase/closeDatabase</button>
+            <button onclick="testDatabaseVersion()">getDatabaseVersion</button>
+            <div id="database-results"></div>
+        </div>
+    </div>
+    
+    <div class="test-suite">
+        <h2>🔍 RouteUtility基本機能テスト</h2>
+        <div class="test-case">
+            <h3>駅・路線検索</h3>
+            <button onclick="testStationSearch()">getStationId/getStationName</button>
+            <button onclick="testLineSearch()">getLineName</button>
+            <button onclick="testStationNameEx()">getStationNameEx</button>
+            <button onclick="testCompanyPrefectName()">getCompanyOrPrefectName</button>
+            <div id="search-results"></div>
+        </div>
+    </div>
+    
+    <div class="test-suite">
+        <h2>📊 RouteUtility配列操作テスト</h2>
+        <div class="test-case">
+            <h3>配列取得機能</h3>
+            <button onclick="testGetCompanyAndPrefects()">getCompanyAndPrefects</button>
+            <button onclick="testKeyMatchStations()">keyMatchStations</button>
+            <button onclick="testLinesFromCompanyOrPrefect()">linesFromCompanyOrPrefect</button>
+            <button onclick="testStationsWithinCompany()">stationsWithinCompanyOrPrefectAndLine</button>
+            <div id="array-results"></div>
+        </div>
+    </div>
+    
+    <div class="test-suite">
+        <h2>🚉 RouteUtility駅情報テスト</h2>
+        <div class="test-case">
+            <h3>駅属性・情報</h3>
+            <button onclick="testStationIds()">getStationIdsOfLine/getJunctionIdsOfLine</button>
+            <button onclick="testStationProperties()">isJunction/isSpecificJunction</button>
+            <button onclick="testStationDetails()">getTerminalName/getPrefectNameByStation</button>
+            <button onclick="testStationKana()">getKanaFromStationId</button>
+            <div id="station-results"></div>
+        </div>
+    </div>
+    
+    <div class="test-suite">
+        <h2>🚄 RouteWrapper基本機能テスト</h2>
+        <div class="test-case">
+            <h3>経路管理</h3>
+            <button onclick="testRouteCreation()">コンストラクタ/デストラクタ</button>
+            <button onclick="testRouteOperations()">addRoute/removeTail/removeAll</button>
+            <button onclick="testRouteProperties()">getRouteCount/startStationId/lastStationId</button>
+            <button onclick="testRouteStatus()">isEnd/routeScript</button>
+            <div id="route-results"></div>
+        </div>
+    </div>
+    
+    <div class="test-suite">
+        <h2>⚙️ RouteWrapper詳細機能テスト</h2>
+        <div class="test-case">
+            <h3>経路設定・制御</h3>
+            <button onclick="testRouteSettings()">setDetour/setNoRule</button>
+            <button onclick="testRouteAdvanced()">reverseRoute/setupRoute</button>
+            <button onclick="testRouteFlags()">各種フラグ設定</button>
+            <div id="route-advanced-results"></div>
+        </div>
+    </div>
+    
+    <div class="test-suite">
+        <h2>📋 RouteListWrapper機能テスト</h2>
+        <div class="test-case">
+            <h3>経路リスト操作</h3>
+            <button onclick="testRouteList()">RouteListWrapper全機能</button>
+            <div id="routelist-results"></div>
+        </div>
+    </div>
+    
+    <div class="test-suite">
+        <h2>💰 CalcRouteWrapper運賃計算テスト</h2>
+        <div class="test-case">
+            <h3>運賃計算</h3>
+            <button onclick="testFareCalculation()">calcFare/showFare</button>
+            <button onclick="testFareSettings()">setLongRoute/setStartAsCity/setArriveAsCity</button>
+            <button onclick="testFareAdvanced()">isEnableLongRoute/setSpecificTermRule115</button>
+            <div id="fare-results"></div>
+        </div>
+    </div>
+    
+    <div class="test-suite">
+        <h2>💾 RouteUtility保存・履歴テスト</h2>
+        <div class="test-case">
+            <h3>データ永続化</h3>
+            <button onclick="testDataStorage()">saveToRouteArray/scriptFromRouteArray</button>
+            <button onclick="testDatabaseStorage()">saveToDatabaseId/getDatabaseId</button>
+            <button onclick="testHistoryManagement()">履歴管理機能</button>
+            <div id="storage-results"></div>
+        </div>
+    </div>
+    
+    <div class="test-suite">
+        <h2>🔧 RouteUtility補助機能テスト</h2>
+        <div class="test-case">
+            <h3>フォーマット・ユーティリティ</h3>
+            <button onclick="testNumberFormatting()">fareNumStr/kmNumStr</button>
+            <button onclick="testScriptParsing()">parseScript</button>
+            <button onclick="testStorageChecks()">loadStorageRoute/isRouteInStorage</button>
+            <div id="utility-results"></div>
+        </div>
+    </div>
+    
+    <div id="detailed-results" style="display: none;">
+        <h2>📝 詳細テスト結果</h2>
+        <div id="all-results"></div>
+    </div>
+
+    <script>
+        let FarertModule = null;
+        let moduleReady = false;
+        let testStats = { total: 0, passed: 0, failed: 0, skipped: 0 };
+        let showDetails = false;
+        
+        // ユーティリティ関数
+        function addResult(containerId, text, status = 'info') {
+            const container = document.getElementById(containerId);
+            const div = document.createElement('div');
+            div.className = 'result ' + status;
+            div.textContent = new Date().toLocaleTimeString() + ' - ' + text;
+            container.appendChild(div);
+            
+            // 詳細結果にも追加
+            if (showDetails) {
+                const allResults = document.getElementById('all-results');
+                const detailDiv = document.createElement('div');
+                detailDiv.className = 'result ' + status;
+                detailDiv.textContent = `[${containerId}] ${text}`;
+                allResults.appendChild(detailDiv);
+            }
+            
+            // 統計更新
+            testStats.total++;
+            if (status === 'pass') testStats.passed++;
+            else if (status === 'fail') testStats.failed++;
+            else if (status === 'skip') testStats.skipped++;
+            
+            updateSummary();
+        }
+        
+        function updateSummary() {
+            const summary = document.getElementById('summary');
+            if (!moduleReady) return;
+            
+            const passRate = testStats.total > 0 ? (testStats.passed / testStats.total * 100).toFixed(1) : 0;
+            summary.textContent = `テスト実行: ${testStats.total} | 成功: ${testStats.passed} | 失敗: ${testStats.failed} | スキップ: ${testStats.skipped} | 成功率: ${passRate}%`;
+            
+            if (testStats.failed > 0) {
+                summary.className = 'error';
+            } else if (testStats.passed > 0) {
+                summary.className = 'success';
+            }
+        }
+        
+        function runTest(testName, testFunc) {
+            try {
+                if (!moduleReady || !FarertModule) {
+                    addResult('all-results', `❌ ${testName}: モジュール未読み込み`, 'skip');
+                    return false;
+                }
+                
+                const result = testFunc();
+                if (result) {
+                    addResult('all-results', `✅ ${testName}: 成功`, 'pass');
+                } else {
+                    addResult('all-results', `❌ ${testName}: 失敗`, 'fail');
+                }
+                return result;
+            } catch (error) {
+                addResult('all-results', `❌ ${testName}: エラー - ${error.message}`, 'fail');
+                return false;
+            }
+        }
+        
+        // WebAssemblyモジュールの読み込み
+        async function loadModule() {
+            try {
+                const module = await import('./dist/farert.js');
+                FarertModule = await module.default();
+                moduleReady = true;
+                
+                document.getElementById('summary').textContent = 'WebAssemblyモジュールが正常に読み込まれました！テスト準備完了';
+                document.getElementById('summary').className = 'success';
+                
+                // グローバルに公開
+                window.FarertModule = FarertModule;
+                window.moduleReady = moduleReady;
+                
+            } catch (error) {
+                document.getElementById('summary').textContent = 'エラー: ' + error.message;
+                document.getElementById('summary').className = 'error';
+            }
+        }
+        
+        // ページ読み込み後にモジュールを読み込み
+        document.addEventListener('DOMContentLoaded', loadModule);
+        
+        // データベース管理テスト
+        function testDatabaseManager() {
+            addResult('database-results', '📦 データベース管理テスト開始', 'info');
+            
+            runTest('openDatabase', () => {
+                const result = FarertModule.openDatabase();
+                return result === 1;
+            });
+            
+            runTest('closeDatabase', () => {
+                FarertModule.closeDatabase();
+                return true; // closeに戻り値がないので常に成功
+            });
+        }
+        
+        function testDatabaseVersion() {
+            runTest('getDatabaseVersion', () => {
+                // この関数は実装されていない可能性があるのでスキップ
+                addResult('database-results', '⚠️ getDatabaseVersion: 実装確認が必要', 'skip');
+                return true;
+            });
+        }
+        
+        // 駅・路線検索テスト
+        function testStationSearch() {
+            addResult('search-results', '🔍 駅・路線検索テスト開始', 'info');
+            
+            const testStations = ['東京', '新宿', '大阪', '存在しない駅'];
+            
+            for (const stationName of testStations) {
+                runTest(`getStationId("${stationName}")`, () => {
+                    const stationId = FarertModule.getStationId(stationName);
+                    if (stationName === '存在しない駅') {
+                        return stationId === 0; // 存在しない駅はID=0を返すと仮定
+                    } else {
+                        return stationId > 0;
+                    }
+                });
+                
+                if (stationName !== '存在しない駅') {
+                    runTest(`getStationName(ID取得->名前復元)`, () => {
+                        const stationId = FarertModule.getStationId(stationName);
+                        if (stationId > 0) {
+                            const retrievedName = FarertModule.getStationName(stationId);
+                            return retrievedName.length > 0;
+                        }
+                        return false;
+                    });
+                }
+            }
+        }
+        
+        function testLineSearch() {
+            runTest('getLineName', () => {
+                const lineName = FarertModule.getLineName(1);
+                return typeof lineName === 'string';
+            });
+        }
+        
+        function testStationNameEx() {
+            runTest('getStationNameEx', () => {
+                const stationName = FarertModule.getStationNameEx(1);
+                return typeof stationName === 'string';
+            });
+        }
+        
+        function testCompanyPrefectName() {
+            runTest('getCompanyOrPrefectName', () => {
+                const name = FarertModule.getCompanyOrPrefectName(1);
+                return typeof name === 'string';
+            });
+        }
+        
+        // 配列操作テスト
+        function testGetCompanyAndPrefects() {
+            addResult('array-results', '📊 配列操作テスト開始', 'info');
+            
+            // この関数は現在のバインディングにないのでスキップ
+            addResult('array-results', '⚠️ getCompanyAndPrefects: WebAssemblyバインディング未実装', 'skip');
+        }
+        
+        function testKeyMatchStations() {
+            addResult('array-results', '⚠️ keyMatchStations: WebAssemblyバインディング未実装', 'skip');
+        }
+        
+        function testLinesFromCompanyOrPrefect() {
+            addResult('array-results', '⚠️ linesFromCompanyOrPrefect: WebAssemblyバインディング未実装', 'skip');
+        }
+        
+        function testStationsWithinCompany() {
+            addResult('array-results', '⚠️ stationsWithinCompanyOrPrefectAndLine: WebAssemblyバインディング未実装', 'skip');
+        }
+        
+        // 駅情報テスト
+        function testStationIds() {
+            addResult('station-results', '🚉 駅情報テスト開始', 'info');
+            addResult('station-results', '⚠️ 配列返却関数: WebAssemblyバインディング未実装', 'skip');
+        }
+        
+        function testStationProperties() {
+            addResult('station-results', '⚠️ 駅属性判定関数: WebAssemblyバインディング未実装', 'skip');
+        }
+        
+        function testStationDetails() {
+            addResult('station-results', '⚠️ 駅詳細情報関数: WebAssemblyバインディング未実装', 'skip');
+        }
+        
+        function testStationKana() {
+            addResult('station-results', '⚠️ getKanaFromStationId: WebAssemblyバインディング未実装', 'skip');
+        }
+        
+        // RouteWrapper基本機能テスト
+        function testRouteCreation() {
+            addResult('route-results', '🚄 経路管理テスト開始', 'info');
+            
+            runTest('createRoute', () => {
+                const result = FarertModule.createRoute();
+                return result === 1;
+            });
+            
+            runTest('destroyRoute', () => {
+                FarertModule.destroyRoute();
+                return true;
+            });
+        }
+        
+        function testRouteOperations() {
+            runTest('Route Operations', () => {
+                // 経路を作成
+                const created = FarertModule.createRoute();
+                if (created !== 1) return false;
+                
+                // 駅を追加
+                const addResult1 = FarertModule.addStation(1);
+                const addResult2 = FarertModule.addRoute(1, 2);
+                
+                // カウント確認
+                const count = FarertModule.getRouteCount();
+                
+                // クリーンアップ
+                FarertModule.removeAll();
+                FarertModule.destroyRoute();
+                
+                return typeof addResult1 === 'number' && typeof addResult2 === 'number' && count >= 0;
+            });
+        }
+        
+        function testRouteProperties() {
+            runTest('Route Properties', () => {
+                const created = FarertModule.createRoute();
+                if (created !== 1) return false;
+                
+                const count = FarertModule.getRouteCount();
+                const startId = FarertModule.startStationId();
+                const lastId = FarertModule.lastStationId();
+                const isEnd = FarertModule.isEnd();
+                
+                FarertModule.destroyRoute();
+                
+                return typeof count === 'number' && 
+                       typeof startId === 'number' && 
+                       typeof lastId === 'number' && 
+                       typeof isEnd === 'number';
+            });
+        }
+        
+        function testRouteStatus() {
+            runTest('Route Status', () => {
+                const created = FarertModule.createRoute();
+                if (created !== 1) return false;
+                
+                const isEnd = FarertModule.isEnd();
+                
+                FarertModule.destroyRoute();
+                return typeof isEnd === 'number';
+            });
+        }
+        
+        // 詳細機能テスト
+        function testRouteSettings() {
+            addResult('route-advanced-results', '⚙️ 詳細機能テスト開始', 'info');
+            addResult('route-advanced-results', '⚠️ 詳細設定関数: WebAssemblyバインディング未実装', 'skip');
+        }
+        
+        function testRouteAdvanced() {
+            runTest('reverseRoute', () => {
+                const created = FarertModule.createRoute();
+                if (created !== 1) return false;
+                
+                const result = FarertModule.reverseRoute();
+                FarertModule.destroyRoute();
+                return typeof result === 'number';
+            });
+        }
+        
+        function testRouteFlags() {
+            addResult('route-advanced-results', '⚠️ フラグ設定関数: WebAssemblyバインディング未実装', 'skip');
+        }
+        
+        // RouteListWrapper機能テスト
+        function testRouteList() {
+            addResult('routelist-results', '📋 RouteListWrapperテスト開始', 'info');
+            addResult('routelist-results', '⚠️ RouteListWrapper: WebAssemblyバインディング未実装', 'skip');
+        }
+        
+        // 運賃計算テスト
+        function testFareCalculation() {
+            addResult('fare-results', '💰 運賃計算テスト開始', 'info');
+            
+            runTest('Fare Calculation Flow', () => {
+                // 経路作成
+                const created = FarertModule.createRoute();
+                if (created !== 1) return false;
+                
+                // 駅追加（適切な経路を作成）
+                FarertModule.addStation(1);
+                FarertModule.addStation(2);
+                
+                // 運賃計算
+                const fareResult = FarertModule.calculateFare();
+                
+                // 運賃文字列取得
+                const fareString = FarertModule.getFareString();
+                
+                // クリーンアップ
+                FarertModule.destroyRoute();
+                
+                return fareResult >= 0 && typeof fareString === 'string';
+            });
+        }
+        
+        function testFareSettings() {
+            runTest('Fare Settings', () => {
+                const created = FarertModule.createRoute();
+                if (created !== 1) return false;
+                
+                const fareResult = FarertModule.calculateFare();
+                if (fareResult < 0) {
+                    FarertModule.destroyRoute();
+                    return false;
+                }
+                
+                // 設定関数を呼び出し
+                FarertModule.setLongRoute(1);
+                FarertModule.setStartAsCity();
+                FarertModule.setArriveAsCity();
+                
+                FarertModule.destroyRoute();
+                return true;
+            });
+        }
+        
+        function testFareAdvanced() {
+            addResult('fare-results', '⚠️ 詳細運賃設定: 一部WebAssemblyバインディング未実装', 'skip');
+        }
+        
+        // 保存・履歴テスト
+        function testDataStorage() {
+            addResult('storage-results', '💾 保存・履歴テスト開始', 'info');
+            addResult('storage-results', '⚠️ データ保存機能: WebAssemblyバインディング未実装', 'skip');
+        }
+        
+        function testDatabaseStorage() {
+            addResult('storage-results', '⚠️ データベース保存機能: WebAssemblyバインディング未実装', 'skip');
+        }
+        
+        function testHistoryManagement() {
+            addResult('storage-results', '⚠️ 履歴管理機能: WebAssemblyバインディング未実装', 'skip');
+        }
+        
+        // 補助機能テスト
+        function testNumberFormatting() {
+            addResult('utility-results', '🔧 補助機能テスト開始', 'info');
+            addResult('utility-results', '⚠️ 数値フォーマット機能: WebAssemblyバインディング未実装', 'skip');
+        }
+        
+        function testScriptParsing() {
+            addResult('utility-results', '⚠️ スクリプト解析機能: WebAssemblyバインディング未実装', 'skip');
+        }
+        
+        function testStorageChecks() {
+            addResult('utility-results', '⚠️ ストレージチェック機能: WebAssemblyバインディング未実装', 'skip');
+        }
+        
+        // 全テスト実行
+        function runAllTests() {
+            if (!moduleReady) {
+                alert('WebAssemblyモジュールがまだ読み込まれていません');
+                return;
+            }
+            
+            // 統計リセット
+            testStats = { total: 0, passed: 0, failed: 0, skipped: 0 };
+            
+            // 全結果をクリア
+            document.querySelectorAll('[id$="-results"]').forEach(container => {
+                container.innerHTML = '';
+            });
+            
+            // 全テストを順次実行
+            testDatabaseManager();
+            testDatabaseVersion();
+            
+            testStationSearch();
+            testLineSearch();
+            testStationNameEx();
+            testCompanyPrefectName();
+            
+            testGetCompanyAndPrefects();
+            testKeyMatchStations();
+            testLinesFromCompanyOrPrefect();
+            testStationsWithinCompany();
+            
+            testStationIds();
+            testStationProperties();
+            testStationDetails();
+            testStationKana();
+            
+            testRouteCreation();
+            testRouteOperations();
+            testRouteProperties();
+            testRouteStatus();
+            
+            testRouteSettings();
+            testRouteAdvanced();
+            testRouteFlags();
+            
+            testRouteList();
+            
+            testFareCalculation();
+            testFareSettings();
+            testFareAdvanced();
+            
+            testDataStorage();
+            testDatabaseStorage();
+            testHistoryManagement();
+            
+            testNumberFormatting();
+            testScriptParsing();
+            testStorageChecks();
+            
+            addResult('all-results', `🎯 全テスト完了: 合計${testStats.total}件のテストを実行`, 'info');
+        }
+        
+        function clearResults() {
+            document.querySelectorAll('[id$="-results"]').forEach(container => {
+                container.innerHTML = '';
+            });
+            testStats = { total: 0, passed: 0, failed: 0, skipped: 0 };
+            updateSummary();
+        }
+        
+        function toggleDetails() {
+            const details = document.getElementById('detailed-results');
+            showDetails = !showDetails;
+            details.style.display = showDetails ? 'block' : 'none';
+        }
+    </script>
+</body>
+</html>

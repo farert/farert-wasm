@@ -8,7 +8,15 @@
     "clean": "make clean",
     "serve": "make serve",
     "dev": "source setup_env.sh && make && make serve",
-    "setup": "source setup_env.sh"
+    "setup": "source setup_env.sh",
+    "test": "node test_simple.js",
+    "test:unit": "node tests/run_tests.js",
+    "test:simple": "node test_simple.js",
+    "test:database": "node tests/run_tests.js database",
+    "test:route": "node tests/run_tests.js route",
+    "test:fare": "node tests/run_tests.js fare",
+    "test:integration": "node tests/run_tests.js integration",
+    "test:browser": "echo 'Open http://localhost:8080/test_unit.html in browser after running: npm run serve'"
   },
   "keywords": [
     "webassembly",

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <title>拡張機能確認: 東京→東海道線→神戸→山陽線→下関</title>
+    <style>
+        body { font-family: monospace; margin: 20px; }
+        .pass { color: green; }
+        .fail { color: red; }
+        .info { color: blue; }
+    </style>
+</head>
+<body>
+    <h1>🚄 拡張機能確認テスト</h1>
+    <p>経路: <strong>東京 → 東海道線 → 神戸 → 山陽線 → 下関</strong></p>
+    
+    <button onclick="verifyEnhancements()">🧪 拡張機能確認</button>
+    <button onclick="location.href='test_route_detailed.html'">📋 詳細テストページ</button>
+    <button onclick="location.href='farert_test.html'">🏠 メインテストページ</button>
+    
+    <div id="results"></div>
+
+    <script>
+        let moduleReady = false;
+        let FarertModule = null;
+
+        function log(message, className = 'info') {
+            const div = document.createElement('div');
+            div.className = className;
+            div.textContent = new Date().toLocaleTimeString() + ' - ' + message;
+            document.getElementById('results').appendChild(div);
+        }
+
+        async function loadModule() {
+            try {
+                log('WebAssemblyモジュール読み込み中...');
+                const module = await import('./dist/farert.js');
+                FarertModule = await module.default();
+                moduleReady = true;
+                log('✅ モジュール読み込み完了', 'pass');
+            } catch (error) {
+                log('❌ モジュール読み込み失敗: ' + error.message, 'fail');
+            }
+        }
+
+        async function verifyEnhancements() {
+            if (!moduleReady) {
+                await loadModule();
+                if (!moduleReady) return;
+            }
+            
+            document.getElementById('results').innerHTML = '';
+            
+            try {
+                // データベース接続
+                FarertModule.openDatabase();
+                log('✅ データベース接続', 'pass');
+                
+                // 指定された駅のテスト
+                const stations = ['東京', '神戸', '下関'];
+                log('=== 指定駅検索テスト ===', 'info');
+                
+                for (const station of stations) {
+                    const id = FarertModule.getStationId(station);
+                    const name = id > 0 ? FarertModule.getStationName(id) : '';
+                    log(`${station}: ID=${id}, 取得名="${name}"`, id > 0 ? 'pass' : 'fail');
+                }
+                
+                // 関連路線の検索
+                log('=== 関連路線検索テスト ===', 'info');
+                let tokaido = false, sanyo = false;
+                
+                for (let lineId = 1; lineId <= 20; lineId++) {
+                    const lineName = FarertModule.getLineName(lineId);
+                    if (lineName && lineName.length > 0) {
+                        if (lineName.includes('東海道')) {
+                            log(`東海道線発見: ID=${lineId}, 名前="${lineName}"`, 'pass');
+                            tokaido = true;
+                        } else if (lineName.includes('山陽')) {
+                            log(`山陽線発見: ID=${lineId}, 名前="${lineName}"`, 'pass');
+                            sanyo = true;
+                        }
+                    }
+                }
+                
+                // 経路作成テスト
+                log('=== 経路作成テスト ===', 'info');
+                const routeCreated = FarertModule.createRoute();
+                log(`経路作成: ${routeCreated === 1 ? '成功' : '失敗'}`, routeCreated === 1 ? 'pass' : 'fail');
+                
+                // 駅追加テスト
+                if (routeCreated === 1) {
+                    for (const station of stations) {
+                        const id = FarertModule.getStationId(station);
+                        if (id > 0) {
+                            const result = FarertModule.addStation(id);
+                            log(`${station}駅追加: ${result >= 0 ? '成功' : '失敗'}`, result >= 0 ? 'pass' : 'fail');
+                        }
+                    }
+                    
+                    const routeCount = FarertModule.getRouteCount();
+                    log(`経路駅数: ${routeCount}`, 'info');
+                    
+                    // 運賃計算
+                    const fare = FarertModule.calculateFare();
+                    const fareString = FarertModule.getFareString();
+                    log(`運賃計算: ${fare >= 0 ? '成功' : '失敗'}`, fare >= 0 ? 'pass' : 'fail');
+                    log(`運賃情報: "${fareString}"`, 'info');
+                }
+                
+                log('🎉 拡張機能確認完了！', 'pass');
+                log('💡 詳細なテストは「詳細テストページ」で実行してください', 'info');
+                
+            } catch (error) {
+                log('❌ エラー: ' + error.message, 'fail');
+            }
+        }
+
+        window.addEventListener('load', loadModule);
+    </script>
+</body>
+</html>

@@ -170,8 +170,8 @@
             if (!checkModule()) return;
             
             try {
-                // 有名な駅名でテスト
-                const stationNames = ['東京', '新宿', '大阪'];
+                // 指定された駅でテスト: 東京 → 神戸 → 下関
+                const stationNames = ['東京', '神戸', '下関', '新宿', '大阪'];
                 
                 for (const name of stationNames) {
                     const stationId = FarertModule.getStationId(name);
@@ -182,8 +182,19 @@
                         addResult(`⚠️ 駅が見つかりません: ${name}`, 'error');
                     }
                 }
+                
+                // 路線検索テスト
+                addResult('🛤️ 路線検索テスト開始...', 'success');
+                for (let lineId = 1; lineId <= 10; lineId++) {
+                    const lineName = FarertModule.getLineName(lineId);
+                    if (lineName && lineName.trim().length > 0) {
+                        const isTargetLine = lineName.includes('東海道') || lineName.includes('山陽') || lineName.includes('中央');
+                        addResult(`🛤️ 路線ID${lineId}: ${lineName}${isTargetLine ? ' ⭐' : ''}`, 'success');
+                    }
+                }
+                
             } catch (error) {
-                addResult('❌ 駅検索エラー: ' + error.message, 'error');
+                addResult('❌ 駅・路線検索エラー: ' + error.message, 'error');
             }
         };
         
@@ -195,9 +206,33 @@
                 if (result) {
                     addResult('✅ 経路オブジェクト作成成功', 'success');
                     
-                    // 試しに駅を追加
-                    const addStationResult = FarertModule.addStation(1); // 仮のID
-                    addResult('📍 駅追加テスト結果: ' + addStationResult, 'success');
+                    // 指定された経路での駅追加テスト: 東京 → 神戸 → 下関
+                    const routeStations = [
+                        { name: '東京', description: '出発地' },
+                        { name: '神戸', description: '中継地（東海道線→山陽線の接続点）' },
+                        { name: '下関', description: '到着地' }
+                    ];
+                    
+                    let successCount = 0;
+                    for (const station of routeStations) {
+                        const stationId = FarertModule.getStationId(station.name);
+                        if (stationId > 0) {
+                            const stationAddResult = FarertModule.addStation(stationId);
+                            addResult(`📍 ${station.name}駅追加: ID=${stationId}, 結果=${stationAddResult} (${station.description})`, 'success');
+                            successCount++;
+                        } else {
+                            addResult(`⚠️ ${station.name}駅ID取得失敗`, 'error');
+                        }
+                    }
+                    
+                    // 経路情報の確認
+                    const routeCount = FarertModule.getRouteCount();
+                    const startId = FarertModule.startStationId();
+                    const lastId = FarertModule.lastStationId();
+                    
+                    addResult(`📊 経路情報: 駅数=${routeCount}, 始点ID=${startId}, 終点ID=${lastId}`, 'success');
+                    addResult(`📈 成功率: ${successCount}/${routeStations.length}駅`, 'success');
+                    
                 } else {
                     addResult('❌ 経路作成失敗', 'error');
                 }

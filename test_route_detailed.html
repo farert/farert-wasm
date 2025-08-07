@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <title>詳細経路テスト: 東京→東海道線→神戸→山陽線→下関</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; max-width: 1000px; }
+        .test-section { border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .result { padding: 8px; margin: 3px 0; border-radius: 3px; font-family: monospace; }
+        .pass { background: #d4edda; color: #155724; }
+        .fail { background: #f8d7da; color: #721c24; }
+        .info { background: #e2e3e5; color: #383d41; }
+        .warn { background: #fff3cd; color: #856404; }
+        .station-info { background: #cce7ff; padding: 10px; margin: 5px 0; border-radius: 3px; }
+        .route-step { background: #f0f0f0; padding: 8px; margin: 3px 0; border-left: 4px solid #007cba; }
+        button { padding: 10px 20px; margin: 5px; background: #007cba; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #005a87; }
+        table { border-collapse: collapse; width: 100%; margin: 10px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+    <h1>🚄 詳細経路テスト</h1>
+    <h2>経路: 東京 → 東海道線 → 神戸 → 山陽線 → 下関</h2>
+    
+    <button onclick="runDetailedTest()">🚀 詳細テスト実行</button>
+    <button onclick="clearResults()">🧹 結果クリア</button>
+    
+    <div id="status" style="padding: 10px; margin: 10px 0; border-radius: 5px; background: #e2e3e5;">
+        WebAssemblyモジュール読み込み待機中...
+    </div>
+    
+    <div class="test-section">
+        <h3>📍 駅情報取得</h3>
+        <div id="station-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>🛤️ 路線情報取得</h3>
+        <div id="line-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>🚄 経路作成・追加</h3>
+        <div id="route-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>💰 運賃計算</h3>
+        <div id="fare-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>📊 データベース詳細情報</h3>
+        <div id="db-results"></div>
+    </div>
+
+    <script>
+        let FarertModule = null;
+        let moduleReady = false;
+        
+        // ログ関数
+        function log(containerId, message, status = 'info') {
+            const container = document.getElementById(containerId);
+            const div = document.createElement('div');
+            div.className = 'result ' + status;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong> - ${message}`;
+            container.appendChild(div);
+            console.log(message);
+        }
+        
+        // WebAssemblyモジュール読み込み
+        async function loadModule() {
+            try {
+                document.getElementById('status').textContent = 'WebAssemblyモジュールを読み込み中...';
+                document.getElementById('status').style.background = '#fff3cd';
+                
+                const module = await import('./dist/farert.js');
+                FarertModule = await module.default();
+                moduleReady = true;
+                
+                document.getElementById('status').textContent = '✅ WebAssemblyモジュール読み込み完了！テスト準備OK';
+                document.getElementById('status').style.background = '#d4edda';
+                
+            } catch (error) {
+                document.getElementById('status').textContent = `❌ エラー: ${error.message}`;
+                document.getElementById('status').style.background = '#f8d7da';
+            }
+        }
+        
+        // 詳細テスト実行
+        async function runDetailedTest() {
+            if (!moduleReady) {
+                alert('WebAssemblyモジュールがまだ読み込まれていません');
+                return;
+            }
+            
+            // 結果をクリア
+            clearResults();
+            
+            try {
+                // データベース接続
+                const dbResult = FarertModule.openDatabase();
+                log('db-results', `データベース接続: ${dbResult === 1 ? '成功' : '失敗'}`, dbResult === 1 ? 'pass' : 'fail');
+                
+                // 駅情報詳細取得
+                await testStationDetails();
+                
+                // 路線情報詳細取得
+                await testLineDetails();
+                
+                // 経路作成詳細テスト
+                await testRouteCreation();
+                
+                // 運賃計算詳細テスト
+                await testFareCalculation();
+                
+                log('db-results', '🎉 全テスト完了', 'pass');
+                
+            } catch (error) {
+                log('db-results', `❌ テスト実行エラー: ${error.message}`, 'fail');
+            }
+        }
+        
+        // 駅情報詳細テスト
+        async function testStationDetails() {
+            const stations = [
+                { name: '東京', description: '首都圏の中心駅' },
+                { name: '神戸', description: '関西の主要駅' },
+                { name: '下関', description: '本州最西端の主要駅' },
+                { name: '新宿', description: '東京の副都心' },
+                { name: '大阪', description: '関西の中心駅' }
+            ];
+            
+            log('station-results', '📍 駅情報詳細取得を開始...', 'info');
+            
+            let stationTable = '<table><tr><th>駅名</th><th>駅ID</th><th>取得駅名</th><th>説明</th><th>状態</th></tr>';
+            
+            for (const station of stations) {
+                const stationId = FarertModule.getStationId(station.name);
+                const retrievedName = stationId > 0 ? FarertModule.getStationName(stationId) : '';
+                const status = stationId > 0 ? '✅' : '❌';
+                
+                stationTable += `<tr>
+                    <td>${station.name}</td>
+                    <td>${stationId}</td>
+                    <td>${retrievedName}</td>
+                    <td>${station.description}</td>
+                    <td>${status}</td>
+                </tr>`;
+                
+                log('station-results', 
+                    `${station.name}: ID=${stationId}, 取得名="${retrievedName}"`, 
+                    stationId > 0 ? 'pass' : 'fail');
+            }
+            
+            stationTable += '</table>';
+            
+            const tableDiv = document.createElement('div');
+            tableDiv.innerHTML = stationTable;
+            document.getElementById('station-results').appendChild(tableDiv);
+        }
+        
+        // 路線情報詳細テスト
+        async function testLineDetails() {
+            log('line-results', '🛤️ 路線情報詳細取得を開始...', 'info');
+            
+            let lineTable = '<table><tr><th>路線ID</th><th>路線名</th><th>状態</th></tr>';
+            let foundLines = 0;
+            
+            // 路線IDを1から50まで検索
+            for (let lineId = 1; lineId <= 50; lineId++) {
+                const lineName = FarertModule.getLineName(lineId);
+                if (lineName && lineName.trim().length > 0) {
+                    foundLines++;
+                    lineTable += `<tr><td>${lineId}</td><td>${lineName}</td><td>✅</td></tr>`;
+                    
+                    // 特に関係する路線をハイライト
+                    const isTargetLine = lineName.includes('東海道') || 
+                                        lineName.includes('山陽') || 
+                                        lineName.includes('中央');
+                    
+                    log('line-results', 
+                        `路線ID ${lineId}: "${lineName}"${isTargetLine ? ' ⭐' : ''}`, 
+                        isTargetLine ? 'pass' : 'info');
+                    
+                    if (foundLines >= 10) break; // 最初の10個の有効な路線のみ表示
+                }
+            }
+            
+            lineTable += '</table>';
+            
+            const tableDiv = document.createElement('div');
+            tableDiv.innerHTML = lineTable;
+            document.getElementById('line-results').appendChild(tableDiv);
+            
+            log('line-results', `発見された路線数: ${foundLines}`, 'info');
+        }
+        
+        // 経路作成詳細テスト
+        async function testRouteCreation() {
+            log('route-results', '🚄 経路作成詳細テストを開始...', 'info');
+            
+            // 経路作成
+            const createResult = FarertModule.createRoute();
+            log('route-results', `経路オブジェクト作成: ${createResult === 1 ? '成功' : '失敗'}`, 
+                createResult === 1 ? 'pass' : 'fail');
+            
+            // 指定された経路での駅追加: 東京 → 神戸 → 下関
+            const routeStations = ['東京', '神戸', '下関'];
+            let routeHtml = '<div class="station-info"><h4>📍 経路構築過程</h4>';
+            
+            for (let i = 0; i < routeStations.length; i++) {
+                const stationName = routeStations[i];
+                const stationId = FarertModule.getStationId(stationName);
+                
+                if (stationId > 0) {
+                    const addResult = FarertModule.addStation(stationId);
+                    routeHtml += `<div class="route-step">
+                        ステップ ${i + 1}: ${stationName}駅 (ID: ${stationId}) 追加 
+                        → 結果: ${addResult >= 0 ? '成功' : '失敗'}
+                    </div>`;
+                    
+                    log('route-results', 
+                        `ステップ${i + 1}: ${stationName}駅(ID:${stationId})追加 → ${addResult}`, 
+                        addResult >= 0 ? 'pass' : 'fail');
+                    
+                    // 経路状態を確認
+                    const currentCount = FarertModule.getRouteCount();
+                    const isEnd = FarertModule.isEnd();
+                    
+                    log('route-results', 
+                        `  現在の経路数: ${currentCount}, 終端: ${isEnd ? 'はい' : 'いいえ'}`, 
+                        'info');
+                } else {
+                    routeHtml += `<div class="route-step" style="background: #f8d7da;">
+                        ステップ ${i + 1}: ${stationName}駅 → 駅ID取得失敗
+                    </div>`;
+                    
+                    log('route-results', `❌ ${stationName}駅のIDが取得できませんでした`, 'fail');
+                }
+            }
+            
+            routeHtml += '</div>';
+            document.getElementById('route-results').innerHTML += routeHtml;
+            
+            // 最終的な経路情報
+            const finalCount = FarertModule.getRouteCount();
+            const startId = FarertModule.startStationId();
+            const lastId = FarertModule.lastStationId();
+            
+            log('route-results', `📊 最終経路情報: 駅数=${finalCount}, 始点ID=${startId}, 終点ID=${lastId}`, 'info');
+        }
+        
+        // 運賃計算詳細テスト
+        async function testFareCalculation() {
+            log('fare-results', '💰 運賃計算詳細テストを開始...', 'info');
+            
+            try {
+                // 運賃計算実行
+                const fareResult = FarertModule.calculateFare();
+                log('fare-results', `運賃計算実行: ${fareResult >= 0 ? '成功' : '失敗'} (結果: ${fareResult})`, 
+                    fareResult >= 0 ? 'pass' : 'fail');
+                
+                // 運賃情報取得
+                const fareString = FarertModule.getFareString();
+                log('fare-results', `運賃情報: "${fareString}"`, 'info');
+                
+                // 運賃設定のテスト
+                log('fare-results', '⚙️ 運賃設定テスト:', 'info');
+                
+                FarertModule.setLongRoute(1);
+                log('fare-results', '長距離設定: 有効', 'pass');
+                
+                FarertModule.setStartAsCity();
+                log('fare-results', '出発地都市内設定: 適用', 'pass');
+                
+                FarertModule.setArriveAsCity();
+                log('fare-results', '到着地都市内設定: 適用', 'pass');
+                
+                // 再計算
+                const recalcResult = FarertModule.calculateFare();
+                const newFareString = FarertModule.getFareString();
+                
+                log('fare-results', `設定適用後再計算: ${recalcResult >= 0 ? '成功' : '失敗'} (結果: ${recalcResult})`, 
+                    recalcResult >= 0 ? 'pass' : 'fail');
+                log('fare-results', `新運賃情報: "${newFareString}"`, 'info');
+                
+                // 運賃比較
+                if (fareString !== newFareString) {
+                    log('fare-results', '✅ 設定変更により運賃情報が更新されました', 'pass');
+                } else {
+                    log('fare-results', '⚠️ 設定変更後も運賃情報に変化なし', 'warn');
+                }
+                
+            } catch (error) {
+                log('fare-results', `❌ 運賃計算エラー: ${error.message}`, 'fail');
+            }
+        }
+        
+        // 結果クリア
+        function clearResults() {
+            const resultContainers = ['station-results', 'line-results', 'route-results', 'fare-results', 'db-results'];
+            resultContainers.forEach(id => {
+                document.getElementById(id).innerHTML = '';
+            });
+        }
+        
+        // ページ読み込み時に初期化
+        window.addEventListener('load', loadModule);
+    </script>
+</body>
+</html>

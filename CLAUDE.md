@@ -33,6 +33,8 @@ make help           # ヘルプ表示
 
 ## Development Environment Setup
 
+q../- コミットメッセージは conventional commits 形式で書いてください
+
 1. Emscripten SDK is installed at `~/priv/farert.repos/emsdk/`
 2. Use `setup_env.sh` script to activate environment automatically
 3. Build outputs to `dist/` directory

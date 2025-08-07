@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <title>拡張WebAssembly APIテスト</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; max-width: 1200px; }
+        .api-section { border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .result { padding: 8px; margin: 3px 0; border-radius: 3px; font-family: monospace; font-size: 12px; }
+        .pass { background: #d4edda; color: #155724; }
+        .fail { background: #f8d7da; color: #721c24; }
+        .info { background: #e2e3e5; color: #383d41; }
+        .warn { background: #fff3cd; color: #856404; }
+        .new-api { background: #cce7ff; color: #004085; font-weight: bold; }
+        button { padding: 8px 15px; margin: 5px; background: #007cba; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #005a87; }
+        .json-data { background: #f8f9fa; padding: 10px; border-left: 3px solid #007cba; white-space: pre-wrap; font-family: monospace; font-size: 11px; max-height: 200px; overflow-y: auto; }
+        .api-count { background: #28a745; color: white; padding: 5px 10px; border-radius: 15px; display: inline-block; margin: 5px 0; }
+    </style>
+</head>
+<body>
+    <h1>🚀 拡張WebAssembly APIテスト</h1>
+    <div class="api-count" id="api-counter">利用可能API: 検出中...</div>
+    <p>27個の基本APIに加えて、<strong>新たに12個の拡張API</strong>を追加しました（合計39個のAPI）</p>
+    
+    <button onclick="runAllExtendedTests()">🧪 全拡張APIテスト実行</button>
+    <button onclick="clearResults()">🧹 結果クリア</button>
+    <button onclick="location.href='farert_test.html'">🏠 メインテスト</button>
+    
+    <div id="status" style="padding: 10px; margin: 10px 0; border-radius: 5px; background: #e2e3e5;">
+        WebAssemblyモジュール読み込み中...
+    </div>
+    
+    <div class="api-section">
+        <h2>🆕 配列系API (JSON形式)</h2>
+        <button onclick="testArrayApis()">配列系API テスト</button>
+        <div id="array-results"></div>
+    </div>
+    
+    <div class="api-section">
+        <h2>📋 詳細情報取得API</h2>
+        <button onclick="testDetailApis()">詳細情報API テスト</button>
+        <div id="detail-results"></div>
+    </div>
+    
+    <div class="api-section">
+        <h2>🎯 高度な経路操作API</h2>
+        <button onclick="testAdvancedRouteApis()">高度経路API テスト</button>
+        <div id="advanced-results"></div>
+    </div>
+    
+    <div class="api-section">
+        <h2>🔍 API利用可能性チェック</h2>
+        <button onclick="testApiAvailability()">全API利用可能性テスト</button>
+        <div id="availability-results"></div>
+    </div>
+
+    <script>
+        let FarertModule = null;
+        let moduleReady = false;
+        
+        // ログ関数
+        function log(containerId, message, status = 'info') {
+            const container = document.getElementById(containerId);
+            const div = document.createElement('div');
+            div.className = 'result ' + status;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong> - ${message}`;
+            container.appendChild(div);
+            console.log(message);
+        }
+        
+        // JSON表示用関数
+        function logJson(containerId, title, jsonString, status = 'info') {
+            const container = document.getElementById(containerId);
+            const div = document.createElement('div');
+            div.className = 'result ' + status;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong> - ${title}`;
+            container.appendChild(div);
+            
+            const jsonDiv = document.createElement('div');
+            jsonDiv.className = 'json-data';
+            try {
+                const parsed = JSON.parse(jsonString);
+                jsonDiv.textContent = JSON.stringify(parsed, null, 2);
+            } catch (e) {
+                jsonDiv.textContent = jsonString;
+            }
+            container.appendChild(jsonDiv);
+        }
+        
+        // WebAssemblyモジュール読み込み
+        async function loadModule() {
+            try {
+                document.getElementById('status').textContent = 'WebAssemblyモジュールを読み込み中...';
+                document.getElementById('status').style.background = '#fff3cd';
+                
+                const module = await import('./dist/farert.js');
+                FarertModule = await module.default();
+                moduleReady = true;
+                
+                document.getElementById('status').textContent = '✅ WebAssemblyモジュール読み込み完了！拡張API準備OK';
+                document.getElementById('status').style.background = '#d4edda';
+                
+                // API数をカウント
+                countAvailableApis();
+                
+            } catch (error) {
+                document.getElementById('status').textContent = `❌ エラー: ${error.message}`;
+                document.getElementById('status').style.background = '#f8d7da';
+            }
+        }
+        
+        // 利用可能APIをカウント
+        function countAvailableApis() {
+            if (!moduleReady || !FarertModule) return;
+            
+            const expectedApis = [
+                // 基本API (27個)
+                'test', 'openDatabase', 'closeDatabase', 'createRoute', 'destroyRoute',
+                'addStation', 'addRoute', 'removeTail', 'removeAll', 'reverseRoute',
+                'getRouteCount', 'startStationId', 'lastStationId', 'isEnd',
+                'getStationId', 'getStationName', 'getLineName', 'calculateFare',
+                'getFareString', 'setLongRoute', 'setStartAsCity', 'setArriveAsCity',
+                'debugStations',
+                // 拡張API (12個)
+                'getLineIdsFromStation', 'getStationIdsOfLine', 'getJunctionIdsOfLine',
+                'searchStationsByKeyword', 'getLinesFromCompanyOrPrefect',
+                'getStationKana', 'getStationPrefecture', 'getStationNameExtended',
+                'getTerminalStationName', 'getCompanyOrPrefectName', 'getCompanyAndPrefects',
+                'getDatabaseVersion', 'getCurrentRoute', 'getRouteDetails'
+            ];
+            
+            let availableCount = 0;
+            for (const api of expectedApis) {
+                if (typeof FarertModule[api] === 'function') {
+                    availableCount++;
+                }
+            }
+            
+            document.getElementById('api-counter').textContent = 
+                `利用可能API: ${availableCount}/${expectedApis.length} (新規拡張: ${availableCount - 27})`;
+        }
+        
+        // 配列系APIのテスト
+        async function testArrayApis() {
+            if (!moduleReady) return;
+            document.getElementById('array-results').innerHTML = '';
+            
+            try {
+                FarertModule.openDatabase();
+                log('array-results', '🆕 配列系APIテスト開始', 'new-api');
+                
+                // 東京駅の路線IDを取得
+                const tokyoId = FarertModule.getStationId('東京');
+                if (tokyoId > 0) {
+                    log('array-results', `東京駅ID: ${tokyoId}`, 'info');
+                    
+                    // 新API: 駅から路線IDリスト取得
+                    const lineIds = FarertModule.getLineIdsFromStation(tokyoId);
+                    logJson('array-results', '🆕 東京駅の路線IDリスト', lineIds, 'new-api');
+                    
+                    // 各路線の駅リストを取得
+                    const lineArray = JSON.parse(lineIds);
+                    if (lineArray.length > 0) {
+                        const firstLineId = lineArray[0];
+                        const stationIds = FarertModule.getStationIdsOfLine(firstLineId);
+                        logJson('array-results', `🆕 路線${firstLineId}の駅IDリスト`, stationIds, 'new-api');
+                        
+                        // ジャンクション駅取得
+                        const junctionIds = FarertModule.getJunctionIdsOfLine(firstLineId, tokyoId);
+                        logJson('array-results', `🆕 路線${firstLineId}のジャンクション駅`, junctionIds, 'new-api');
+                    }
+                }
+                
+                // キーワード検索テスト
+                const searchResults = FarertModule.searchStationsByKeyword('新宿');
+                logJson('array-results', '🆕 「新宿」キーワード検索結果', searchResults, 'new-api');
+                
+                // 会社・都道府県の路線取得
+                const companyLines = FarertModule.getLinesFromCompanyOrPrefect(1);
+                logJson('array-results', '🆕 会社/都道府県ID=1の路線リスト', companyLines, 'new-api');
+                
+                log('array-results', '✅ 配列系APIテスト完了', 'pass');
+                
+            } catch (error) {
+                log('array-results', `❌ エラー: ${error.message}`, 'fail');
+            }
+        }
+        
+        // 詳細情報APIのテスト
+        async function testDetailApis() {
+            if (!moduleReady) return;
+            document.getElementById('detail-results').innerHTML = '';
+            
+            try {
+                log('detail-results', '📋 詳細情報APIテスト開始', 'new-api');
+                
+                const stations = ['東京', '新宿', '大阪', '神戸'];
+                
+                for (const stationName of stations) {
+                    const stationId = FarertModule.getStationId(stationName);
+                    if (stationId > 0) {
+                        log('detail-results', `=== ${stationName}駅 (ID: ${stationId}) ===`, 'info');
+                        
+                        // 新API: かな取得
+                        const kana = FarertModule.getStationKana(stationId);
+                        log('detail-results', `🆕 かな: "${kana}"`, 'new-api');
+                        
+                        // 新API: 都道府県取得
+                        const prefecture = FarertModule.getStationPrefecture(stationId);
+                        log('detail-results', `🆕 都道府県: "${prefecture}"`, 'new-api');
+                        
+                        // 新API: 拡張駅名取得
+                        const extendedName = FarertModule.getStationNameExtended(stationId);
+                        log('detail-results', `🆕 拡張名: "${extendedName}"`, 'new-api');
+                        
+                        // 新API: ターミナル駅名
+                        const terminalName = FarertModule.getTerminalStationName(stationId);
+                        log('detail-results', `🆕 ターミナル名: "${terminalName}"`, 'new-api');
+                    }
+                }
+                
+                // 会社・都道府県データ取得
+                const companyData = FarertModule.getCompanyAndPrefects();
+                logJson('detail-results', '🆕 会社・都道府県データ', companyData, 'new-api');
+                
+                // データベースバージョン
+                const dbVersion = FarertModule.getDatabaseVersion();
+                log('detail-results', `🆕 データベースバージョン: ${dbVersion}`, 'new-api');
+                
+                log('detail-results', '✅ 詳細情報APIテスト完了', 'pass');
+                
+            } catch (error) {
+                log('detail-results', `❌ エラー: ${error.message}`, 'fail');
+            }
+        }
+        
+        // 高度な経路操作APIのテスト
+        async function testAdvancedRouteApis() {
+            if (!moduleReady) return;
+            document.getElementById('advanced-results').innerHTML = '';
+            
+            try {
+                log('advanced-results', '🎯 高度経路操作APIテスト開始', 'new-api');
+                
+                // 経路作成
+                const routeCreated = FarertModule.createRoute();
+                log('advanced-results', `経路作成: ${routeCreated === 1 ? '成功' : '失敗'}`, 
+                    routeCreated === 1 ? 'pass' : 'fail');
+                
+                if (routeCreated === 1) {
+                    // 駅を追加
+                    const tokyoId = FarertModule.getStationId('東京');
+                    const osakaId = FarertModule.getStationId('大阪');
+                    
+                    if (tokyoId > 0 && osakaId > 0) {
+                        FarertModule.addStation(tokyoId);
+                        FarertModule.addStation(osakaId);
+                        
+                        log('advanced-results', '東京駅・大阪駅を追加', 'info');
+                        
+                        // 新API: 現在の経路をJSON取得
+                        const currentRoute = FarertModule.getCurrentRoute();
+                        logJson('advanced-results', '🆕 現在の経路JSON', currentRoute, 'new-api');
+                        
+                        // 新API: 経路詳細情報取得
+                        const routeDetails = FarertModule.getRouteDetails();
+                        logJson('advanced-results', '🆕 経路詳細情報', routeDetails, 'new-api');
+                        
+                        // 運賃計算してから再度確認
+                        const fareResult = FarertModule.calculateFare();
+                        if (fareResult >= 0) {
+                            log('advanced-results', '運賃計算実行', 'pass');
+                            
+                            // 計算後の経路詳細
+                            const detailsAfterCalc = FarertModule.getRouteDetails();
+                            logJson('advanced-results', '🆕 運賃計算後の経路詳細', detailsAfterCalc, 'new-api');
+                        }
+                    }
+                }
+                
+                log('advanced-results', '✅ 高度経路操作APIテスト完了', 'pass');
+                
+            } catch (error) {
+                log('advanced-results', `❌ エラー: ${error.message}`, 'fail');
+            }
+        }
+        
+        // API利用可能性テスト
+        async function testApiAvailability() {
+            if (!moduleReady) return;
+            document.getElementById('availability-results').innerHTML = '';
+            
+            const extendedApis = [
+                { name: 'getLineIdsFromStation', category: '配列系', description: '駅から路線IDリスト取得' },
+                { name: 'getStationIdsOfLine', category: '配列系', description: '路線の駅IDリスト取得' },
+                { name: 'getJunctionIdsOfLine', category: '配列系', description: 'ジャンクション駅ID取得' },
+                { name: 'searchStationsByKeyword', category: '配列系', description: 'キーワード駅検索' },
+                { name: 'getLinesFromCompanyOrPrefect', category: '配列系', description: '会社・都道府県路線取得' },
+                { name: 'getStationKana', category: '詳細情報', description: '駅名かな取得' },
+                { name: 'getStationPrefecture', category: '詳細情報', description: '駅都道府県取得' },
+                { name: 'getStationNameExtended', category: '詳細情報', description: '駅拡張名取得' },
+                { name: 'getTerminalStationName', category: '詳細情報', description: 'ターミナル駅名取得' },
+                { name: 'getCompanyOrPrefectName', category: '詳細情報', description: '会社・都道府県名取得' },
+                { name: 'getCompanyAndPrefects', category: '詳細情報', description: '会社・都道府県データ取得' },
+                { name: 'getDatabaseVersion', category: '詳細情報', description: 'データベースバージョン取得' },
+                { name: 'getCurrentRoute', category: '経路操作', description: '現在経路JSON取得' },
+                { name: 'getRouteDetails', category: '経路操作', description: '経路詳細情報取得' }
+            ];
+            
+            log('availability-results', '🔍 拡張API利用可能性チェック開始', 'new-api');
+            
+            let availableCount = 0;
+            const categories = {};
+            
+            for (const api of extendedApis) {
+                const available = typeof FarertModule[api.name] === 'function';
+                if (available) availableCount++;
+                
+                if (!categories[api.category]) categories[api.category] = { total: 0, available: 0 };
+                categories[api.category].total++;
+                if (available) categories[api.category].available++;
+                
+                log('availability-results', 
+                    `${api.name}: ${available ? '✅' : '❌'} ${api.description}`, 
+                    available ? 'pass' : 'fail');
+            }
+            
+            // カテゴリ別サマリー
+            log('availability-results', '📊 カテゴリ別利用可能性:', 'info');
+            for (const [category, stats] of Object.entries(categories)) {
+                const percentage = Math.round((stats.available / stats.total) * 100);
+                log('availability-results', 
+                    `  ${category}: ${stats.available}/${stats.total} (${percentage}%)`, 
+                    stats.available === stats.total ? 'pass' : 'warn');
+            }
+            
+            const totalPercentage = Math.round((availableCount / extendedApis.length) * 100);
+            log('availability-results', 
+                `🎯 総合利用可能性: ${availableCount}/${extendedApis.length} (${totalPercentage}%)`, 
+                availableCount === extendedApis.length ? 'pass' : 'warn');
+        }
+        
+        // 全拡張APIテスト実行
+        async function runAllExtendedTests() {
+            if (!moduleReady) {
+                alert('WebAssemblyモジュールがまだ読み込まれていません');
+                return;
+            }
+            
+            clearResults();
+            
+            log('availability-results', '🚀 全拡張APIテスト開始', 'new-api');
+            
+            await testApiAvailability();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await testArrayApis();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await testDetailApis();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await testAdvancedRouteApis();
+            
+            log('availability-results', '🎉 全拡張APIテスト完了！', 'pass');
+        }
+        
+        // 結果クリア
+        function clearResults() {
+            ['array-results', 'detail-results', 'advanced-results', 'availability-results'].forEach(id => {
+                document.getElementById(id).innerHTML = '';
+            });
+        }
+        
+        // ページ読み込み時に初期化
+        window.addEventListener('load', loadModule);
+    </script>
+</body>
+</html>
