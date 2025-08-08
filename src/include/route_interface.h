@@ -86,6 +86,7 @@ public:
 class CalcRouteWrapper {
 private:
     CalcRoute* calcRoute;
+    int lastFareResult;  // Store last fare calculation result code
     
 public:
     CalcRouteWrapper(const RouteWrapper& route);

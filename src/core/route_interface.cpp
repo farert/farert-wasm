@@ -169,15 +169,18 @@ std::string RouteListWrapper::routeScript() const {
 // CalcRouteWrapper implementation
 CalcRouteWrapper::CalcRouteWrapper(const RouteWrapper& routeWrapper) {
     calcRoute = new CalcRoute(*routeWrapper.route);
+    lastFareResult = -1;  // Initialize to invalid state
 }
 
 CalcRouteWrapper::CalcRouteWrapper(const RouteWrapper& route, int count) {
     // TODO: Implement constructor with count parameter
     calcRoute = new CalcRoute(*route.route);
+    lastFareResult = -1;  // Initialize to invalid state
 }
 
 CalcRouteWrapper::CalcRouteWrapper(const RouteListWrapper& routeList) {
     calcRoute = new CalcRoute(*routeList.routeList);
+    lastFareResult = -1;  // Initialize to invalid state
 }
 
 CalcRouteWrapper::~CalcRouteWrapper() {
@@ -195,40 +198,65 @@ void CalcRouteWrapper::sync(const RouteWrapper& route, int count) {
 
 FARE_INFO* CalcRouteWrapper::calcFare() {
     FARE_INFO* fareInfo = new FARE_INFO();
+    int fare_result;
+
     calcRoute->calcFare(fareInfo);
+    
+    // Original logic from c_route.mm
+    switch (fareInfo->resultCode()) {
+        case 0:     // success, company begin/first or too many company
+            fare_result = 0;
+            break;  // OK
+        case -1:    /* In completed (吉塚、西小倉における不完全ルート) */
+            fare_result = 1;     //"この経路の片道乗車券は購入できません.続けて経路を指定してください."
+            break;
+        default:
+            delete fareInfo; // Clean up memory
+            return nullptr; /* -2:empty or -3:fail */
+            break;
+    }
+
+    // Store the result code for later use
+    lastFareResult = fare_result;
     return fareInfo;
 }
 
 std::string CalcRouteWrapper::showFare() const {
-    // TODO: Implement showFare functionality
-    return "";
+    // Original implementation from c_route.mm
+    FARE_INFO fi;
+    calcRoute->calcFare(&fi);
+    return fi.showFare(calcRoute->getRouteFlag());
 }
 
 // Options and settings
 bool CalcRouteWrapper::isEnableLongRoute() const {
-    // TODO: Implement isEnableLongRoute functionality
-    return false;
+    // Original implementation from c_route.mm
+    return calcRoute->getRouteFlag().isEnableLongRoute();
 }
 
 bool CalcRouteWrapper::isRule115specificTerm() const {
-    // TODO: Implement isRule115specificTerm functionality
-    return false;
+    // Original implementation from c_route.mm
+    return calcRoute->getRouteFlag().isRule115specificTerm();
 }
 
 void CalcRouteWrapper::setSpecificTermRule115(bool enable) {
-    // TODO: Implement setSpecificTermRule115 functionality
+    // TODO: Implement setSpecificTermRule115 functionality - need to find original method
+    // This method may not exist in original c_route.mm
 }
 
 void CalcRouteWrapper::setStartAsCity() {
-    // TODO: Implement setStartAsCity functionality
+    // Original implementation from c_route.mm
+    calcRoute->refRouteFlag().setStartAsCity();
 }
 
 void CalcRouteWrapper::setArriveAsCity() {
-    // TODO: Implement setArriveAsCity functionality
+    // Original implementation from c_route.mm
+    calcRoute->refRouteFlag().setArriveAsCity();
 }
 
 void CalcRouteWrapper::setLongRoute(bool flag) {
-    // TODO: Implement setLongRoute functionality
+    // Original implementation from c_route.mm
+    calcRoute->refRouteFlag().setLongRoute(flag);
 }
 
 // Route list operations (inherited from RouteList)

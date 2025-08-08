@@ -178,7 +178,14 @@ int farert_calculate_fare() {
     if (!g_calcRoute) return 0;
     
     FARE_INFO* fareInfo = g_calcRoute->calcFare();
-    return fareInfo != nullptr ? 1 : 0;
+    if (fareInfo != nullptr) {
+        // Return result based on original calcFare logic
+        // 0: success, 1: incomplete route, negative: error
+        int resultCode = fareInfo->resultCode();
+        delete fareInfo; // Clean up memory
+        return (resultCode >= 0) ? 1 : 0; // 1 for success or recoverable, 0 for failure
+    }
+    return 0; // Calculation failed
 }
 
 EMSCRIPTEN_KEEPALIVE
