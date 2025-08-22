@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a C/C++ to WebAssembly migration project that converts a Japanese railway fare calculation system from native C/C++/Objective-C++ to WASM for use in TypeScript/JavaScript applications.
 
+- TypeScript を使用する際は strict モードを有効にしてください
+
 ## Build Commands
 
 **重要**: ビルド前にEmscripten環境を設定する必要があります。
@@ -29,6 +31,13 @@ source ~/priv/farert.repos/emsdk/emsdk_env.sh
 make                # ビルド
 make serve          # 開発サーバー起動
 make help           # ヘルプ表示
+```
+
+### テスト実行
+```bash
+# ブラウザでテスト（推奨）
+make serve          # サーバー起動
+# then open http://localhost:8080/test_claude_public_api.html
 ```
 
 ## Development Environment Setup
@@ -77,10 +86,57 @@ q../- コミットメッセージは conventional commits 形式で書いてく�
 5. **Dependencies**: ✅ SQLite3 integrated with WebAssembly MEMFS
 
 ### 🚀 WebAssembly API Status
-- **Total APIs**: 39 functions (27 basic + 12 extended)
+- **Total APIs**: 45 functions (27 basic + 12 extended + 6 CLAUDE.md public)
 - **All original c_route.h functionality**: ✅ Fully implemented in route_interface.h
+- **CLAUDE.md Public Functions**: ✅ setupRoute, routeScript, terminalName, isJunction, isSpecificJunction, terminal history
 - **WebAssembly bindings**: ✅ Complete with JSON array support
 - **Test coverage**: ✅ Comprehensive test suites implemented
+
+### Public function for JS/TS
+
+openDatabase() as bool
+closeDatabase() as void
+
+rt = cRoute()
+rt.setupRoute(string route) as void // 経路のバリデーションチェック
+
+// left view, routeFolder
+rtl = cRouteList()
+rt = cRoute()
+rt.setupRoute()
+crt = cCalcRoute(rtl)
+cds = cCalcRoute(routeList: item.routeList) {
+let fareInfo : FareInfo = cds.calcFare() {
+
+cCalcRouteは、cRoute, cRouteList から構築し、calcFare メソッドが、fareInfo を返す
+fareInfoに運賃その他が入っている
+上記4オブジェクトとそのなかの公開関数
+
+fareInfo.fare
+fareInfo.isRule114Applied
+fareInfo.availCountForFareOfStockDiscount
+:
+
+// Terminal select
+cRouteUtil.getCompanyAndPrefects() as! [[Int]]
+cRouteUtil.readFromTerminalHistory() as! [String]?
+cRouteUtil.stationNameEx(int id) as String
+cRouteUtil.getKanaFromStationId(int station_id) as String
+cRouteUtil.prectName(byStation: ident) as String
+cRouteUtil.companyOrPrefectName(int companyOrPrefect) as String
+cRouteUtil.saveToTerminalHistory([string])
+cRouteUtil.getStationId(string station)
+cRouteUtil.stationName(int StationId)
+cRouteUtil.lineIds(int stationId) as! [Int]
+cRouteUtil.lines(int companyOrPrefectId) as! [Int]
+cRouteUtil.lineName(int lineId)
+cRouteUtil.stationsWith(int ompanyOrPrefectId, int lineId) as! [Int]
+cRouteUtil.stationsIds(int lineId) as! [Int]
+cRouteUtil.junctionIds(int lineId, int stationId) as! [Int]
+cRouteUtil.isJunction(int stationId) as bool
+cRouteUtil.isSpecificJunction(int lineId, int stationId) as bool
+cRouteUtil.terminalName(int fareInfo.endStationId) as string
+cRouteUtil.routeScript() as String
 
 ## Testing
 The project includes a test HTML file (`index.html`) for validating WASM functions in the browser.

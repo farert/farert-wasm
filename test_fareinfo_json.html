@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <title>FareInfo JSON テスト</title>
+    <style>
+        body { font-family: monospace; margin: 20px; max-width: 1200px; }
+        .result { padding: 8px; margin: 3px 0; border-radius: 3px; }
+        .pass { background: #d4edda; color: #155724; }
+        .fail { background: #f8d7da; color: #721c24; }
+        .info { background: #e2e3e5; color: #383d41; }
+        button { padding: 10px 20px; margin: 5px; background: #007cba; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #005a87; }
+        .json-display { background: #f8f9fa; padding: 15px; border-left: 3px solid #007cba; white-space: pre-wrap; font-family: monospace; font-size: 12px; max-height: 400px; overflow-y: auto; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>🎫 FareInfo JSON API テスト</h1>
+    <p>移植元のFareInfoクラスを完全にJSON形式で再現するテストページです。</p>
+    
+    <button onclick="testFareInfoJson()">🧪 FareInfo JSON テスト実行</button>
+    <button onclick="testRouteAndFare()">🚄 経路作成→運賃計算→詳細表示</button>
+    <button onclick="clearResults()">🧹 結果クリア</button>
+    
+    <div id="status" style="padding: 10px; margin: 10px 0; border-radius: 5px; background: #e2e3e5;">
+        WebAssemblyモジュール読み込み中...
+    </div>
+    
+    <div id="results"></div>
+
+    <script>
+        let FarertModule = null;
+        let moduleReady = false;
+        
+        // ログ関数
+        function log(message, status = 'info') {
+            const div = document.createElement('div');
+            div.className = 'result ' + status;
+            div.textContent = new Date().toLocaleTimeString() + ' - ' + message;
+            document.getElementById('results').appendChild(div);
+            console.log(message);
+        }
+        
+        // JSON表示関数
+        function displayJson(title, jsonString) {
+            const titleDiv = document.createElement('div');
+            titleDiv.className = 'result pass';
+            titleDiv.textContent = `${new Date().toLocaleTimeString()} - ${title}`;
+            document.getElementById('results').appendChild(titleDiv);
+            
+            const jsonDiv = document.createElement('div');
+            jsonDiv.className = 'json-display';
+            try {
+                const parsed = JSON.parse(jsonString);
+                jsonDiv.textContent = JSON.stringify(parsed, null, 2);
+            } catch (e) {
+                jsonDiv.textContent = jsonString;
+            }
+            document.getElementById('results').appendChild(jsonDiv);
+        }
+        
+        // WebAssemblyモジュール読み込み
+        async function loadModule() {
+            try {
+                document.getElementById('status').textContent = 'WebAssemblyモジュールを読み込み中...';
+                document.getElementById('status').style.background = '#fff3cd';
+                
+                const module = await import('./dist/farert.js');
+                FarertModule = await module.default();
+                moduleReady = true;
+                
+                document.getElementById('status').textContent = '✅ WebAssemblyモジュール読み込み完了！FareInfo JSON API準備OK';
+                document.getElementById('status').style.background = '#d4edda';
+                
+            } catch (error) {
+                document.getElementById('status').textContent = `❌ エラー: ${error.message}`;
+                document.getElementById('status').style.background = '#f8d7da';
+            }
+        }
+        
+        // FareInfo JSON テスト
+        async function testFareInfoJson() {
+            if (!moduleReady) return;
+            
+            log('🎫 FareInfo JSON APIテスト開始', 'info');
+            
+            try {
+                // データベース接続
+                FarertModule.openDatabase();
+                log('データベース接続完了', 'pass');
+                
+                // 経路作成
+                FarertModule.createRoute();
+                log('経路作成完了', 'pass');
+                
+                // 東京-大阪の経路を作成
+                const tokyoId = FarertModule.getStationId('東京');
+                const osakaId = FarertModule.getStationId('大阪');
+                
+                if (tokyoId > 0 && osakaId > 0) {
+                    FarertModule.addStation(tokyoId);
+                    FarertModule.addStation(osakaId);
+                    log(`東京駅(ID:${tokyoId})→大阪駅(ID:${osakaId})の経路を作成`, 'pass');
+                    
+                    // 運賃計算実行
+                    const calcResult = FarertModule.calculateFare();
+                    log(`運賃計算実行: ${calcResult === 1 ? '成功' : '失敗'}`, calcResult === 1 ? 'pass' : 'fail');
+                    
+                    if (calcResult === 1) {
+                        // FareInfo JSON取得
+                        const fareInfoJson = FarertModule.getFareInfoJson();
+                        displayJson('📊 FareInfo JSON (完全な運賃詳細情報)', fareInfoJson);
+                        
+                        // JSON内容の検証
+                        const fareData = JSON.parse(fareInfoJson);
+                        log('JSON解析成功', 'pass');
+                        log(`結果コード: ${fareData.result} (0:成功, 1:不完全, その他:エラー)`, 'info');
+                        log(`始点駅ID: ${fareData.beginStationId}, 終点駅ID: ${fareData.endStationId}`, 'info');
+                        log(`会社線跨ぎ: ${fareData.isResultCompanyMultipassed}`, 'info');
+                        log(`Rule114適用: ${fareData.isRule114Applied}`, 'info');
+                        
+                        // showFare()との比較
+                        const fareString = FarertModule.getFareString();
+                        log('', '');
+                        log('📝 showFare()結果（表示用文字列）:', 'info');
+                        const fareDiv = document.createElement('div');
+                        fareDiv.className = 'json-display';
+                        fareDiv.textContent = fareString;
+                        document.getElementById('results').appendChild(fareDiv);
+                        
+                    } else {
+                        log('運賃計算に失敗したため、FareInfo取得をスキップ', 'fail');
+                    }
+                } else {
+                    log('東京駅または大阪駅のIDが取得できません', 'fail');
+                }
+                
+                log('🎉 FareInfo JSONテスト完了', 'pass');
+                
+            } catch (error) {
+                log(`❌ エラー: ${error.message}`, 'fail');
+            }
+        }
+        
+        // 複数経路での詳細テスト
+        async function testRouteAndFare() {
+            if (!moduleReady) return;
+            
+            clearResults();
+            log('🚄 複数経路での運賃計算詳細テスト開始', 'info');
+            
+            const routes = [
+                { from: '東京', to: '新宿', description: '近距離・都内' },
+                { from: '東京', to: '大阪', description: '長距離・会社跨ぎ' },
+                { from: '東京', to: '神戸', description: '超長距離' },
+                { from: '新宿', to: '東京', description: '逆方向テスト' }
+            ];
+            
+            try {
+                FarertModule.openDatabase();
+                
+                for (let i = 0; i < routes.length; i++) {
+                    const route = routes[i];
+                    log(`=== 経路 ${i + 1}: ${route.from}→${route.to} (${route.description}) ===`, 'info');
+                    
+                    // 新しい経路を作成
+                    FarertModule.createRoute();
+                    
+                    const fromId = FarertModule.getStationId(route.from);
+                    const toId = FarertModule.getStationId(route.to);
+                    
+                    if (fromId > 0 && toId > 0) {
+                        FarertModule.addStation(fromId);
+                        FarertModule.addStation(toId);
+                        
+                        const calcResult = FarertModule.calculateFare();
+                        if (calcResult === 1) {
+                            const fareInfoJson = FarertModule.getFareInfoJson();
+                            displayJson(`🎫 ${route.from}→${route.to} 運賃詳細`, fareInfoJson);
+                        } else {
+                            log(`${route.from}→${route.to}: 運賃計算失敗`, 'fail');
+                        }
+                    } else {
+                        log(`${route.from}または${route.to}の駅ID取得失敗`, 'fail');
+                    }
+                    
+                    // 少し間隔を空ける
+                    if (i < routes.length - 1) {
+                        log('', '');
+                    }
+                }
+                
+                log('🎉 複数経路テスト完了', 'pass');
+                
+            } catch (error) {
+                log(`❌ エラー: ${error.message}`, 'fail');
+            }
+        }
+        
+        // 結果クリア
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+        
+        // ページ読み込み時に初期化
+        window.addEventListener('load', loadModule);
+    </script>
+</body>
+</html>

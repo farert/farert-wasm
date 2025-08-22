@@ -1,5 +1,6 @@
 #include <emscripten.h>
 #include <emscripten/bind.h>
+#include <sstream>
 #include "include/route_interface.h"
 #include "include/common.h"
 #include "core/alpdb.h"
@@ -127,6 +128,67 @@ std::string getFareStringResult() {
     return "";
 }
 
+// Get detailed FareInfo as JSON
+std::string getFareInfoJson() {
+    if (g_calcRoute) {
+        return g_calcRoute->calcFare();
+    }
+    return "{}";
+}
+
+// Route script operations (from CLAUDE.md Public functions)
+int setupRoute(const std::string& route) {
+    if (!g_route) return 0;
+    try {
+        g_route->setupRoute(route);
+        return 1;
+    } catch (...) {
+        return 0;
+    }
+}
+
+std::string getRouteScript() {
+    if (!g_route) return "";
+    return g_route->routeScript();
+}
+
+// Terminal name function
+std::string getTerminalName(int stationId) {
+    return RouteUtility::getTerminalName(stationId);
+}
+
+// Check if station is junction
+int isJunction(int stationId) {
+    return RouteUtility::isJunction(stationId) ? 1 : 0;
+}
+
+// Check if specific junction
+int isSpecificJunction(int lineId, int stationId) {
+    return RouteUtility::isSpecificJunction(lineId, stationId) ? 1 : 0;
+}
+
+// Terminal history operations
+void saveToTerminalHistory(const std::string& historyData) {
+    // Split comma-separated string and save as array
+    std::vector<std::string> history;
+    std::stringstream ss(historyData);
+    std::string item;
+    while (std::getline(ss, item, ',')) {
+        history.push_back(item);
+    }
+    RouteUtility::saveToTerminalHistoryWithArray(history);
+}
+
+std::string readFromTerminalHistory() {
+    std::vector<std::string> history = RouteUtility::readFromTerminalHistory();
+    std::string result;
+    for (size_t i = 0; i < history.size(); i++) {
+        if (i > 0) result += ",";
+        result += history[i];
+    }
+    return result;
+}
+
 std::string debugStationsResult() {
     std::string result = "";
     
@@ -177,13 +239,9 @@ int farert_calculate_fare() {
     g_calcRoute = new CalcRouteWrapper(*g_route);
     if (!g_calcRoute) return 0;
     
-    FARE_INFO* fareInfo = g_calcRoute->calcFare();
-    if (fareInfo != nullptr) {
-        // Return result based on original calcFare logic
-        // 0: success, 1: incomplete route, negative: error
-        int resultCode = fareInfo->resultCode();
-        delete fareInfo; // Clean up memory
-        return (resultCode >= 0) ? 1 : 0; // 1 for success or recoverable, 0 for failure
+    std::string fareJson = g_calcRoute->calcFare();
+    if (!fareJson.empty() && fareJson != "{}") {
+        return 1; // Calculation succeeded
     }
     return 0; // Calculation failed
 }
@@ -344,7 +402,7 @@ std::string getCompanyOrPrefectName(int id) {
 
 // 会社・都道府県データ取得（JSON形式）
 std::string getCompanyAndPrefectsAsJson() {
-    CompanyPrefectData data = RouteUtility::getCompanyAndPrefects();
+    RouteUtility::CompanyPrefectData data = RouteUtility::getCompanyAndPrefects();
     std::string json = "{";
     json += "\"companies\":[";
     for (size_t i = 0; i < data.companies.size(); i++) {
@@ -395,7 +453,7 @@ std::string getRouteDetailsAsJson() {
     json += "\"stationCount\":" + std::to_string(g_route->getRouteCount()) + ",";
     json += "\"startStationId\":" + std::to_string(g_route->startStationId()) + ",";
     json += "\"lastStationId\":" + std::to_string(g_route->lastStationId()) + ",";
-    json += "\"isEnd\":" + (g_route->isEnd() ? "true" : "false");
+    json += "\"isEnd\":" + std::string(g_route->isEnd() ? "true" : "false");
     json += "}";
     return json;
 }
@@ -455,4 +513,100 @@ EMSCRIPTEN_BINDINGS(farert_module) {
     // ===== 拡張API: 高度な経路操作 =====
     emscripten::function("getCurrentRoute", &getCurrentRouteAsJson);
     emscripten::function("getRouteDetails", &getRouteDetailsAsJson);
+    
+    // ===== 拡張API: 運賃詳細情報 =====
+    emscripten::function("getFareInfoJson", &getFareInfoJson);
+    
+    // ===== CLAUDE.md Public Functions =====
+    // Route validation and script operations
+    emscripten::function("setupRoute", &setupRoute);
+    emscripten::function("routeScript", &getRouteScript);
+    
+    // Terminal operations
+    emscripten::function("terminalName", &getTerminalName);
+    emscripten::function("isJunction", &isJunction);
+    emscripten::function("isSpecificJunction", &isSpecificJunction);
+    
+    // Terminal history
+    emscripten::function("saveToTerminalHistory", &saveToTerminalHistory);
+    emscripten::function("readFromTerminalHistory", &readFromTerminalHistory);
+    
+    // ===== 4つのオブジェクトクラス (CLAUDE.md Public functions for JS/TS) =====
+    
+    // 1. cRoute (RouteWrapper) クラス
+    emscripten::class_<RouteWrapper>("cRoute")
+        .constructor()
+        .constructor<const RouteWrapper&>()
+        .function("removeAll", &RouteWrapper::removeAll)
+        .function("addRoute", emscripten::select_overload<int(int)>(&RouteWrapper::addRoute))
+        .function("addRouteWithLine", emscripten::select_overload<int(int, int)>(&RouteWrapper::addRoute))
+        .function("removeTail", &RouteWrapper::removeTail)
+        .function("autoRoute", &RouteWrapper::autoRoute)
+        .function("reverseRoute", &RouteWrapper::reverseRoute)
+        .function("setupRoute", &RouteWrapper::setupRoute)
+        .function("setDetour", &RouteWrapper::setDetour)
+        .function("setNoRule", &RouteWrapper::setNoRule)
+        .function("getRouteCount", &RouteWrapper::getRouteCount)
+        .function("startStationId", &RouteWrapper::startStationId)
+        .function("lastStationId", &RouteWrapper::lastStationId)
+        .function("lastLineId", &RouteWrapper::lastLineId)
+        .function("isReverseAllow", &RouteWrapper::isReverseAllow)
+        .function("isEnd", &RouteWrapper::isEnd)
+        .function("routeScript", &RouteWrapper::routeScript);
+    
+    // 2. cRouteList (RouteListWrapper) クラス  
+    emscripten::class_<RouteListWrapper>("cRouteList")
+        .constructor<const RouteWrapper&>()
+        .function("startStationId", &RouteListWrapper::startStationId)
+        .function("lastStationId", &RouteListWrapper::lastStationId)
+        .function("routeScript", &RouteListWrapper::routeScript);
+    
+    // 3. cCalcRoute (CalcRouteWrapper) クラス
+    emscripten::class_<CalcRouteWrapper>("cCalcRoute")
+        .constructor<const RouteWrapper&>()
+        .constructor<const RouteListWrapper&>()
+        .function("calcFare", emscripten::select_overload<FareInfoData()>(&CalcRouteWrapper::calcFareObject))
+        .function("calcFareJson", emscripten::select_overload<std::string()>(&CalcRouteWrapper::calcFare))
+        .function("showFare", &CalcRouteWrapper::showFare)
+        .function("isEnableLongRoute", &CalcRouteWrapper::isEnableLongRoute)
+        .function("setLongRoute", &CalcRouteWrapper::setLongRoute)
+        .function("setStartAsCity", &CalcRouteWrapper::setStartAsCity)
+        .function("setArriveAsCity", &CalcRouteWrapper::setArriveAsCity)
+        .function("getRouteCount", &CalcRouteWrapper::getRouteCount)
+        .function("startStationId", &CalcRouteWrapper::startStationId)
+        .function("lastStationId", &CalcRouteWrapper::lastStationId)
+        .function("routeScript", &CalcRouteWrapper::routeScript);
+    
+    // 4. FareInfo (FareInfoData) クラス
+    emscripten::class_<FareInfoData>("FareInfo")
+        .constructor()
+        .property("result", &FareInfoData::result)
+        .property("fare", &FareInfoData::fare)
+        .property("isRule114Applied", &FareInfoData::isRule114Applied)
+        .property("availCountForFareOfStockDiscount", &FareInfoData::availCountForFareOfStockDiscount)
+        .property("beginStationId", &FareInfoData::beginStationId)
+        .property("endStationId", &FareInfoData::endStationId)
+        .property("isResultCompanyBeginEnd", &FareInfoData::isResultCompanyBeginEnd)
+        .property("isResultCompanyMultipassed", &FareInfoData::isResultCompanyMultipassed)
+        .property("totalSalesKm", &FareInfoData::totalSalesKm)
+        .property("jrCalcKm", &FareInfoData::jrCalcKm)
+        .property("jrSalesKm", &FareInfoData::jrSalesKm)
+        .property("companySalesKm", &FareInfoData::companySalesKm)
+        .property("fareForCompanyline", &FareInfoData::fareForCompanyline)
+        .property("fareForIC", &FareInfoData::fareForIC)
+        .property("fareForBRT", &FareInfoData::fareForBRT)
+        .property("childFare", &FareInfoData::childFare)
+        .property("academicFare", &FareInfoData::academicFare)
+        .property("ticketAvailDays", &FareInfoData::ticketAvailDays)
+        .property("isRoundtrip", &FareInfoData::isRoundtrip)
+        .property("isRoundtripDiscount", &FareInfoData::isRoundtripDiscount)
+        .property("routeList", &FareInfoData::routeList)
+        .property("routeListForTOICA", &FareInfoData::routeListForTOICA)
+        .function("setFareForStockDiscounts", &FareInfoData::setFareForStockDiscounts)
+        .function("setFareForStockDiscountsForR114", &FareInfoData::setFareForStockDiscountsForR114)
+        .function("fareForStockDiscount", &FareInfoData::fareForStockDiscount)
+        .function("fareForStockDiscountTitle", &FareInfoData::fareForStockDiscountTitle);
+    
+    // 5. cRouteUtil (RouteUtility) は静的クラスなので、関数として既に公開済み
+    // RouteUtility の静的メソッドは既に function で公開されている
 }

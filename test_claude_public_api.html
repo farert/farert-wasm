@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <title>CLAUDE.md Public API テスト</title>
+    <style>
+        body { font-family: monospace; margin: 20px; max-width: 1200px; }
+        .result { padding: 8px; margin: 3px 0; border-radius: 3px; }
+        .pass { background: #d4edda; color: #155724; }
+        .fail { background: #f8d7da; color: #721c24; }
+        .info { background: #e2e3e5; color: #383d41; }
+        button { padding: 10px 20px; margin: 5px; background: #007cba; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #005a87; }
+        .json-display { background: #f8f9fa; padding: 15px; border-left: 3px solid #007cba; white-space: pre-wrap; font-family: monospace; font-size: 12px; max-height: 400px; overflow-y: auto; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>🚀 CLAUDE.md Public API テスト</h1>
+    <p>CLAUDE.mdに記載されたPublic function for JS/TSの新規実装APIをテストします。</p>
+    
+    <button onclick="testPublicAPIs()">🧪 Public API テスト実行</button>
+    <button onclick="testRouteValidation()">📝 経路バリデーション テスト</button>
+    <button onclick="testTerminalOperations()">🚉 ターミナル操作 テスト</button>
+    <button onclick="clearResults()">🧹 結果クリア</button>
+    
+    <div id="status" style="padding: 10px; margin: 10px 0; border-radius: 5px; background: #e2e3e5;">
+        WebAssemblyモジュール読み込み中...
+    </div>
+    
+    <div id="results"></div>
+
+    <script>
+        let FarertModule = null;
+        let moduleReady = false;
+        
+        // ログ関数
+        function log(message, status = 'info') {
+            const div = document.createElement('div');
+            div.className = 'result ' + status;
+            div.textContent = new Date().toLocaleTimeString() + ' - ' + message;
+            document.getElementById('results').appendChild(div);
+            console.log(message);
+        }
+        
+        // JSON表示関数
+        function displayJson(title, jsonString) {
+            const titleDiv = document.createElement('div');
+            titleDiv.className = 'result pass';
+            titleDiv.textContent = `${new Date().toLocaleTimeString()} - ${title}`;
+            document.getElementById('results').appendChild(titleDiv);
+            
+            const jsonDiv = document.createElement('div');
+            jsonDiv.className = 'json-display';
+            jsonDiv.textContent = jsonString;
+            document.getElementById('results').appendChild(jsonDiv);
+        }
+        
+        // WebAssemblyモジュール読み込み
+        async function loadModule() {
+            try {
+                document.getElementById('status').textContent = 'WebAssemblyモジュールを読み込み中...';
+                document.getElementById('status').style.background = '#fff3cd';
+                
+                const module = await import('./dist/farert.js');
+                FarertModule = await module.default();
+                moduleReady = true;
+                
+                document.getElementById('status').textContent = '✅ WebAssemblyモジュール読み込み完了！Public API準備OK';
+                document.getElementById('status').style.background = '#d4edda';
+                
+            } catch (error) {
+                document.getElementById('status').textContent = `❌ エラー: ${error.message}`;
+                document.getElementById('status').style.background = '#f8d7da';
+            }
+        }
+        
+        // Public API テスト
+        async function testPublicAPIs() {
+            if (!moduleReady) return;
+            
+            log('🚀 CLAUDE.md Public API テスト開始', 'info');
+            
+            try {
+                // データベース接続
+                const dbResult = FarertModule.openDatabase();
+                log(`openDatabase(): ${dbResult ? '成功' : '失敗'}`, dbResult ? 'pass' : 'fail');
+                
+                // 基本的な駅・路線情報取得
+                const tokyoId = FarertModule.getStationId('東京');
+                const tokyoName = FarertModule.getStationName(tokyoId);
+                log(`getStationId('東京'): ${tokyoId}`, tokyoId > 0 ? 'pass' : 'fail');
+                log(`getStationName(${tokyoId}): ${tokyoName}`, 'info');
+                
+                // 新規追加関数のテスト
+                
+                // 1. terminalName
+                const terminalName = FarertModule.terminalName(tokyoId);
+                log(`terminalName(${tokyoId}): "${terminalName}"`, 'pass');
+                
+                // 2. isJunction
+                const junction = FarertModule.isJunction(tokyoId);
+                log(`isJunction(${tokyoId}): ${junction ? 'はい' : 'いいえ'}`, 'pass');
+                
+                // 3. isSpecificJunction  
+                const lineIds = JSON.parse(FarertModule.getLineIdsFromStation(tokyoId));
+                if (lineIds.length > 0) {
+                    const specificJunction = FarertModule.isSpecificJunction(lineIds[0], tokyoId);
+                    log(`isSpecificJunction(${lineIds[0]}, ${tokyoId}): ${specificJunction ? 'はい' : 'いいえ'}`, 'pass');
+                }
+                
+                // 4. ターミナル履歴テスト
+                FarertModule.saveToTerminalHistory('東京,新宿,大阪');
+                const history = FarertModule.readFromTerminalHistory();
+                log(`saveToTerminalHistory & readFromTerminalHistory: "${history}"`, 'pass');
+                
+                log('✅ Public API テスト完了', 'pass');
+                
+            } catch (error) {
+                log(`❌ エラー: ${error.message}`, 'fail');
+            }
+        }
+        
+        // 経路バリデーション テスト
+        async function testRouteValidation() {
+            if (!moduleReady) return;
+            
+            log('📝 経路バリデーション テスト開始', 'info');
+            
+            try {
+                FarertModule.openDatabase();
+                
+                // 経路作成
+                FarertModule.createRoute();
+                log('createRoute(): 経路オブジェクト作成完了', 'pass');
+                
+                // setupRoute テスト（新規追加関数）
+                const setupResult = FarertModule.setupRoute('東京,新宿,大阪');
+                log(`setupRoute('東京,新宿,大阪'): ${setupResult ? '成功' : '失敗'}`, setupResult ? 'pass' : 'fail');
+                
+                // routeScript テスト（新規追加関数）
+                const script = FarertModule.routeScript();
+                log(`routeScript(): "${script}"`, 'pass');
+                displayJson('📄 Route Script', script);
+                
+                // 手動で駅追加してスクリプト比較
+                FarertModule.createRoute();
+                const tokyoId = FarertModule.getStationId('東京');
+                const shinjukuId = FarertModule.getStationId('新宿');
+                FarertModule.addStation(tokyoId);
+                FarertModule.addStation(shinjukuId);
+                
+                const manualScript = FarertModule.routeScript();
+                log('手動経路作成後のrouteScript():', 'info');
+                displayJson('📄 Manual Route Script', manualScript);
+                
+                log('✅ 経路バリデーション テスト完了', 'pass');
+                
+            } catch (error) {
+                log(`❌ エラー: ${error.message}`, 'fail');
+            }
+        }
+        
+        // ターミナル操作 テスト
+        async function testTerminalOperations() {
+            if (!moduleReady) return;
+            
+            log('🚉 ターミナル操作 テスト開始', 'info');
+            
+            try {
+                FarertModule.openDatabase();
+                
+                // 主要駅のターミナル情報を取得
+                const stations = ['東京', '新宿', '大阪', '京都', '名古屋'];
+                
+                for (const stationName of stations) {
+                    const stationId = FarertModule.getStationId(stationName);
+                    if (stationId > 0) {
+                        const terminalName = FarertModule.terminalName(stationId);
+                        const isJunc = FarertModule.isJunction(stationId);
+                        
+                        log(`${stationName}駅 (ID:${stationId})`, 'info');
+                        log(`  ターミナル名: "${terminalName}"`, 'pass');
+                        log(`  ジャンクション: ${isJunc ? 'はい' : 'いいえ'}`, 'pass');
+                        
+                        // 接続路線を取得してspecific junction判定
+                        const lineIds = JSON.parse(FarertModule.getLineIdsFromStation(stationId));
+                        log(`  接続路線数: ${lineIds.length}`, 'info');
+                        
+                        if (lineIds.length > 0) {
+                            const lineName = FarertModule.getLineName(lineIds[0]);
+                            const isSpecific = FarertModule.isSpecificJunction(lineIds[0], stationId);
+                            log(`  路線"${lineName}"での特定ジャンクション: ${isSpecific ? 'はい' : 'いいえ'}`, 'pass');
+                        }
+                        
+                        log('', ''); // 空行
+                    }
+                }
+                
+                log('✅ ターミナル操作 テスト完了', 'pass');
+                
+            } catch (error) {
+                log(`❌ エラー: ${error.message}`, 'fail');
+            }
+        }
+        
+        // 結果クリア
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+        
+        // ページ読み込み時に初期化
+        window.addEventListener('load', loadModule);
+    </script>
+</body>
+</html>
