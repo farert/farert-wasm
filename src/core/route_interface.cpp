@@ -196,14 +196,17 @@ void CalcRouteWrapper::sync(const RouteWrapper& route, int count) {
     calcRoute->sync(*route.route);
 }
 
-FARE_INFO* CalcRouteWrapper::calcFare() {
-    FARE_INFO* fareInfo = new FARE_INFO();
+std::string CalcRouteWrapper::calcFare() {
+    FARE_INFO fi;  // Using 'fi' to match original c_route.mm variable name
     int fare_result;
 
-    calcRoute->calcFare(fareInfo);
+    calcRoute->calcFare(&fi);
+    
+    // Create FareInfoData and populate it exactly like original c_route.mm
+    FareInfoData result;
     
     // Original logic from c_route.mm
-    switch (fareInfo->resultCode()) {
+    switch (fi.resultCode()) {
         case 0:     // success, company begin/first or too many company
             fare_result = 0;
             break;  // OK
@@ -211,14 +214,248 @@ FARE_INFO* CalcRouteWrapper::calcFare() {
             fare_result = 1;     //"この経路の片道乗車券は購入できません.続けて経路を指定してください."
             break;
         default:
-            delete fareInfo; // Clean up memory
-            return nullptr; /* -2:empty or -3:fail */
+            lastFareResult = -1;
+            return "{}"; /* -2:empty or -3:fail - return empty JSON */
             break;
     }
 
     // Store the result code for later use
     lastFareResult = fare_result;
-    return fareInfo;
+    
+    // Populate FareInfoData exactly like original c_route.mm
+    result.result = fare_result;
+    result.isResultCompanyBeginEnd = fi.isBeginEndCompanyLine();
+    result.isResultCompanyMultipassed = fi.isMultiCompanyLine();
+    
+    result.beginStationId = fi.getBeginTerminalId();
+    result.endStationId = fi.getEndTerminalId();
+    result.isBeginInCity = FARE_INFO::IsCityId(fi.getBeginTerminalId());
+    result.isEndInCity = FARE_INFO::IsCityId(fi.getEndTerminalId());
+    
+    result.totalSalesKm = fi.getTotalSalesKm();
+    result.jrCalcKm = fi.getJRCalcKm();
+    result.jrSalesKm = fi.getJRSalesKm();
+    result.companySalesKm = fi.getCompanySalesKm();
+    result.salesKmForHokkaido = fi.getSalesKmForHokkaido();
+    result.calcKmForHokkaido = fi.getCalcKmForHokkaido();
+    result.salesKmForKyusyu = fi.getSalesKmForKyusyu();
+    result.calcKmForKyusyu = fi.getCalcKmForKyusyu();
+    result.salesKmForShikoku = fi.getSalesKmForShikoku();
+    result.calcKmForShikoku = fi.getCalcKmForShikoku();
+    result.brtSalesKm = fi.getBRTSalesKm();
+    
+    result.fare = fi.getFareForJR();
+    result.fareForCompanyline = fi.getFareForCompanyline();
+    result.fareForIC = fi.getFareForIC();
+    result.fareForBRT = fi.getFareForBRT();
+    result.isBRTdiscount = (fi.getFareForBRT() < fi.getFareForJR());  // Alternative check
+    result.childFare = fi.getChildFareForDisplay();
+    result.academicFare = fi.getAcademicDiscountFare();
+    result.ticketAvailDays = fi.getTicketAvailDays();
+    
+    result.routeList = fi.getRoute_string();
+    result.routeListForTOICA = fi.getTOICACalcRoute_string();
+    
+    result.isRoundtrip = calcRoute->refRouteFlag().isRoundTrip();
+    result.isRoundtripDiscount = fi.isRoundTripDiscount();
+    
+    // Stock discount (114 not applied) - exactly like original c_route.mm
+    tstring str1, str2;
+    int w2 = fi.getFareStockDiscount(0, str1);
+    int w3 = fi.getFareStockDiscount(1, str2);
+    result.setFareForStockDiscounts(w2 + fi.getFareForCompanyline(),
+                                    str1,
+                                    w3 + fi.getFareForCompanyline(), 
+                                    str2);
+    
+    // Rule 114 - exactly like original c_route.mm  
+    if (!fi.isRule114()) {
+        result.rule114_salesKm = 0;
+        result.rule114_calcKm = 0;
+        result.isRule114Applied = false;
+    } else {
+        result.isRule114Applied = true;
+        result.rule114_salesKm = fi.getRule114SalesKm();
+        result.rule114_calcKm = fi.getRule114CalcKm();
+
+        // Stock discount (114 applied) - exactly like original c_route.mm
+        tstring notused;
+        w2 = fi.getFareStockDiscount(0, notused, true);
+        w3 = fi.getFareStockDiscount(1, notused, true);
+        result.setFareForStockDiscountsForR114(w2 + fi.getFareForCompanyline(),
+                                               w3 + fi.getFareForCompanyline());
+    }
+
+    result.isMeihanCityStartTerminalEnable = calcRoute->refRouteFlag().isMeihanCityEnable();
+    result.isMeihanCityStart = calcRoute->refRouteFlag().isStartAsCity();
+    result.isMeihanCityTerminal = calcRoute->refRouteFlag().isArriveAsCity();
+    result.isEnableLongRoute = calcRoute->refRouteFlag().isEnableLongRoute();
+    result.isLongRoute = calcRoute->refRouteFlag().isLongRoute();
+    result.isRule115specificTerm = calcRoute->refRouteFlag().isRule115specificTerm();
+    result.isEnableRule115 = calcRoute->refRouteFlag().isEnableRule115();
+    result.isSpecificFare = (fi.getTicketAvailDays() > 1);  // Alternative check
+    
+    // Convert FareInfoData to JSON string
+    std::string json = "{";
+    json += "\"result\":" + std::to_string(result.result) + ",";
+    json += "\"isResultCompanyBeginEnd\":" + std::string(result.isResultCompanyBeginEnd ? "true" : "false") + ",";
+    json += "\"isResultCompanyMultipassed\":" + std::string(result.isResultCompanyMultipassed ? "true" : "false") + ",";
+    json += "\"beginStationId\":" + std::to_string(result.beginStationId) + ",";
+    json += "\"endStationId\":" + std::to_string(result.endStationId) + ",";
+    json += "\"isBeginInCity\":" + std::string(result.isBeginInCity ? "true" : "false") + ",";
+    json += "\"isEndInCity\":" + std::string(result.isEndInCity ? "true" : "false") + ",";
+    json += "\"totalSalesKm\":" + std::to_string(result.totalSalesKm) + ",";
+    json += "\"jrCalcKm\":" + std::to_string(result.jrCalcKm) + ",";
+    json += "\"jrSalesKm\":" + std::to_string(result.jrSalesKm) + ",";
+    json += "\"companySalesKm\":" + std::to_string(result.companySalesKm) + ",";
+    json += "\"salesKmForHokkaido\":" + std::to_string(result.salesKmForHokkaido) + ",";
+    json += "\"calcKmForHokkaido\":" + std::to_string(result.calcKmForHokkaido) + ",";
+    json += "\"salesKmForKyusyu\":" + std::to_string(result.salesKmForKyusyu) + ",";
+    json += "\"calcKmForKyusyu\":" + std::to_string(result.calcKmForKyusyu) + ",";
+    json += "\"salesKmForShikoku\":" + std::to_string(result.salesKmForShikoku) + ",";
+    json += "\"calcKmForShikoku\":" + std::to_string(result.calcKmForShikoku) + ",";
+    json += "\"brtSalesKm\":" + std::to_string(result.brtSalesKm) + ",";
+    json += "\"fare\":" + std::to_string(result.fare) + ",";
+    json += "\"fareForCompanyline\":" + std::to_string(result.fareForCompanyline) + ",";
+    json += "\"fareForIC\":" + std::to_string(result.fareForIC) + ",";
+    json += "\"fareForBRT\":" + std::to_string(result.fareForBRT) + ",";
+    json += "\"isBRTdiscount\":" + std::string(result.isBRTdiscount ? "true" : "false") + ",";
+    json += "\"childFare\":" + std::to_string(result.childFare) + ",";
+    json += "\"academicFare\":" + std::to_string(result.academicFare) + ",";
+    json += "\"ticketAvailDays\":" + std::to_string(result.ticketAvailDays) + ",";
+    json += "\"routeList\":\"" + result.routeList + "\",";
+    json += "\"routeListForTOICA\":\"" + result.routeListForTOICA + "\",";
+    json += "\"isRoundtrip\":" + std::string(result.isRoundtrip ? "true" : "false") + ",";
+    json += "\"isRoundtripDiscount\":" + std::string(result.isRoundtripDiscount ? "true" : "false") + ",";
+    
+    // Stock discount info using proper FareInfo methods
+    json += "\"availCountForFareOfStockDiscount\":" + std::to_string(result.availCountForFareOfStockDiscount) + ",";
+    json += "\"fareStockDiscount1\":" + std::to_string(result.fareForStockDiscount(0)) + ",";
+    json += "\"fareStockDiscountTitle1\":\"" + result.fareForStockDiscountTitle(0) + "\",";
+    json += "\"fareStockDiscount2\":" + std::to_string(result.fareForStockDiscount(1)) + ",";
+    json += "\"fareStockDiscountTitle2\":\"" + result.fareForStockDiscountTitle(1) + "\",";
+    
+    // Rule 114 info
+    json += "\"isRule114Applied\":" + std::string(result.isRule114Applied ? "true" : "false") + ",";
+    json += "\"rule114_salesKm\":" + std::to_string(result.rule114_salesKm) + ",";
+    json += "\"rule114_calcKm\":" + std::to_string(result.rule114_calcKm) + ",";
+    json += "\"fareStockDiscountR1141\":" + std::to_string(result.fareForStockDiscount(2)) + ",";
+    json += "\"fareStockDiscountR1142\":" + std::to_string(result.fareForStockDiscount(3)) + ",";
+    
+    // Route flags
+    json += "\"isMeihanCityStartTerminalEnable\":" + std::string(result.isMeihanCityStartTerminalEnable ? "true" : "false") + ",";
+    json += "\"isMeihanCityStart\":" + std::string(result.isMeihanCityStart ? "true" : "false") + ",";
+    json += "\"isMeihanCityTerminal\":" + std::string(result.isMeihanCityTerminal ? "true" : "false") + ",";
+    json += "\"isEnableLongRoute\":" + std::string(result.isEnableLongRoute ? "true" : "false") + ",";
+    json += "\"isLongRoute\":" + std::string(result.isLongRoute ? "true" : "false") + ",";
+    json += "\"isRule115specificTerm\":" + std::string(result.isRule115specificTerm ? "true" : "false") + ",";
+    json += "\"isEnableRule115\":" + std::string(result.isEnableRule115 ? "true" : "false") + ",";
+    json += "\"isSpecificFare\":" + std::string(result.isSpecificFare ? "true" : "false");
+    
+    json += "}";
+    return json;
+}
+
+FareInfoData CalcRouteWrapper::calcFareObject() {
+    FARE_INFO fi;  // Using 'fi' to match original c_route.mm variable name
+    int fare_result;
+
+    calcRoute->calcFare(&fi);
+    
+    // Create FareInfoData and populate it exactly like original c_route.mm
+    FareInfoData result;
+    
+    // Original logic from c_route.mm
+    switch (fi.resultCode()) {
+        case 0:     // success, company begin/first or too many company
+            fare_result = 0;
+            break;  // OK
+        case -1:    /* In completed (吉塚、西小倉における不完全ルート) */
+            fare_result = 1;     //"この経路の片道乗車券は購入できません.続けて経路を指定してください."
+            break;
+        default:
+            lastFareResult = -1;
+            return result; /* -2:empty or -3:fail - return empty FareInfoData */
+            break;
+    }
+
+    // Store the result code for later use
+    lastFareResult = fare_result;
+    
+    // Populate FareInfoData exactly like original c_route.mm
+    result.result = fare_result;
+    result.isResultCompanyBeginEnd = fi.isBeginEndCompanyLine();
+    result.isResultCompanyMultipassed = fi.isMultiCompanyLine();
+    
+    result.beginStationId = fi.getBeginTerminalId();
+    result.endStationId = fi.getEndTerminalId();
+    result.isBeginInCity = FARE_INFO::IsCityId(fi.getBeginTerminalId());
+    result.isEndInCity = FARE_INFO::IsCityId(fi.getEndTerminalId());
+    
+    result.totalSalesKm = fi.getTotalSalesKm();
+    result.jrCalcKm = fi.getJRCalcKm();
+    result.jrSalesKm = fi.getJRSalesKm();
+    result.companySalesKm = fi.getCompanySalesKm();
+    result.salesKmForHokkaido = fi.getSalesKmForHokkaido();
+    result.calcKmForHokkaido = fi.getCalcKmForHokkaido();
+    result.salesKmForKyusyu = fi.getSalesKmForKyusyu();
+    result.calcKmForKyusyu = fi.getCalcKmForKyusyu();
+    result.salesKmForShikoku = fi.getSalesKmForShikoku();
+    result.calcKmForShikoku = fi.getCalcKmForShikoku();
+    result.brtSalesKm = fi.getBRTSalesKm();
+    
+    result.fare = fi.getFareForJR();
+    result.fareForCompanyline = fi.getFareForCompanyline();
+    result.fareForIC = fi.getFareForIC();
+    result.fareForBRT = fi.getFareForBRT();
+    result.isBRTdiscount = (fi.getFareForBRT() < fi.getFareForJR());  // Alternative check
+    result.childFare = fi.getChildFareForDisplay();
+    result.academicFare = fi.getAcademicDiscountFare();
+    result.ticketAvailDays = fi.getTicketAvailDays();
+    
+    result.routeList = fi.getRoute_string();
+    result.routeListForTOICA = fi.getTOICACalcRoute_string();
+    
+    result.isRoundtrip = calcRoute->refRouteFlag().isRoundTrip();
+    result.isRoundtripDiscount = fi.isRoundTripDiscount();
+    
+    // Stock discount (114 not applied) - exactly like original c_route.mm
+    tstring str1, str2;
+    int w2 = fi.getFareStockDiscount(0, str1);
+    int w3 = fi.getFareStockDiscount(1, str2);
+    result.setFareForStockDiscounts(w2 + fi.getFareForCompanyline(),
+                                    str1,
+                                    w3 + fi.getFareForCompanyline(), 
+                                    str2);
+    
+    // Rule 114 - exactly like original c_route.mm  
+    if (!fi.isRule114()) {
+        result.rule114_salesKm = 0;
+        result.rule114_calcKm = 0;
+        result.isRule114Applied = false;
+    } else {
+        result.isRule114Applied = true;
+        result.rule114_salesKm = fi.getRule114SalesKm();
+        result.rule114_calcKm = fi.getRule114CalcKm();
+
+        // Stock discount (114 applied) - exactly like original c_route.mm
+        tstring notused;
+        w2 = fi.getFareStockDiscount(0, notused, true);
+        w3 = fi.getFareStockDiscount(1, notused, true);
+        result.setFareForStockDiscountsForR114(w2 + fi.getFareForCompanyline(),
+                                               w3 + fi.getFareForCompanyline());
+    }
+
+    result.isMeihanCityStartTerminalEnable = calcRoute->refRouteFlag().isMeihanCityEnable();
+    result.isMeihanCityStart = calcRoute->refRouteFlag().isStartAsCity();
+    result.isMeihanCityTerminal = calcRoute->refRouteFlag().isArriveAsCity();
+    result.isEnableLongRoute = calcRoute->refRouteFlag().isEnableLongRoute();
+    result.isLongRoute = calcRoute->refRouteFlag().isLongRoute();
+    result.isRule115specificTerm = calcRoute->refRouteFlag().isRule115specificTerm();
+    result.isEnableRule115 = calcRoute->refRouteFlag().isEnableRule115();
+    result.isSpecificFare = (fi.getTicketAvailDays() > 1);  // Alternative check
+    
+    return result;
 }
 
 std::string CalcRouteWrapper::showFare() const {
@@ -351,10 +588,11 @@ RouteUtility::CompanyPrefectData RouteUtility::getCompanyAndPrefects() {
     if (dbo.isvalid()) {
         while (dbo.moveNext()) {
             int ident = dbo.getInt(1);
+            std::string name = dbo.getText(0);
             if (ident < 0x10000) {
-                data.companies.push_back(ident);
+                data.companies.push_back(std::make_pair(ident, name));
             } else {
-                data.prefects.push_back(ident);
+                data.prefects.push_back(std::make_pair(ident, name));
             }
         }
     }

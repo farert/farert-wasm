@@ -7,8 +7,149 @@
 class Route;
 class RouteList;
 class CalcRoute;
-class FARE_INFO;
 class RouteItem;
+
+// FareInfo equivalent structure (matching original FareInfo.h/FareInfo.m)
+struct FareInfoData {
+    // Member variables matching original FareInfo
+    int fareForStockDiscounts[2*2];  // [4] array: [0,1]=normal, [2,3]=rule114
+    std::string fareForStockDiscountNames[2];  // [0,1] titles
+    
+    // Properties from FareInfo.h
+    int result;
+    bool isResultCompanyBeginEnd;
+    bool isResultCompanyMultipassed;
+    int beginStationId;
+    int endStationId;
+    bool isBeginInCity;
+    bool isEndInCity;
+    int availCountForFareOfStockDiscount;
+    int rule114_salesKm;
+    int rule114_calcKm;
+    bool isRule114Applied;
+    bool isSpecificFare;
+    int totalSalesKm;
+    int jrCalcKm;
+    int jrSalesKm;
+    int companySalesKm;
+    int salesKmForHokkaido;
+    int calcKmForHokkaido;
+    int brtSalesKm;
+    int salesKmForShikoku;
+    int calcKmForShikoku;
+    int salesKmForKyusyu;
+    int calcKmForKyusyu;
+    bool isRoundtrip;
+    bool isRoundtripDiscount;
+    int fareForCompanyline;
+    int fare;
+    int fareForBRT;
+    bool isBRTdiscount;
+    int fareForIC;
+    int childFare;
+    int academicFare;
+    int ticketAvailDays;
+    std::string routeList;
+    std::string routeListForTOICA;
+    bool isMeihanCityStartTerminalEnable;
+    bool isMeihanCityStart;
+    bool isMeihanCityTerminal;
+    bool isEnableLongRoute;
+    bool isLongRoute;
+    bool isRule115specificTerm;
+    bool isEnableRule115;
+    
+    // Constructor
+    FareInfoData() {
+        // Initialize arrays
+        for (int i = 0; i < 4; i++) fareForStockDiscounts[i] = 0;
+        for (int i = 0; i < 2; i++) fareForStockDiscountNames[i] = "";
+        
+        // Initialize all other members to default values
+        result = -1;
+        isResultCompanyBeginEnd = false;
+        isResultCompanyMultipassed = false;
+        beginStationId = 0;
+        endStationId = 0;
+        isBeginInCity = false;
+        isEndInCity = false;
+        availCountForFareOfStockDiscount = 0;
+        rule114_salesKm = 0;
+        rule114_calcKm = 0;
+        isRule114Applied = false;
+        isSpecificFare = false;
+        totalSalesKm = 0;
+        jrCalcKm = 0;
+        jrSalesKm = 0;
+        companySalesKm = 0;
+        salesKmForHokkaido = 0;
+        calcKmForHokkaido = 0;
+        brtSalesKm = 0;
+        salesKmForShikoku = 0;
+        calcKmForShikoku = 0;
+        salesKmForKyusyu = 0;
+        calcKmForKyusyu = 0;
+        isRoundtrip = false;
+        isRoundtripDiscount = false;
+        fareForCompanyline = 0;
+        fare = 0;
+        fareForBRT = 0;
+        isBRTdiscount = false;
+        fareForIC = 0;
+        childFare = 0;
+        academicFare = 0;
+        ticketAvailDays = 0;
+        routeList = "";
+        routeListForTOICA = "";
+        isMeihanCityStartTerminalEnable = false;
+        isMeihanCityStart = false;
+        isMeihanCityTerminal = false;
+        isEnableLongRoute = false;
+        isLongRoute = false;
+        isRule115specificTerm = false;
+        isEnableRule115 = false;
+    }
+    
+    // Methods matching original FareInfo.m
+    void setFareForStockDiscounts(int discount1, const std::string& title1, int discount2, const std::string& title2) {
+        if (discount1 <= 0) {
+            availCountForFareOfStockDiscount = 0;
+            fareForStockDiscountNames[0] = "";
+            fareForStockDiscountNames[1] = "";
+            fareForStockDiscounts[0] = 0;
+            fareForStockDiscounts[1] = 0;
+        } else {
+            if (discount2 <= 0) {
+                availCountForFareOfStockDiscount = 1;
+                fareForStockDiscounts[1] = 0;
+                fareForStockDiscountNames[1] = "";
+            } else {
+                availCountForFareOfStockDiscount = 2;
+                fareForStockDiscounts[1] = discount2;
+                fareForStockDiscountNames[1] = title2;
+            }
+            fareForStockDiscounts[0] = discount1;
+            fareForStockDiscountNames[0] = title1;
+        }
+        fareForStockDiscounts[2] = 0;
+        fareForStockDiscounts[3] = 0;
+    }
+    
+    void setFareForStockDiscountsForR114(int discount1, int discount2) {
+        fareForStockDiscounts[2] = discount1;
+        fareForStockDiscounts[3] = discount2;
+    }
+    
+    int fareForStockDiscount(int index) {
+        if (index >= 4) return 0;
+        return fareForStockDiscounts[index];
+    }
+    
+    std::string fareForStockDiscountTitle(int index) {
+        if (index >= 2) return "";
+        return fareForStockDiscountNames[index];
+    }
+};
 
 // Database management
 class DatabaseManager {
@@ -98,7 +239,8 @@ public:
     void sync(const RouteWrapper& route, int count);
     
     // Fare calculation
-    FARE_INFO* calcFare();
+    std::string calcFare();  // Returns FareInfo as JSON string
+    FareInfoData calcFareObject();  // Returns FareInfo as object (for CLAUDE.md compatibility)
     std::string showFare() const;
     
     // Options and settings
@@ -134,8 +276,8 @@ public:
     
     // Company and prefecture operations
     struct CompanyPrefectData {
-        std::vector<int> companies;
-        std::vector<int> prefects;
+        std::vector<std::pair<int, std::string>> companies;
+        std::vector<std::pair<int, std::string>> prefects;
     };
     static CompanyPrefectData getCompanyAndPrefects();
     static std::vector<int> keyMatchStations(const std::string& key);

@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <title>4つのオブジェクトクラス テスト</title>
+    <style>
+        body { font-family: monospace; margin: 20px; max-width: 1200px; }
+        .result { padding: 8px; margin: 3px 0; border-radius: 3px; }
+        .pass { background: #d4edda; color: #155724; }
+        .fail { background: #f8d7da; color: #721c24; }
+        .info { background: #e2e3e5; color: #383d41; }
+        button { padding: 10px 20px; margin: 5px; background: #007cba; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #005a87; }
+        .json-display { background: #f8f9fa; padding: 15px; border-left: 3px solid #007cba; white-space: pre-wrap; font-family: monospace; font-size: 12px; max-height: 400px; overflow-y: auto; margin: 10px 0; }
+        .object-demo { background: #f0f8ff; padding: 15px; margin: 10px 0; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🧪 4つのオブジェクトクラス テスト</h1>
+    <p>CLAUDE.mdに記載された「4つのオブジェクトとそのなかの公開インスタンス関数」をテストします。</p>
+    
+    <div class="object-demo">
+        <h3>📋 4つのオブジェクトクラス:</h3>
+        <ul>
+            <li><strong>cRoute (RouteWrapper)</strong> - 経路構築クラス</li>
+            <li><strong>cRouteList (RouteListWrapper)</strong> - 経路リストクラス</li>
+            <li><strong>cCalcRoute (CalcRouteWrapper)</strong> - 運賃計算クラス</li>
+            <li><strong>FareInfo (FareInfoData)</strong> - 運賃詳細情報クラス</li>
+        </ul>
+    </div>
+    
+    <button onclick="testObjectClasses()">🚀 4オブジェクトクラステスト</button>
+    <button onclick="testObjectWorkflow()">🔄 オブジェクト連携ワークフロー</button>
+    <button onclick="testFareInfoProperties()">💰 FareInfo プロパティテスト</button>
+    <button onclick="clearResults()">🧹 結果クリア</button>
+    
+    <div id="status" style="padding: 10px; margin: 10px 0; border-radius: 5px; background: #e2e3e5;">
+        WebAssemblyモジュール読み込み中...
+    </div>
+    
+    <div id="results"></div>
+
+    <script>
+        let FarertModule = null;
+        let moduleReady = false;
+        
+        // ログ関数
+        function log(message, status = 'info') {
+            const div = document.createElement('div');
+            div.className = 'result ' + status;
+            div.textContent = new Date().toLocaleTimeString() + ' - ' + message;
+            document.getElementById('results').appendChild(div);
+            console.log(message);
+        }
+        
+        // オブジェクト表示関数
+        function displayObject(title, obj) {
+            const titleDiv = document.createElement('div');
+            titleDiv.className = 'result pass';
+            titleDiv.textContent = `${new Date().toLocaleTimeString()} - ${title}`;
+            document.getElementById('results').appendChild(titleDiv);
+            
+            const objDiv = document.createElement('div');
+            objDiv.className = 'json-display';
+            
+            if (typeof obj === 'object' && obj !== null) {
+                // オブジェクトのプロパティを表示
+                let output = '';
+                for (const key in obj) {
+                    if (typeof obj[key] === 'function') {
+                        output += `${key}: [Function]\\n`;
+                    } else {
+                        output += `${key}: ${obj[key]}\\n`;
+                    }
+                }
+                objDiv.textContent = output || 'Empty object';
+            } else {
+                objDiv.textContent = String(obj);
+            }
+            
+            document.getElementById('results').appendChild(objDiv);
+        }
+        
+        // WebAssemblyモジュール読み込み
+        async function loadModule() {
+            try {
+                document.getElementById('status').textContent = 'WebAssemblyモジュールを読み込み中...';
+                document.getElementById('status').style.background = '#fff3cd';
+                
+                const module = await import('./dist/farert.js');
+                FarertModule = await module.default();
+                moduleReady = true;
+                
+                document.getElementById('status').textContent = '✅ 4オブジェクトクラス準備完了！';
+                document.getElementById('status').style.background = '#d4edda';
+                
+            } catch (error) {
+                document.getElementById('status').textContent = `❌ エラー: ${error.message}`;
+                document.getElementById('status').style.background = '#f8d7da';
+            }
+        }
+        
+        // 4オブジェクトクラステスト
+        async function testObjectClasses() {
+            if (!moduleReady) return;
+            
+            log('🧪 4つのオブジェクトクラス テスト開始', 'info');
+            
+            try {
+                // データベース接続
+                FarertModule.openDatabase();
+                
+                // 1. cRoute (RouteWrapper) テスト
+                log('=== 1. cRoute (RouteWrapper) テスト ===', 'info');
+                const cRoute = new FarertModule.cRoute();
+                log('new FarertModule.cRoute(): オブジェクト作成成功', 'pass');
+                
+                // 駅追加
+                const tokyoId = FarertModule.getStationId('東京');
+                const osakaId = FarertModule.getStationId('大阪');
+                
+                cRoute.addRoute(tokyoId);
+                cRoute.addRoute(osakaId);
+                log(`cRoute.addRoute(${tokyoId}), addRoute(${osakaId}): 駅追加完了`, 'pass');
+                
+                const routeCount = cRoute.getRouteCount();
+                const startId = cRoute.startStationId();
+                const lastId = cRoute.lastStationId();
+                log(`cRoute.getRouteCount(): ${routeCount}`, 'pass');
+                log(`cRoute.startStationId(): ${startId}, lastStationId(): ${lastId}`, 'pass');
+                
+                // 2. cRouteList (RouteListWrapper) テスト
+                log('=== 2. cRouteList (RouteListWrapper) テスト ===', 'info');
+                const cRouteList = new FarertModule.cRouteList(cRoute);
+                log('new FarertModule.cRouteList(cRoute): オブジェクト作成成功', 'pass');
+                
+                const listStartId = cRouteList.startStationId();
+                const listLastId = cRouteList.lastStationId();
+                log(`cRouteList.startStationId(): ${listStartId}, lastStationId(): ${listLastId}`, 'pass');
+                
+                // 3. cCalcRoute (CalcRouteWrapper) テスト
+                log('=== 3. cCalcRoute (CalcRouteWrapper) テスト ===', 'info');
+                const cCalcRoute = new FarertModule.cCalcRoute(cRoute);
+                log('new FarertModule.cCalcRoute(cRoute): オブジェクト作成成功', 'pass');
+                
+                const calcRouteCount = cCalcRoute.getRouteCount();
+                log(`cCalcRoute.getRouteCount(): ${calcRouteCount}`, 'pass');
+                
+                // 運賃計算実行
+                const fareInfo = cCalcRoute.calcFare();
+                log('cCalcRoute.calcFare(): FareInfo オブジェクト取得成功', 'pass');
+                
+                // 4. FareInfo テスト
+                log('=== 4. FareInfo (FareInfoData) テスト ===', 'info');
+                log(`fareInfo.result: ${fareInfo.result}`, 'pass');
+                log(`fareInfo.fare: ${fareInfo.fare}`, 'pass');
+                log(`fareInfo.isRule114Applied: ${fareInfo.isRule114Applied}`, 'pass');
+                log(`fareInfo.availCountForFareOfStockDiscount: ${fareInfo.availCountForFareOfStockDiscount}`, 'pass');
+                
+                displayObject('💰 FareInfo オブジェクト内容', fareInfo);
+                
+                log('✅ 4つのオブジェクトクラス テスト完了', 'pass');
+                
+            } catch (error) {
+                log(`❌ エラー: ${error.message}`, 'fail');
+                console.error(error);
+            }
+        }
+        
+        // オブジェクト連携ワークフロー
+        async function testObjectWorkflow() {
+            if (!moduleReady) return;
+            
+            log('🔄 オブジェクト連携ワークフローテスト開始', 'info');
+            
+            try {
+                FarertModule.openDatabase();
+                
+                // CLAUDE.mdのワークフロー例を実装
+                // rt = cRoute()
+                const rt = new FarertModule.cRoute();
+                log('rt = new cRoute(): 作成完了', 'pass');
+                
+                // rt.setupRoute()
+                const setupResult = rt.setupRoute('東京,新宿,大阪');
+                log(`rt.setupRoute('東京,新宿,大阪'): ${setupResult ? '成功' : '失敗'}`, setupResult ? 'pass' : 'fail');
+                
+                // routeFolder (cRouteList)
+                const rtl = new FarertModule.cRouteList(rt);
+                log('rtl = new cRouteList(rt): 作成完了', 'pass');
+                
+                // cCalcRoute(routeList)
+                const cds = new FarertModule.cCalcRoute(rtl);
+                log('cds = new cCalcRoute(rtl): 作成完了', 'pass');
+                
+                // let fareInfo : FareInfo = cds.calcFare()
+                const fareInfo = cds.calcFare();
+                log('fareInfo = cds.calcFare(): 運賃計算完了', 'pass');
+                
+                // CLAUDE.mdの例のプロパティチェック
+                log(`fareInfo.fare: ${fareInfo.fare}`, 'pass');
+                log(`fareInfo.isRule114Applied: ${fareInfo.isRule114Applied}`, 'pass');
+                log(`fareInfo.availCountForFareOfStockDiscount: ${fareInfo.availCountForFareOfStockDiscount}`, 'pass');
+                
+                log('✅ オブジェクト連携ワークフロー完了', 'pass');
+                
+            } catch (error) {
+                log(`❌ エラー: ${error.message}`, 'fail');
+                console.error(error);
+            }
+        }
+        
+        // FareInfo プロパティテスト
+        async function testFareInfoProperties() {
+            if (!moduleReady) return;
+            
+            log('💰 FareInfo プロパティテスト開始', 'info');
+            
+            try {
+                FarertModule.openDatabase();
+                
+                const cRoute = new FarertModule.cRoute();
+                cRoute.addRoute(FarertModule.getStationId('東京'));
+                cRoute.addRoute(FarertModule.getStationId('大阪'));
+                
+                const cCalcRoute = new FarertModule.cCalcRoute(cRoute);
+                const fareInfo = cCalcRoute.calcFare();
+                
+                // FareInfo の全プロパティをテスト
+                const properties = [
+                    'result', 'fare', 'beginStationId', 'endStationId',
+                    'isResultCompanyBeginEnd', 'isResultCompanyMultipassed',
+                    'totalSalesKm', 'jrCalcKm', 'jrSalesKm', 'companySalesKm',
+                    'fareForCompanyline', 'fareForIC', 'fareForBRT',
+                    'childFare', 'academicFare', 'ticketAvailDays',
+                    'isRule114Applied', 'availCountForFareOfStockDiscount',
+                    'isRoundtrip', 'isRoundtripDiscount',
+                    'routeList', 'routeListForTOICA'
+                ];
+                
+                log('FareInfo 全プロパティ確認:', 'info');
+                properties.forEach(prop => {
+                    if (fareInfo.hasOwnProperty(prop)) {
+                        log(`  ${prop}: ${fareInfo[prop]}`, 'pass');
+                    } else {
+                        log(`  ${prop}: (undefined)`, 'fail');
+                    }
+                });
+                
+                // FareInfo メソッドテスト
+                log('FareInfo メソッド確認:', 'info');
+                const stockDiscount0 = fareInfo.fareForStockDiscount(0);
+                const stockDiscountTitle0 = fareInfo.fareForStockDiscountTitle(0);
+                log(`fareForStockDiscount(0): ${stockDiscount0}`, 'pass');
+                log(`fareForStockDiscountTitle(0): "${stockDiscountTitle0}"`, 'pass');
+                
+                log('✅ FareInfo プロパティテスト完了', 'pass');
+                
+            } catch (error) {
+                log(`❌ エラー: ${error.message}`, 'fail');
+                console.error(error);
+            }
+        }
+        
+        // 結果クリア
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+        
+        // ページ読み込み時に初期化
+        window.addEventListener('load', loadModule);
+    </script>
+</body>
+</html>
