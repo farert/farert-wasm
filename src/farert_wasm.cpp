@@ -121,6 +121,11 @@ std::string getLineNameFromId(int id) {
     return RouteUtility::getLineName(id);
 }
 
+// 路線名からIDを取得
+int getLineIdFromName(const std::string& lineName) {
+    return RouteUtility::getLineIdFromName(lineName);
+}
+
 std::string getFareStringResult() {
     if (g_calcRoute) {
         return g_calcRoute->showFare();
@@ -474,7 +479,7 @@ EMSCRIPTEN_BINDINGS(farert_module) {
     emscripten::function("closeDatabase", &farert_close_database);
     emscripten::function("createRoute", &farert_create_route);
     emscripten::function("destroyRoute", &farert_destroy_route);
-    emscripten::function("addStation", &farert_add_station);
+    emscripten::function("addRouteBegin", &farert_add_station);
     emscripten::function("addRoute", &farert_add_route);
     emscripten::function("removeTail", &farert_remove_tail);
     emscripten::function("removeAll", &farert_remove_all);
@@ -486,6 +491,7 @@ EMSCRIPTEN_BINDINGS(farert_module) {
     emscripten::function("getStationId", &getStationIdFromString);
     emscripten::function("getStationName", &getStationNameFromId);
     emscripten::function("getLineName", &getLineNameFromId);
+    emscripten::function("getLineId", &getLineIdFromName);
     emscripten::function("calculateFare", &farert_calculate_fare);
     emscripten::function("getFareString", &getFareStringResult);
     emscripten::function("setLongRoute", &farert_set_long_route);
@@ -527,9 +533,7 @@ EMSCRIPTEN_BINDINGS(farert_module) {
     emscripten::function("isJunction", &isJunction);
     emscripten::function("isSpecificJunction", &isSpecificJunction);
     
-    // Terminal history
-    emscripten::function("saveToTerminalHistory", &saveToTerminalHistory);
-    emscripten::function("readFromTerminalHistory", &readFromTerminalHistory);
+    // Terminal history - 削除済み（プラットフォーム依存のため）
     
     // ===== 4つのオブジェクトクラス (CLAUDE.md Public functions for JS/TS) =====
     
@@ -564,7 +568,6 @@ EMSCRIPTEN_BINDINGS(farert_module) {
     // 3. cCalcRoute (CalcRouteWrapper) クラス
     emscripten::class_<CalcRouteWrapper>("cCalcRoute")
         .constructor<const RouteWrapper&>()
-        .constructor<const RouteListWrapper&>()
         .function("calcFare", emscripten::select_overload<FareInfoData()>(&CalcRouteWrapper::calcFareObject))
         .function("calcFareJson", emscripten::select_overload<std::string()>(&CalcRouteWrapper::calcFare))
         .function("showFare", &CalcRouteWrapper::showFare)

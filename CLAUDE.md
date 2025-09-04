@@ -1,142 +1,409 @@
-# CLAUDE.md
+# CLAUDE.md - Japanese Railway Fare Calculation WebAssembly Project
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides comprehensive guidance to Claude Code (claude.ai/code) when working with this repository.
 
-## Project Overview
+## 🎯 Project Vision & Mission
 
-This is a C/C++ to WebAssembly migration project that converts a Japanese railway fare calculation system from native C/C++/Objective-C++ to WASM for use in TypeScript/JavaScript applications.
+Transform complex Japanese railway fare calculation logic from native C++ into modern, accessible WebAssembly APIs that enable developers to build sophisticated transportation applications for web and mobile platforms while maintaining **100% compatibility** with the original C++ implementation.
 
-- TypeScript を使用する際は strict モードを有効にしてください
+### Primary Objectives
+1. **Complete Migration**: 100% functional parity with original C++ implementation (`testmain.cpp` → TypeScript CLI)
+2. **Identical Results**: All CLI tests must produce identical results to C++ version (±1 yen tolerance)
+3. **Developer Experience**: Modern TypeScript interfaces with full type safety
+4. **Cross-Platform**: Browser, Node.js, future React Native/Flutter support
 
-## Build Commands
+## 🏗️ Technology Architecture
 
-**重要**: ビルド前にEmscripten環境を設定する必要があります。
-
-### 方法1: 環境設定スクリプトを使用（推奨）
-```bash
-source setup_env.sh && make          # ビルド
-source setup_env.sh && make serve    # 開発サーバー起動
+```mermaid
+graph TD
+    A[TypeScript CLI] --> B[6 Object Classes]
+    B --> C[39+ WebAssembly APIs]
+    C --> D[C++ Core Logic]
+    D --> E[SQLite3 Database]
+    
+    F[React/Vue/Svelte] --> B
+    F --> C
+    
+    subgraph "WebAssembly Module"
+        C --> G[route_interface.cpp]
+        G --> H[alpdb.cpp]
+        H --> I[MEMFS Database]
+    end
 ```
 
-### 方法2: npm scriptsを使用
+### Framework Targets (Priority Order)
+1. **Svelte/SvelteKit** - Primary recommendation for new applications
+2. **React** - Full TypeScript support with hooks
+3. **Vue** - Composition API integration
+4. **Angular** - Injectable services
+5. **Vanilla TypeScript** - Direct WebAssembly usage
+
+- **TypeScript strict mode必須** - 全てのTypeScript実装で有効化
+
+## 📋 Project Deliverables & Scope
+
+### Core Development Requirements
+1. **WebAssembly Compilation**: C++ → WASM with Emscripten toolchain
+2. **TypeScript Interfaces**: Complete type-safe bindings for all WASM APIs and object classes
+3. **CLI完全移植**: Faithful migration of `testmain.cpp` with **identical behavior and results**
+4. **Test Suite Migration**: Complete `test_exec.cpp` migration with **exact test order preservation**
+5. **Object Class Implementation**: 6 classes with inheritance `cCalcRoute < cRoute < cRouteList`
+
+### Build Targets
+- **WASM-only build**: `make all` - WebAssembly module compilation
+- **Complete build**: `npm run build` - WASM + TypeScript compilation
+- **CLI validation**: `npm run cli:exec` - Execute complete test suite
+
+### Integration Goals
+- **CLI Tool**: Validates core logic and serves as development utility
+- **Framework Integration**: Svelte/React/Vue SDKs for frontend applications  
+- **Cross-Platform**: Browser and Node.js environments
+
+### Success Criteria (Non-Negotiable)
+- ✅ **100% test compatibility**: All CLI tests produce identical results to C++ version
+- ✅ **Performance parity**: Route calculations match or exceed C++ speed
+- ✅ **Memory safety**: No WebAssembly memory leaks in long-running applications
+- ✅ **Type safety**: Complete TypeScript coverage with strict mode
+
+## 🚀 Implementation Status
+
+### ✅ C++ Core Migration - COMPLETED
+**Migration Source Files** - All successfully migrated to `src/core/` and `src/include/`:
+- **alpdb.cpp/alpdb.h** → Core railway fare calculation logic  
+- **c_route.mm or routeHelper.kt** → **route_interface.cpp** (Objective-C++ fully converted to C++)
+- **db.cpp/db.h** → SQLite3 database operations
+- **jrdbnewest.db** → Embedded via MEMFS
+- **Platform optimization** → Windows-specific code removed, UTF-8 exclusive
+
+### 🔄 TypeScript CLI Migration - IN PROGRESS  
+**Target Files for Complete Migration**:
+- **Source**: `../farert/test/unix/all/testmain.cpp` → **Target**: `src/cli/main.ts`
+- **Source**: `../farert/app/win_mfc/fjr_mfc/alps_mfc/test_exec.cpp` → **Target**: `src/cli/test_exec_complete.ts`
+
+**CLI Requirements**:
+- **Identical argument parsing**: `-exec`, `-5`, `-h`, `-help` options
+- **Exact test execution order**: No modification to `test_exec.cpp` test sequence
+- **Result compatibility**: All outputs must match C++ version precisely
+- **Error handling**: Replicate C++ error codes and behavior exactly
+
+## ⚙️ Build System & Environment
+
+**⚠️ 重要**: Emscripten SDK required at `~/priv/farert.repos/emsdk/`
+
+### Build Methods (推奨順)
+
+#### Method 1: Environment Script (推奨)
 ```bash
-npm run build       # ビルド（環境設定込み）
-npm run dev         # ビルド + サーバー起動
-npm run clean       # クリーンアップ
+source setup_env.sh && make          # WebAssembly compilation
+source setup_env.sh && make serve    # Development server
+source setup_env.sh && make status   # Project status check
 ```
 
-### 方法3: 手動で環境設定
+#### Method 2: npm Scripts Integration
+```bash
+npm run build         # Complete build (WASM + TypeScript)
+npm run dev          # Development server with hot reload
+npm run clean        # Clean all build artifacts
+npm run cli:build    # TypeScript CLI compilation only
+npm run cli:exec     # Execute complete test suite
+```
+
+#### Method 3: Manual Environment Setup
 ```bash
 source ~/priv/farert.repos/emsdk/emsdk_env.sh
-make                # ビルド
-make serve          # 開発サーバー起動
-make help           # ヘルプ表示
+make                 # WebAssembly compilation
+make serve           # Start development server
+make help            # Display all available commands
 ```
 
-### テスト実行
+### Build Configuration
+- **Optimization**: `-O3` level for production performance
+- **Target**: ES2020+ for modern browser/Node.js compatibility  
+- **Module Format**: ES6 modules with WebAssembly integration
+- **Memory**: Dynamic memory growth enabled for complex calculations
+
+## 💻 Development Standards & Guidelines
+
+### Git & Version Control
+- **Commit Format**: Conventional Commits形式必須 (`feat:`, `fix:`, `docs:`, `refactor:`)
+- **Branch Strategy**: `main` branch for stable releases, feature branches for development
+- **License**: GPL-3.0 for all source code
+
+### Code Quality Standards
+- **TypeScript**: Strict mode enabled (`"strict": true`) for all TypeScript files
+- **C++ Standard**: C++17 with standard library, `-O3` optimization
+- **Error Handling**: Replicate original C++ error codes without adding new types
+- **Memory Management**: RAII patterns, WebAssembly automatic cleanup
+
+### Directory Structure
+```
+farert-wasm/
+├── src/
+│   ├── core/                # C++ implementation (route_interface.cpp, alpdb.cpp)
+│   ├── include/             # C++ headers (route_interface.h, alpdb.h)
+│   ├── cli/                # TypeScript CLI implementation  
+│   └── db/                 # Database operations
+├── dist/                   # Build outputs (farert.js, farert.wasm)
+├── data/                   # SQLite database (jrdbnewest.db)
+└── .claude/               # Claude Code specifications and steering docs
+```
+
+## 🏗️ Core System Architecture
+
+### C++ Backend (Internal Implementation)
+```cpp
+// Core Classes - Hidden from TypeScript Interface
+class Route         // Main route building with junction logic
+class RouteList     // Base route container and operations  
+class CalcRoute     // Route calculation with fare rules
+struct FARE_INFO    // Internal fare calculation results
+class RouteFlag     // Complex routing flags and special cases
+class DBS/DBO       // SQLite database wrapper (completely hidden)
+```
+
+### Database Layer (Completely Hidden)
+- **SQLite3**: Read-only embedded database via MEMFS
+- **Single file**: `jrdbnewest.db` (embedded at compile time)
+- **Access pattern**: All database operations hidden in `route_interface.cpp`
+- **No direct access**: TypeScript never sees database objects
+
+### WebAssembly Interface Layer
+- **Total APIs**: 39+ functions covering complete workflow
+- **Object Classes**: 6 classes with inheritance `cCalcRoute < cRoute < cRouteList`
+- **Memory Management**: Automatic WebAssembly cleanup with C++ RAII
+- **Error Handling**: Original C++ error codes preserved exactly
+
+## 📊 API Classification & Implementation Strategy
+
+### A群: CLI Migration APIs (Complete C++ Compatibility Required)
+**Purpose**: Faithful `testmain.cpp`/`test_exec.cpp` migration with identical results
+
+**Core APIs**:
+```typescript
+// Database operations (hidden in interface layer)
+// openDatabase() - REMOVED: Hidden in route_interface.cpp initialization
+// closeDatabase() - REMOVED: Hidden in WebAssembly module cleanup
+
+// Route member (exact C++ behavior)
+addRouteBegin(stationId: number): number     // Set starting station  
+addRoute(lineId: number, stationId: number): number  // Add route segment
+calculateFare(): number                       // Execute fare calculation
+getFareString(): string                       // Format fare results
+
+// Station/route information (identical C++ API behavior)  
+getStationId(name: string): number           // Station name → ID lookup
+getStationName(id: number): string           // Station ID → name lookup
+```
+
+### B群: Frontend Enhancement APIs (TypeScript-optimized)
+**Purpose**: Modern UI development with caching and JSON responses
+
+**Enhanced Display APIs**:
+```typescript
+// Japanese text support for UI
+getStationKana(id: number): string           // Hiragana reading for display
+getStationPrefecture(id: number): string     // Prefecture information
+getStationNameExtended(id: number): string   // Detailed station names
+
+// JSON APIs for frontend frameworks
+getFareInfoJson(): string                    // Complete fare details as JSON
+getCompanyAndPrefectsAsJson(): string        // Reference data for UI
+getCurrentRouteAsJson(): string              // Route state for React/Vue
+```
+
+### C群: Object-Oriented WebAssembly APIs (5 Classes)
+**Purpose**: Modern development patterns with type safety and inheritance
+
+```typescript
+// Class hierarchy: cCalcRoute < cRoute < cRouteList
+class cRouteList {
+    // Array operations (C++ operator overloading → explicit methods)
+    assign(obj: cRouteList): void               // Copy from another route list
+}
+
+class cRoute extends cRouteList {
+    // Route construction (matching C++ Route class exactly)
+    setupRoute(routeString: string): number     // Parse route string "駅1 路線1 駅2"
+    addRoute(lineId: number, stationId: number): number  // Add route segment
+    getRouteCount(): number                     // Get total route segments
+    routeScript(): string                       // Generate route description
+}
+
+class cCalcRoute extends cRoute {
+    // Fare calculation (matching C++ CalcRoute class exactly)
+    calcFare(): FareInfo                        // Execute fare calculation
+    setLongRoute(flag: boolean): void           // Enable long route calculation
+    showFare(): string                          // Format fare display
+}
+
+class cRouteItem {
+    //  (matching C++ cRouteItem class exactly)
+    stationId: number                           // Station ID at route point
+    lineId: number                              // Line ID for route segment  
+    flag: number                                // Route-specific flags
+}
+
+interface FareInfo {
+    // 25+ properties matching original C++ FARE_INFO exactly
+    fare: number                                // Calculated fare amount
+    isRule114Applied: boolean                   // Special rule application
+    availCountForFareOfStockDiscount: number    // Stock discount availability
+    // ... complete property set from route_interface.h
+    
+    // Stock discount methods (matching C++ implementation)
+    fareForStockDiscount(index: number): number          // Get discount fare
+    fareForStockDiscountTitle(index: number): string     // Get discount name
+}
+```
+
+## 🔧 cRouteUtil Static Utility Class
+
+**重要**: Database objects are completely hidden - all database operations implemented in `route_interface.cpp`
+**実装参考**: Android Kotlin `RouteHelper Methods` に基づいて実装（`c_route.mm` Objective-C++ではなく）
+
+```typescript
+class cRouteFlag {
+    // c++ public member
+}
+class cRouteUtil {
+    // ❌ REMOVED: Database operations hidden in interface layer  
+    // openDatabase() - Hidden in WebAssembly module initialization
+    // closeDatabase() - Hidden in WebAssembly module cleanup
+    
+    // Station and line reference data (based on RouteHelper.kt methods)
+    static getJRCompanys(): number[]                    // JR company IDs (id < 0x10000)
+    static getPrefects(): number[]                      // Prefecture IDs (id >= 0x10000)
+    static getKanaFromStationId(stationId: number): string      // Station hiragana reading
+    static companyOrPrefectName(companyOrPrefect: number): string  // Company/prefecture name
+    
+    // Station lookup and information (RouteHelper.kt compatible)
+    static getStationId(station: string): number        // Station name → ID lookup
+    static stationName(stationId: number): string       // Station ID → name (with duplicates)
+    static stationNameEx(stationId: number): string     // Station ID → name (unique with parentheses)
+    
+    // Line and route information (RouteHelper.kt patterns)
+    static EnumLineOfStationId(stationId: number): number[]     // Lines serving station
+    static lineName(lineId: number): string             // Line ID → line name
+    static linesCompanyOrPrefectId(id: number): number[]        // Lines by company/prefecture
+    static StationsIdsOfLineId(lineId: number): number[]        // Stations on line
+    static JunctionIdsOfLineId(lineId: number, stationId: number): number[]  // Junction stations
+    
+    // Station classification (RouteHelper.kt methods)
+    static isJunction(stationId: number): boolean       // Check if station is junction
+    static isSpecificJunction(lineId: number, stationId: number): boolean    // Special junction check
+    static terminalName(id: number): string             // Terminal station name
+    static routeScript(): string                        // Generate route description
+}
+```
+
+### Android Kotlin Compatibility Requirements
+
+**⚠️ 重要**: `cRouteUtil`関数群の実装は、Objective-C++の`c_route.mm`ではなく、**Android Kotlin `RouteHelper Methods`を参考**にしてください。
+
+**FareInfo Interface** - Compatible with:
+`/Users/ntake/priv/farert.repos/farert/app/Farert.android/app/src/main/java/org/sutezo/alps/FareInfo.kt`
+
+**RouteHelper Methods** - 実装参考ソース:  
+`/Users/ntake/priv/farert.repos/farert/app/Farert.android/app/src/main/java/org/sutezo/alps/RouteHelper.kt`
+- **Excluded methods**: `saveParam`, `readParam`, `readParams`, `saveHistory`, `appendHistory`, `isStrageInRoute`
+- **Reason**: Objective-C++の`c_route.mm`は言語特性が異なるため、KotlinのRouteHelperパターンを採用
+
+## 🧪 Testing & Validation Strategy
+
+### CLI Test Suite Migration (Highest Priority)
+**Source Files**:
+- `../farert/test/unix/all/testmain.cpp` → `src/cli/main.ts`
+- `../farert/app/win_mfc/fjr_mfc/alps_mfc/test_exec.cpp` → `src/cli/test_exec_complete.ts`
+
+**Requirements**:
+- **Test order preservation**: No modification to `test_exec.cpp` sequence
+- **Identical results**: All fare calculations must match C++ output exactly  
+- **Complete argument support**: `-exec`, `-5`, `-h`, `-help` options
+- **Error handling**: Replicate C++ error behavior precisely
+
+### Test Execution Commands
 ```bash
-# ブラウザでテスト（推奨）
-make serve          # サーバー起動
-# then open http://localhost:8080/test_claude_public_api.html
+# Complete test suite (matches test_exec.cpp exactly)
+npm run cli:exec
+
+# Individual route calculation (matches testmain.cpp -5 option)
+npm run cli:calc -- -5 "東京" "東海道線" "横浜"
+
+# Help display (matches testmain.cpp help)
+npm run cli:help
 ```
 
-## Development Environment Setup
+### API Testing Classification
 
-q../- コミットメッセージは conventional commits 形式で書いてください
+#### A群 APIs: CLI Migration (100% C++ Compatible)
+- **Purpose**: Direct migration of `testmain.cpp`/`test_exec.cpp` functionality
+- **Testing**: Must produce identical results to C++ version
+- **Implementation**: Replicate exact C++ behavior and error handling
 
-1. Emscripten SDK is installed at `~/priv/farert.repos/emsdk/`
-2. Use `setup_env.sh` script to activate environment automatically
-3. Build outputs to `dist/` directory
+#### B群 APIs: Frontend Enhancement (TypeScript-optimized)
+- **Purpose**: Modern UI development with JSON and caching
+- **Testing**: Functional verification with UI-focused test scenarios
+- **Implementation**: Build upon A群 APIs with enhanced TypeScript features
 
-## Core Architecture
+#### C群 APIs: Object Classes (WebAssembly-native)  
+- **Purpose**: Object-oriented development patterns
+- **Testing**: Integration testing with inheritance and lifecycle management
+- **Implementation**: Modern TypeScript classes wrapping C++ objects
 
-### Migration Source Files (`migration_source/`) - ✅ COMPLETED
-- **`alpdb.cpp/alpdb.h`** - Core railway fare calculation logic (✅ migrated to `src/core/`)
-- **~~`c_route.h/c_route.mm`~~** - ✅ **FULLY MIGRATED** to `route_interface.h/cpp` (Objective-C++ → C++)
-- **`db.cpp/db.h`** - SQLite3 database operations (✅ migrated to `src/core/`)
-- **`jrdbnewest.db`** - Railway database (✅ integrated with MEMFS)
-- **~~`stdafx.h/stdafx.cpp`~~** - ✅ Windows headers removed (WebAssembly compatible)
+## 🎯 Development Workflow & Priorities
 
-### Key Classes and Components
-- `Route` - Main route building class with junction logic
-- `RouteList` - Base route container
-- `CalcRoute` - Route calculation with fare rules
-- `FARE_INFO` - Comprehensive fare calculation results
-- `RouteFlag` - Complex routing flags and special cases
-- `DBS/DBO` - SQLite database wrapper classes
+### Phase 1: CLI Migration (Current Focus)
+1. ✅ Complete `main.ts` argument parsing and WebAssembly initialization
+2. 🔄 Implement `test_exec_complete.ts` with all 8 test suites in exact order
+3. 🔄 Create comprehensive test data tables for route and fare verification
+4. 📋 Validate CLI output matches C++ version exactly
 
-### Global Variables and Constants
-- `g_tax` - Global tax variable (convert to `#define TAX`)
-- Multiple fare calculation constants and junction definitions
-- City/urban area definitions for special fare rules
+### Phase 2: Object Class Enhancement
+1. Complete `cRouteItem` class implementation  
+2. Enhanced array operations for `cRouteList`
+3. Android Kotlin compatibility validation
+4. Memory management and lifecycle testing
 
-## Database
-- Uses SQLite3 (read-only database)
-- Single database file: `jrdbnewest.db`
-- Remove database switching logic from original code
-- Use MEMFS for WebAssembly deployment
+### Phase 3: Frontend SDK Development  
+1. Framework-agnostic TypeScript SDK
+2. React hooks and Vue composables
+3. Intelligent caching layer
+4. Production-ready documentation
 
-## Migration Status - ✅ COMPLETED
+## 🔧 Implementation Notes
 
-### ✅ Completed Migration Tasks
-1. **Platform Optimization**: ✅ Windows-specific code removed, WebAssembly optimized
-2. **Character Encoding**: ✅ UTF-8 exclusively implemented  
-3. **Objective-C++ Conversion**: ✅ `c_route.mm` → `route_interface.cpp` (pure C++)
-4. **File Organization**: ✅ All files organized in `src/core/`, `src/include/` structure
-5. **Dependencies**: ✅ SQLite3 integrated with WebAssembly MEMFS
+### Naming Convention Changes
+- **Prefix removal**: `farert_open_database` → `openDatabase`
+- **CamelCase unification**: Consistent TypeScript naming
+- **Method clarification**: `addStation` → `addRouteBegin` (route start), `addRoute` (segment addition)
 
-### 🚀 WebAssembly API Status
-- **Total APIs**: 45 functions (27 basic + 12 extended + 6 CLAUDE.md public)
-- **All original c_route.h functionality**: ✅ Fully implemented in route_interface.h
-- **CLAUDE.md Public Functions**: ✅ setupRoute, routeScript, terminalName, isJunction, isSpecificJunction, terminal history
-- **WebAssembly bindings**: ✅ Complete with JSON array support
-- **Test coverage**: ✅ Comprehensive test suites implemented
+### Error Handling Strategy  
+- **Preserve C++ codes**: No new error types added
+- **Identical behavior**: Match original C++ error handling exactly
+- **WebAssembly safety**: Proper cleanup on all error conditions
 
-### Public function for JS/TS
+---
 
-openDatabase() as bool
-closeDatabase() as void
+## 📚 Reference Information
 
-rt = cRoute()
-rt.setupRoute(string route) as void // 経路のバリデーションチェック
+### Core Logic Source
+- **Primary C++ Core**: `alpdb.cpp` - Main railway fare calculation engine
+- **Interface Layer**: `route_interface.cpp` - WebAssembly bindings and API wrapper
+- **Database Operations**: `db.cpp` - SQLite3 integration (hidden from TypeScript)
+- **⚠️ 注意**: `cRouteUtil`実装は`c_route.mm` (Objective-C++)ではなく、Android Kotlin `RouteHelper.kt`を参考にすること
 
-// left view, routeFolder
-rtl = cRouteList()
-rt = cRoute()
-rt.setupRoute()
-crt = cCalcRoute(rtl)
-cds = cCalcRoute(routeList: item.routeList) {
-let fareInfo : FareInfo = cds.calcFare() {
+### Key Project Steering Documents
+- **Product Vision**: `.claude/steering/product.md` - Business objectives and success metrics
+- **Technical Architecture**: `.claude/steering/tech.md` - Technology stack and build system  
+- **Code Organization**: `.claude/steering/structure.md` - Development standards and patterns
 
-cCalcRouteは、cRoute, cRouteList から構築し、calcFare メソッドが、fareInfo を返す
-fareInfoに運賃その他が入っている
-上記4オブジェクトとそのなかの公開関数
+### Implementation Specifications
+- **WASM Object Classes**: `.claude/specs/wasm-object-classes/` - 5-class inheritance system
+- **TypeScript CLI Interface**: `.claude/specs/typescript-cli-interface/` - Complete CLI migration
+- **Frontend API Layer**: `.claude/specs/frontend-api-layer/` - React/Vue/Svelte integration
 
-fareInfo.fare
-fareInfo.isRule114Applied
-fareInfo.availCountForFareOfStockDiscount
-:
+---
 
-// Terminal select
-cRouteUtil.getCompanyAndPrefects() as! [[Int]]
-cRouteUtil.readFromTerminalHistory() as! [String]?
-cRouteUtil.stationNameEx(int id) as String
-cRouteUtil.getKanaFromStationId(int station_id) as String
-cRouteUtil.prectName(byStation: ident) as String
-cRouteUtil.companyOrPrefectName(int companyOrPrefect) as String
-cRouteUtil.saveToTerminalHistory([string])
-cRouteUtil.getStationId(string station)
-cRouteUtil.stationName(int StationId)
-cRouteUtil.lineIds(int stationId) as! [Int]
-cRouteUtil.lines(int companyOrPrefectId) as! [Int]
-cRouteUtil.lineName(int lineId)
-cRouteUtil.stationsWith(int ompanyOrPrefectId, int lineId) as! [Int]
-cRouteUtil.stationsIds(int lineId) as! [Int]
-cRouteUtil.junctionIds(int lineId, int stationId) as! [Int]
-cRouteUtil.isJunction(int stationId) as bool
-cRouteUtil.isSpecificJunction(int lineId, int stationId) as bool
-cRouteUtil.terminalName(int fareInfo.endStationId) as string
-cRouteUtil.routeScript() as String
+**最重要**: このプロジェクトの成功指標は**C++実装との100%互換性**です。全ての実装は元のC++コードの動作を正確に再現し、同一の結果を出力することが必須要件です。
 
-## Testing
-The project includes a test HTML file (`index.html`) for validating WASM functions in the browser.
+

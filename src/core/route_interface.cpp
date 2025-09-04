@@ -537,6 +537,10 @@ std::string RouteUtility::getLineName(int id) {
     return RouteUtil::LineName(id);
 }
 
+int RouteUtility::getLineIdFromName(const std::string& lineName) {
+    return RouteUtil::GetLineId(lineName.c_str());
+}
+
 std::vector<int> RouteUtility::getLineIdsFromStation(int stationId) {
     DBO dbo = RouteUtil::Enum_line_of_stationId(stationId);
     std::vector<int> lineIds;
