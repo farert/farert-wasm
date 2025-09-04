@@ -266,6 +266,7 @@ public:
     static int getStationId(const std::string& name);
     static std::string getStationName(int id);
     static std::string getLineName(int id);
+    static int getLineIdFromName(const std::string& lineName);  // 追加
     static std::vector<int> getLineIdsFromStation(int stationId);
     
     // Array operations from c_route.mm

@@ -16,7 +16,13 @@
     "test:route": "node tests/run_tests.js route",
     "test:fare": "node tests/run_tests.js fare",
     "test:integration": "node tests/run_tests.js integration",
-    "test:browser": "echo 'Open http://localhost:8080/test_unit.html in browser after running: npm run serve'"
+    "test:browser": "echo 'Open http://localhost:8080/test_unit.html in browser after running: npm run serve'",
+    "cli:build": "tsc",
+    "cli:exec": "npm run cli:build && node dist/cli/cli/main.js -exec",
+    "cli": "npm run cli:build && node dist/cli/cli/main.js",
+    "cli:test-original": "npm run cli:exec",
+    "cli:test-extended": "npm run cli:build && node dist/cli/cli/test_wasm_extended.js",
+    "cli:test-all": "npm run cli:build && node dist/cli/cli/test_integration.js"
   },
   "keywords": [
     "webassembly",
@@ -31,7 +37,14 @@
   ],
   "author": "Farert Development Team",
   "license": "GPL-3.0",
-  "devDependencies": {},
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "commander": "^11.0.0"
+  },
+  "dependencies": {
+    "commander": "^11.0.0"
+  },
   "engines": {
     "node": ">=14.0.0"
   }
