@@ -10,9 +10,17 @@ export interface FarertModule {
   closeDatabase(): void;
   
   // Route operations
-  createRoute(): void;
+  createRoute(): number;
+  destroyRoute(): void;
   addRouteBegin(stationId: number): number;  // 改名: addStation → addRouteBegin
   addRoute(lineId: number, stationId: number): number;  // 追加: 2引数版
+  removeTail(): void;
+  removeAll(): void;
+  reverseRoute(): number;
+  getRouteCount(): number;
+  startStationId(): number;
+  lastStationId(): number;
+  isEnd(): number;
   calculateFare(): number;
   getFareString(): string;
   getFareInfoJson(): string;
@@ -24,6 +32,27 @@ export interface FarertModule {
   // Line operations
   getLineId(name: string): number;  // 追加
   getLineName(id: number): string;
+  
+  // Route script operations
+  setupRoute(route: string): number;
+  getRouteScript(): string;
+  
+  // Route calculation configuration
+  setLongRoute(flag: boolean): void;
+  setStartAsCity(): void;
+  setArriveAsCity(): void;
+  
+  // Station/Line utility functions
+  isJunction(stationId: number): number;
+  isSpecificJunction(lineId: number, stationId: number): number;
+  getTerminalStationName(stationId: number): string;
+  
+  // Database utility functions
+  getDatabaseVersion(): number;
+  
+  // Debug and test functions
+  debugStations(): string;
+  test(): number;
   
   // 6 Object Classes (CLAUDE.md Public API)
   cRoute: new() => RouteWrapper;
@@ -42,19 +71,35 @@ export interface RouteListWrapper {
   startStationId(): number;
   lastStationId(): number;
   routeScript(): string;
+  
+  // Essential RouteList operations (from CLAUDE.md specifications)
+  removeAll(): void;
+  assign(obj: RouteListWrapper): void;
 }
 
 export interface RouteWrapper extends RouteListWrapper {
-  setupRoute(route: string): void;
   addRoute(stationId: number): number;
-  removeAll(): void;
+  addRouteWithLine(lineId: number, stationId: number): number;
+  removeTail(): void;
+  autoRoute(): number;
+  reverseRoute(): number;
+  setupRoute(route: string): void;
+  setDetour(flag: boolean): void;
+  setNoRule(flag: boolean): void;
   getRouteCount(): number;
+  lastLineId(): number;
+  isReverseAllow(): boolean;
   isEnd(): boolean;
 }
 
 export interface CalcRouteWrapper extends RouteWrapper {
   calcFare(): FareInfoData;
+  calcFareJson(): string;
   showFare(): string;
+  isEnableLongRoute(): boolean;
+  setLongRoute(flag: boolean): void;
+  setStartAsCity(): void;
+  setArriveAsCity(): void;
 }
 
 // New object class interfaces (CLAUDE.md update)
@@ -62,6 +107,11 @@ export interface RouteItemWrapper {
   stationId: number;
   lineId: number;
   flag: number;
+  
+  // Required properties from CLAUDE.md specifications
+  fare: number;
+  salesKm: number;
+  indexOfAggregate: number;
 }
 
 export interface RouteFlagWrapper {
@@ -185,3 +235,4 @@ export class TestExecutionError extends Error {
     this.name = 'TestExecutionError';
   }
 }
+

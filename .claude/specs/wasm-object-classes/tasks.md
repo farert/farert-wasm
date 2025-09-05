@@ -153,11 +153,11 @@ Tasks follow CLAUDE.md architecture patterns with inheritance hierarchy `cCalcRo
   - _Requirements: REQ-OBJ-001, REQ-OBJ-003_
   - _Leverage: existing RouteFlagWrapper interface structure_
 
-- [ ] 16. Enhanced array operation interfaces for cRouteList in src/cli/types.ts
-  - File: src/cli/types.ts (modify existing RouteListWrapper lines 41-45)
-  - Add at(index: number): RouteItemWrapper method
-  - Add count(), remove(index), removeAll(), insert(), assign() methods
-  - Add getRouteFlag(): RouteFlagWrapper, setRouteFlag() methods
+- [x] 16. Essential RouteList operations for cRouteList in src/cli/types.ts
+  - File: src/cli/types.ts (modify existing RouteListWrapper)
+  - Add removeAll(): void method for clearing all route segments
+  - Add assign(obj: RouteListWrapper): void method for copying route data
+  - Remove unnecessary array-like operations (at, count, remove, insert)
   - _Requirements: REQ-OBJ-001, REQ-OBJ-003_
   - _Leverage: existing RouteListWrapper interface_
 

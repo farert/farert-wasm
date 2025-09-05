@@ -143,4 +143,76 @@ export class TestOutputWriter {
         this.write(`${sectionName}\\n`);
         this.write(`${separator}\\n`);
     }
+    
+    /**
+     * Write test validation result with tolerance check
+     */
+    writeValidationResult(
+        testName: string,
+        routeDefinition: string,
+        expectedFare: number,
+        actualFare: number,
+        tolerance: number = 0
+    ): void {
+        const difference = Math.abs(expectedFare - actualFare);
+        const passed = difference <= tolerance;
+        
+        this.write(`\\nValidation: ${testName}\\n`);
+        this.write(`Route: ${routeDefinition}\\n`);
+        this.write(`Expected Fare: ${expectedFare} yen\\n`);
+        this.write(`Actual Fare: ${actualFare} yen\\n`);
+        this.write(`Difference: ${difference} yen\\n`);
+        this.write(`Tolerance: ${tolerance} yen\\n`);
+        this.write(`Result: ${passed ? 'PASS' : 'FAIL'}\\n`);
+        this.write('---\\n');
+    }
+    
+    /**
+     * Write test statistics summary
+     */
+    writeTestStatistics(
+        totalTests: number,
+        passedTests: number,
+        failedTests: number,
+        executionTime: number
+    ): void {
+        const successRate = totalTests > 0 ? (passedTests / totalTests * 100).toFixed(2) : '0.00';
+        
+        this.write('\\n=== TEST STATISTICS ===\\n');
+        this.write(`Total Tests: ${totalTests}\\n`);
+        this.write(`Passed: ${passedTests}\\n`);
+        this.write(`Failed: ${failedTests}\\n`);
+        this.write(`Success Rate: ${successRate}%\\n`);
+        this.write(`Execution Time: ${executionTime.toFixed(2)}s\\n`);
+        this.write('=======================\\n');
+    }
+    
+    /**
+     * Write detailed failure information for debugging
+     */
+    writeFailureDetails(
+        testName: string,
+        routeDefinition: string,
+        errorMessage: string,
+        expectedValue?: number,
+        actualValue?: number,
+        timestamp?: number
+    ): void {
+        this.write(`\\n=== FAILURE DETAILS ===\\n`);
+        this.write(`Test: ${testName}\\n`);
+        this.write(`Route: ${routeDefinition}\\n`);
+        this.write(`Error: ${errorMessage}\\n`);
+        
+        if (expectedValue !== undefined && actualValue !== undefined) {
+            this.write(`Expected: ${expectedValue}\\n`);
+            this.write(`Actual: ${actualValue}\\n`);
+            this.write(`Difference: ${Math.abs(expectedValue - actualValue)}\\n`);
+        }
+        
+        if (timestamp) {
+            this.write(`Timestamp: ${new Date(timestamp).toISOString()}\\n`);
+        }
+        
+        this.write('======================\\n');
+    }
 }

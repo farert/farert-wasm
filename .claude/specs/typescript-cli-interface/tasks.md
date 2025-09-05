@@ -43,7 +43,7 @@ These tasks follow CLAUDE.md requirements for 100% C++ compatibility, maintain t
   - _Leverage: existing file existence checking logic, dist/ directory structure_
   - _Requirements: REQ-CLI-001.1, REQ-CLI-003.1_
 
-- [ ] 3. Add missing WebAssembly API functions to types.ts FarertModule interface
+- [x] 3. Add missing WebAssembly API functions to types.ts FarertModule interface
   - File: src/cli/types.ts
   - Add getLineId(name: string): number method definition
   - Add getRouteScript(): string method definition  
@@ -54,7 +54,7 @@ These tasks follow CLAUDE.md requirements for 100% C++ compatibility, maintain t
   - _Leverage: existing FarertModule interface structure, src/farert_wasm.cpp API definitions_
   - _Requirements: REQ-CLI-001.1, REQ-CLI-001.2_
 
-- [ ] 4. Create test data tables file for complete test suite execution
+- [x] 4. Create test data tables file for complete test suite execution
   - File: src/cli/test_data.ts
   - Define testRoute2Tbl array with main route test patterns
   - Define jctSpecialRouteTbl array with special junction test patterns
@@ -65,7 +65,7 @@ These tasks follow CLAUDE.md requirements for 100% C++ compatibility, maintain t
   - _Leverage: existing test patterns in test_exec_complete.ts, original C++ test data_
   - _Requirements: REQ-CLI-002.1, REQ-CLI-002.2_
 
-- [ ] 5. Complete test suite implementation in test_exec_complete.ts
+- [x] 5. Complete test suite implementation in test_exec_complete.ts
   - File: src/cli/test_exec_complete.ts
   - Uncomment and implement all 8 test suites in exact C++ execution order
   - Import test data from test_data.ts and use in respective test functions
@@ -75,7 +75,7 @@ These tasks follow CLAUDE.md requirements for 100% C++ compatibility, maintain t
   - _Leverage: existing test function implementations, TestOutputWriter, test data structure_
   - _Requirements: REQ-CLI-002.1, REQ-CLI-002.2, REQ-CLI-002.3_
 
-- [ ] 6. Enhance route_test.ts with missing getLineId API usage
+- [x] 6. Enhance route_test.ts with missing getLineId API usage
   - File: src/cli/route_test.ts
   - Fix setupRouteFromString function to properly use module.getLineId() API
   - Add proper error handling for line ID resolution failures
@@ -84,7 +84,7 @@ These tasks follow CLAUDE.md requirements for 100% C++ compatibility, maintain t
   - _Leverage: existing setupRouteFromString logic, FarertModule interface_
   - _Requirements: REQ-CLI-001.3, REQ-CLI-003.2_
 
-- [ ] 7. Add Japanese text validation and fuzzy matching in main.ts
+- [x] 7. Add Japanese text validation and fuzzy matching in main.ts
   - File: src/cli/main.ts
   - Enhance validateJapaneseInput function with comprehensive character set support
   - Implement fuzzy matching for station name suggestions when station not found
