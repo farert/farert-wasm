@@ -75,7 +75,7 @@ function setupAutoRoute(fromStation: string, toStation: string, module: FarertMo
 /**
  * Apply route options (equivalent to route option setting in original)
  */
-function applyRouteOptions(options: {
+function applyRouteOptions(_options: {
     zairaisen: boolean;
     shinkansen: boolean; 
     companyLine: boolean;

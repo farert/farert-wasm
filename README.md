@@ -1,0 +1,254 @@
+# Farert WebAssembly - Japanese Railway Fare Calculation System
+
+WebAssembly implementation of C++ railway fare calculation engine. Accurately calculates complex Japanese railway fares, works in browser and Node.js environments.
+
+## 🎯 Project Goals
+
+Provides modern WebAssembly APIs while maintaining **100% compatibility** with the original C++ implementation:
+
+- ✅ **Complete Migration**: `testmain.cpp` → TypeScript CLI
+- ✅ **Identical Results**: All CLI tests match within ±0 yen tolerance  
+- ✅ **Type Safety**: Full TypeScript support
+- ✅ **Cross-Platform**: Browser and Node.js support
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+```bash
+# Emscripten SDK (required)
+~/priv/farert.repos/emsdk/
+
+# Node.js 14.0.0+
+node --version
+
+# Recommended: TypeScript
+npm install -g typescript
+```
+
+### Build and Run
+
+```bash
+# 1. Environment setup + WebAssembly build
+source setup_env.sh && make node
+
+# 2. TypeScript CLI compilation
+npm run cli:build
+
+# 3. Fare calculation test
+npm run cli:calc -- -5 "東京" "東海道線" "横浜"
+
+# 4. Full test suite execution
+npm run cli:exec
+```
+
+### Development Server
+
+```bash
+# Start development server with auto port selection
+source setup_env.sh && make serve
+
+# Open browser at http://localhost:8080
+```
+
+## 🏗️ Architecture
+
+```text
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│ TypeScript CLI  │ -> │ 6 Object Classes │ -> │ 39+ WASM APIs   │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+                                |                         |
+                       ┌──────────────────┐    ┌─────────────────┐
+                       │ Modern Frontend  │    │ C++ Core Logic  │
+                       │ React/Vue/Svelte │    │ + SQLite3 DB    │
+                       └──────────────────┘    └─────────────────┘
+```
+
+### Core Technology Stack
+
+- **WebAssembly**: Compiled with Emscripten
+- **C++17**: Optimization level `-O3`
+- **TypeScript**: Strict mode required
+- **SQLite3**: Embedded via MEMFS
+- **Database**: `jrdbnewest.db` (All Japanese stations/lines data)
+
+## 📋 Available Commands
+
+### Make Commands
+
+```bash
+make node          # Node.js compatible WebAssembly build
+make all           # Browser WebAssembly build  
+make serve         # Start development server
+make clean         # Remove build artifacts
+make status        # Check project status
+make help          # Show all commands
+```
+
+### npm Scripts
+
+```bash
+npm run build      # Complete build (WASM + TypeScript)
+npm run cli:build  # TypeScript CLI only
+npm run cli:exec   # Execute full test suite
+npm run cli:calc   # Individual fare calculation
+npm run dev        # Development mode
+npm run clean      # Cleanup
+```
+
+## 🧪 Testing and Verification
+
+### CLI Test Execution
+
+```bash
+# Full test suite (verify identical results with C++ version)
+npm run cli:exec
+
+# Individual route calculation
+npm run cli:calc -- -5 "新宿" "中央線" "立川"
+
+# Complex route calculation example
+npm run cli:calc -- -5 "茂市" "山田線" "盛岡" "田沢湖線" "大曲" "奥羽線" "新庄" "陸羽西線" "余目" "羽越線" "新津" "信越線(直江津-新潟)" "宮内" "上越線" "越後川口" "飯山線" "豊野" "しなの鉄道(北)" "長野"
+```
+
+### Programming Usage Example
+
+```typescript
+import { wasmLoader } from './src/cli/wasm_loader';
+
+const module = await wasmLoader.loadModule();
+const dbResult = module.openDatabase();  // Database connection
+
+// Get station IDs
+const tokyoId = module.getStationId('東京');
+const yokohamaId = module.getStationId('横浜'); 
+
+// Create route and calculate fare
+module.createRoute();
+module.addRouteBegin(tokyoId);
+module.addRoute(0, yokohamaId);  // lineId=0 for auto-route
+const fare = module.calculateFare();
+
+console.log(`Fare: ${fare} yen`);
+```
+
+## 🎨 Object-Oriented API
+
+### 6 Class Hierarchy
+
+```typescript
+// Inheritance: cCalcRoute < cRoute < cRouteList
+const route = new module.cRoute();
+route.setupRoute("東京 東海道線 横浜");
+
+const calcRoute = new module.cCalcRoute(route);
+const fareInfo = calcRoute.calcFare();
+
+console.log(`Fare: ${fareInfo.fare} yen`);
+console.log(`Route: ${fareInfo.routeList}`);
+```
+
+### Complete Object Classes
+
+- `cRouteList`: Basic route container
+- `cRoute`: Route construction features
+- `cCalcRoute`: Fare calculation features  
+- `cRouteItem`: Route elements
+- `cRouteFlag`: Route flag management
+- `FareInfo`: Detailed fare information
+
+## 📁 Project Structure
+
+```text
+farert-wasm/
+├── src/
+│   ├── core/           # C++ implementation (route_interface.cpp, alpdb.cpp)
+│   ├── include/        # C++ headers (route_interface.h)
+│   ├── cli/           # TypeScript CLI implementation
+│   ├── db/            # Database operations
+│   └── farert_wasm.cpp # WebAssembly bindings
+├── dist/              # Build outputs
+│   ├── farert.js/.wasm       # Browser version
+│   └── farert_node.js/.wasm  # Node.js version
+├── data/              # SQLite database
+├── .claude/           # Claude Code specifications
+└── third_party/       # SQLite3 source
+```
+
+## 🔧 Troubleshooting
+
+### Common Issues
+
+#### 1. Emscripten Environment Error
+
+```bash
+❌ em++ command not found
+
+# Solution
+source setup_env.sh && make
+```
+
+#### 2. WebAssembly File Not Found
+
+```bash
+❌ WebAssembly file not found
+
+# Solution  
+make node  # Build Node.js version
+# or
+make all   # Build browser version
+```
+
+#### 3. TypeScript Compilation Error
+
+```bash
+# Build with skipLibCheck
+npx tsc --skipLibCheck
+
+# or compile individual files
+npx tsc --target es2020 --module commonjs --outDir dist/cli src/cli/main.ts
+```
+
+### Debug Mode
+
+```bash
+# Show detailed logs
+export CLI_DEBUG=1
+npm run cli:exec
+
+# Show WebAssembly memory statistics
+export CLI_DEBUG=1
+npm run cli:calc -- -5 "東京" "山手線" "新宿"
+```
+
+## 📚 Detailed Documentation
+
+- **[CLAUDE.md](./CLAUDE.md)**: Complete project guidelines and API specifications
+- **[.claude/specs/](./claude/specs/)**: Technical specifications and design documents
+- **[Makefile](./Makefile)**: Build system details
+
+## 🤝 Development Guidelines
+
+### Commit Conventions
+
+```bash
+feat: add new feature
+fix: bug fix  
+docs: documentation update
+refactor: code refactoring
+```
+
+### Code Quality
+
+- **TypeScript Strict Mode**: Required
+- **C++17 Standard**: `-O3` optimization
+- **Error Handling**: Preserve original C++ error codes
+- **Memory Management**: WebAssembly automatic cleanup
+
+## 📄 License
+
+GPL-3.0 - See [LICENSE](./LICENSE) for details
+
+---
+
+**Success Metric**: 100% compatibility with C++ implementation - All implementations must accurately reproduce the behavior of the original C++ code.

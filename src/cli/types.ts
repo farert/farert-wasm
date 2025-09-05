@@ -28,7 +28,7 @@ export interface FarertModule {
   // 6 Object Classes (CLAUDE.md Public API)
   cRoute: new() => RouteWrapper;
   cRouteList: new(route: RouteWrapper) => RouteListWrapper;
-  cCalcRoute: new(route: RouteWrapper) => CalcRouteWrapper;
+  cCalcRoute: new(route: RouteWrapper | RouteListWrapper) => CalcRouteWrapper;
   cRouteItem: new() => RouteItemWrapper;
   cRouteFlag: new() => RouteFlagWrapper;
   FareInfo: new() => FareInfoData;
@@ -37,23 +37,22 @@ export interface FarertModule {
   [key: string]: any;
 }
 
-// Object class interfaces
-export interface RouteWrapper {
+// Object class interfaces (inheritance: cCalcRoute < cRoute < cRouteList)
+export interface RouteListWrapper {
+  startStationId(): number;
+  lastStationId(): number;
+  routeScript(): string;
+}
+
+export interface RouteWrapper extends RouteListWrapper {
   setupRoute(route: string): void;
   addRoute(stationId: number): number;
   removeAll(): void;
   getRouteCount(): number;
-  startStationId(): number;
-  lastStationId(): number;
   isEnd(): boolean;
 }
 
-export interface RouteListWrapper {
-  startStationId(): number;
-  lastStationId(): number;
-}
-
-export interface CalcRouteWrapper {
+export interface CalcRouteWrapper extends RouteWrapper {
   calcFare(): FareInfoData;
   showFare(): string;
 }

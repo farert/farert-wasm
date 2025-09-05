@@ -10,10 +10,10 @@ import * as fs from 'fs';
 
 export class TestOutputWriter {
     private fileHandle: number | null = null;
-    private filename: string;
+    // private _filename: string; // Unused for now
     
     constructor(filename: string) {
-        this.filename = filename;
+        // this._filename = filename; // Store filename if needed later
         try {
             // Open file for writing (equivalent to fopen_s in original)
             this.fileHandle = fs.openSync(filename, 'w');
