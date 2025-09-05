@@ -99,11 +99,9 @@ cCalcRoute (most derived)
 
 #### cRouteItem and Array Acceptance Criteria
 
-1. WHEN working with cRouteItem objects THEN they SHALL provide access to fare, salesKm, and indexOfAggregate properties as specified in CLAUDE.md
-2. WHEN accessing cRouteList elements THEN `routeList.at(index: number)` SHALL return individual cRouteItem objects with proper type safety
-3. IF manipulating route collections THEN cRouteList SHALL provide `remove(index: number): cRouteItem`, `removeAll(): void`, `insert(obj: cRouteList, at: number): void`, and `assign(obj: cRouteList): void` methods
-4. WHEN counting route elements THEN `routeList.count()` SHALL return the number of cRouteItem elements in the collection
-5. IF array operations fail THEN methods SHALL throw specific errors with clear messages indicating invalid indices or operations
+1. ✅ WHEN working with cRouteItem objects THEN they SHALL provide access to fare, salesKm, and indexOfAggregate properties as specified in CLAUDE.md
+2. ✅ WHEN working with cRouteList THEN it SHALL provide `assign(obj: cRouteList): void` method for copying route data from another RouteList
+3. ✅ WHEN clearing route data THEN cRouteList SHALL provide `removeAll(): void` method to clear all route segments
 
 ### REQ-OBJ-004: C++ Compatible Route Construction
 

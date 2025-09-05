@@ -90,11 +90,11 @@ function applyRouteOptions(_options: {
         
         // Set start/arrive as city options if available
         if (module.setStartAsCity) {
-            module.setStartAsCity(false);
+            module.setStartAsCity();
         }
         
         if (module.setArriveAsCity) {
-            module.setArriveAsCity(false);
+            module.setArriveAsCity();
         }
         
         // Note: The original C++ had complex route option settings

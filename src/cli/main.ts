@@ -92,91 +92,508 @@ function parseCommandLine(argc: number, argv: string[], isReverse: boolean): voi
 }
 
 /**
- * Print comprehensive help information (equivalent to C++ help display)
- * Includes Japanese examples as specified in requirements
+ * Print comprehensive help information with Japanese examples
+ * Requirements: REQ-CLI-006.1, REQ-CLI-006.2, REQ-CLI-006.4
+ * 
+ * Provides detailed command syntax, parameter descriptions, and real Japanese examples
  */
 function printHelp(): void {
-    console.log('Farert WebAssembly CLI - Japanese Railway Fare Calculator');
-    console.log('========================================================');
+    console.log('🚀 Farert WebAssembly CLI - Japanese Railway Fare Calculator');
+    console.log('═══════════════════════════════════════════════════════════════');
     console.log('');
-    console.log('USAGE:');
+    console.log('📖 OVERVIEW:');
+    console.log('  A comprehensive TypeScript CLI for calculating Japanese railway fares');
+    console.log('  using WebAssembly. Supports all JR lines, private railways, and');
+    console.log('  complex routing with special fare rules.');
+    console.log('');
+    console.log('⚡ QUICK START:');
+    console.log('  1. Ensure WebAssembly module is built: npm run build');
+    console.log('  2. For single route: node main.js -5 東京 山手線 新宿 中央線 立川');
+    console.log('  3. For test suite: node main.js -exec');
+    console.log('');
+    console.log('📋 COMMAND SYNTAX:');
     console.log('  node main.js [OPTIONS] [ARGUMENTS]');
     console.log('');
-    console.log('OPTIONS:');
-    console.log('  -exec                Execute complete test suite (equivalent to test_exec.cpp)');
-    console.log('  -h, --help, -help    Show this help message');
+    console.log('🔧 OPTIONS:');
+    console.log('');
+    console.log('  -exec');
+    console.log('    Execute complete test suite (equivalent to original test_exec.cpp)');
+    console.log('    Runs all validation tests to verify WebAssembly implementation');
+    console.log('');
     console.log('  -5 <station1> <line1> <station2> <line2> <station3>');
-    console.log('                      Calculate fare for 5-parameter route');
-    console.log('  -<num>[r]           Route test with format options:');
-    console.log('                      0: all details (default)');
-    console.log('                      1: no return trip info');
-    console.log('                      2: no special rules');
-    console.log('                      3: no rules + no return');
-    console.log('                      4: only special rules');
-    console.log('                      5: only special rules + no return');
-    console.log('                      r: reverse route order');
+    console.log('    Calculate fare for specific 5-parameter route');
+    console.log('    Parameters:');
+    console.log('      station1: Starting station (Japanese name)');
+    console.log('      line1:    First railway line name');
+    console.log('      station2: Transfer station (intermediate)');
+    console.log('      line2:    Second railway line name');  
+    console.log('      station3: Destination station');
     console.log('');
-    console.log('EXAMPLES:');
-    console.log('  # Execute complete test suite');
-    console.log('  node main.js -exec');
+    console.log('  -h, --help, -help');
+    console.log('    Show this comprehensive help message');
     console.log('');
-    console.log('  # Calculate fare for Tokyo to Osaka via Tokaido Line');
-    console.log('  node main.js -5 東京 東海道線 品川 東海道線 新大阪');
+    console.log('  -<number>[r]');
+    console.log('    Route test with output format options:');
+    console.log('      0: Show all details (default - complete fare breakdown)');
+    console.log('      1: No return trip information');
+    console.log('      2: No special rules display');
+    console.log('      3: No rules + no return trip');
+    console.log('      4: Only special rules (hide basic fare)');
+    console.log('      5: Only special rules + no return trip');
+    console.log('      r: Reverse route calculation order');
     console.log('');
-    console.log('  # Direct route calculation (normal format)');
-    console.log('  node main.js 東京 東海道線 品川');
+    console.log('📍 JAPANESE STATION EXAMPLES (REQ-CLI-006.1):');
     console.log('');
-    console.log('  # Route from file');
-    console.log('  node main.js route_file.txt');
+    console.log('  🏙️  Major Stations:');
+    console.log('    東京, 新宿, 大阪, 品川, 上野, 池袋, 渋谷');
+    console.log('    横浜, 名古屋, 京都, 神戸, 仙台, 福岡, 札幌');
     console.log('');
-    console.log('  # Auto route calculation (even number of parameters)');
-    console.log('  node main.js 東京 大阪');
+    console.log('  🚉 JR Lines:');
+    console.log('    東海道線, 山手線, 中央線, 京浜東北線, 総武線');
+    console.log('    常磐線, 埼京線, 湘南新宿ライン, 上野東京ライン');
     console.log('');
-    console.log('For more information, see CLAUDE.md in the project root.');
+    console.log('  🚄 Shinkansen:');
+    console.log('    東海道新幹線, 東北新幹線, 上越新幹線, 北陸新幹線');
     console.log('');
+    console.log('  🚇 Private Lines:');
+    console.log('    東急東横線, 小田急線, 京王線, 西武池袋線, 京急本線');
+    console.log('');
+    console.log('💡 DETAILED EXAMPLES (REQ-CLI-006.4):');
+    console.log('');
+    console.log('  🌟 Basic Route Calculation:');
+    console.log('    node main.js -5 東京 東海道線 品川 山手線 新宿');
+    console.log('    → Calculates: Tokyo → Shinagawa (Tokaido) → Shinjuku (Yamanote)');
+    console.log('');
+    console.log('  🌟 Long Distance Route:');
+    console.log('    node main.js -5 東京 東海道線 名古屋 東海道線 大阪');
+    console.log('    → Calculates: Tokyo → Nagoya → Osaka via Tokaido Line');
+    console.log('');
+    console.log('  🌟 Complex Transfer Route:');
+    console.log('    node main.js -5 新宿 中央線 立川 青梅線 青梅');
+    console.log('    → Calculates: Shinjuku → Tachikawa (Chuo) → Ome (Ome Line)');
+    console.log('');
+    console.log('  🌟 Metropolitan Area:');
+    console.log('    node main.js -5 渋谷 山手線 新橋 東海道線 川崎');
+    console.log('    → Calculates: Shibuya → Shimbashi (Yamanote) → Kawasaki (Tokaido)');
+    console.log('');
+    console.log('  🌟 Direct Route (3 parameters):');
+    console.log('    node main.js 上野 山手線 東京');
+    console.log('    → Calculates: Ueno → Tokyo via Yamanote Line');
+    console.log('');
+    console.log('  🌟 Auto Route (2 parameters):');
+    console.log('    node main.js 東京 大阪');
+    console.log('    → Automatically finds optimal route Tokyo → Osaka');
+    console.log('');
+    console.log('  🌟 Route from File:');
+    console.log('    node main.js routes.txt');
+    console.log('    → Process multiple routes from text file');
+    console.log('');
+    console.log('  🌟 Test Suite Execution:');
+    console.log('    node main.js -exec');
+    console.log('    → Run comprehensive validation test suite');
+    console.log('');
+    console.log('  🌟 Format Options:');
+    console.log('    node main.js -2 東京 東海道線 大阪  # No special rules');
+    console.log('    node main.js -1r 新宿 山手線 品川   # No return, reversed');
+    console.log('');
+    console.log('📂 FILE FORMAT:');
+    console.log('  Routes can be specified in text files, one route per line:');
+    console.log('    東京 東海道線 品川');
+    console.log('    新宿 山手線 上野');
+    console.log('    # Comments start with #');
+    console.log('    大阪 東海道線 京都 # Inline comments supported');
+    console.log('    / # End processing marker');
+    console.log('');
+    console.log('⚠️  COMMON MISTAKES & SOLUTIONS (REQ-CLI-006.2):');
+    console.log('');
+    console.log('  ❌ Problem: "Station not found" error');
+    console.log('  ✅ Solution: Use exact Japanese station names');
+    console.log('     • Correct: 東京');
+    console.log('     • Incorrect: tokyo, Tokyo, とうきょう');
+    console.log('');
+    console.log('  ❌ Problem: "Invalid line name" error');
+    console.log('  ✅ Solution: Use official line names with proper suffixes');
+    console.log('     • Correct: 東海道線, 山手線, 中央線');
+    console.log('     • Incorrect: 東海道, 山手, JR中央線');
+    console.log('');
+    console.log('  ❌ Problem: "Parameter count mismatch" error');
+    console.log('  ✅ Solution: Check parameter count for command type');
+    console.log('     • -5 command: exactly 5 parameters required');
+    console.log('     • Direct route: odd number (3, 5, 7, ...)');
+    console.log('     • Auto route: even number (2, 4, 6, ...)');
+    console.log('');
+    console.log('  ❌ Problem: "WebAssembly module not found" error');
+    console.log('  ✅ Solution: Build the project first');
+    console.log('     npm run build');
+    console.log('     npm run cli:build');
+    console.log('');
+    console.log('🛠️  TROUBLESHOOTING (REQ-CLI-006.2):');
+    console.log('');
+    console.log('  🔍 Build Issues:');
+    console.log('    • Run: npm install && npm run build');
+    console.log('    • Check: dist/farert.js and dist/farert.wasm exist');
+    console.log('    • Verify: data/jrdbnewest.db is present');
+    console.log('');
+    console.log('  🔍 Database Issues:');
+    console.log('    • Ensure jrdbnewest.db file exists in data/ directory');
+    console.log('    • Check file permissions (readable)');
+    console.log('    • Verify database integrity with: file data/jrdbnewest.db');
+    console.log('');
+    console.log('  🔍 Japanese Text Issues:');
+    console.log('    • Use UTF-8 encoding in terminal');
+    console.log('    • On Windows: chcp 65001 (for UTF-8 support)');
+    console.log('    • Use proper Japanese input method');
+    console.log('');
+    console.log('  🔍 Node.js Version:');
+    console.log('    • Required: Node.js 14.0.0 or higher');
+    console.log('    • Check with: node --version');
+    console.log('    • Update if needed: https://nodejs.org');
+    console.log('');
+    console.log('📚 DOCUMENTATION REFERENCES:');
+    console.log('');
+    console.log('  📖 Main Documentation: CLAUDE.md (project root)');
+    console.log('  🏗️  Build Instructions: README.md');
+    console.log('  🧪 Testing Guide: .claude/specs/typescript-cli-interface/');
+    console.log('  🐛 Issues & Support: https://github.com/anthropics/claude-code/issues');
+    console.log('');
+    console.log('🎯 ENVIRONMENT VARIABLES:');
+    console.log('');
+    console.log('  CLI_DEBUG=1          Enable verbose debug logging');
+    console.log('  CLI_WASM_PATH=path   Custom WebAssembly module path');
+    console.log('');
+    console.log('📞 GETTING HELP:');
+    console.log('');
+    console.log('  For detailed technical documentation: see CLAUDE.md');
+    console.log('  For build issues: check .claude/steering/ directory');
+    console.log('  For WebAssembly specifics: see src/core/ implementation');
+    console.log('');
+    console.log('💻 PLATFORM SUPPORT:');
+    console.log('');
+    console.log('  ✅ macOS (Terminal, iTerm2)');
+    console.log('  ✅ Linux (bash, zsh)');
+    console.log('  ✅ Windows (cmd, PowerShell, WSL)');
+    console.log('');
+    console.log('🚀 Ready to calculate Japanese railway fares with precision!');
+    console.log('═══════════════════════════════════════════════════════════════');
 }
 
 /**
  * Handle 5-parameter route calculation (-5 command)
+ * Enhanced with comprehensive Japanese text validation and fuzzy matching
+ * Requirements: REQ-CLI-003.3, REQ-CLI-006.3
  */
 async function handle5ParameterRoute(args: string[], module: FarertModule): Promise<number> {
     if (args.length !== 5) {
-        console.error('Error: -5 command requires exactly 5 parameters:');
+        console.error('❌ Error: -5 command requires exactly 5 parameters:');
         console.error('Usage: -5 <station1> <line1> <station2> <line2> <station3>');
         console.error('Example: -5 東京 東海道線 品川 東海道線 新大阪');
+        console.error('');
+        console.error('Valid Japanese station names: 東京, 新宿, 大阪, etc.');
+        console.error('Valid line names: 東海道線, 山手線, 中央線, etc.');
         return -1;
     }
     
     const [station1, line1, station2, line2, station3] = args;
-    const routeString = `${station1} ${line1} ${station2} ${line2} ${station3}`;
     
-    console.log(`Calculating fare for route: ${routeString}`);
+    // Enhanced validation for each parameter with fuzzy matching suggestions
+    const validationResults = [
+        { value: station1, type: 'station' as const, name: 'Station 1' },
+        { value: line1, type: 'line' as const, name: 'Line 1' },
+        { value: station2, type: 'station' as const, name: 'Station 2' },
+        { value: line2, type: 'line' as const, name: 'Line 2' },
+        { value: station3, type: 'station' as const, name: 'Station 3' }
+    ];
+    
+    let hasValidationErrors = false;
+    
+    for (const param of validationResults) {
+        const validation = validateWithSuggestions(param.value, param.type);
+        
+        if (!validation.isValid) {
+            hasValidationErrors = true;
+            console.error(`❌ ${param.name}: ${validation.errorMessage}`);
+            
+            if (validation.suggestions.length > 0) {
+                console.error(`   Similar ${param.type} names:`);
+                validation.suggestions.forEach((suggestion, index) => {
+                    console.error(`     ${index + 1}. ${suggestion}`);
+                });
+            }
+            console.error('');
+        }
+    }
+    
+    if (hasValidationErrors) {
+        console.error('Please check the parameter names and try again.');
+        console.error('Use valid Japanese station and line names as shown in the examples.');
+        return -1;
+    }
+    
+    // Use sanitized values for route calculation
+    const sanitizedArgs = validationResults.map(param => 
+        validateWithSuggestions(param.value, param.type).sanitized
+    );
+    
+    const routeString = sanitizedArgs.join(' ');
+    console.log(`🚂 Calculating fare for route: ${routeString}`);
     
     try {
         // Execute route test with all details (option 0)
         await executeRouteTest([routeString, ''], 0, module);
         return 0;
     } catch (error) {
-        console.error('Error calculating 5-parameter route:', error);
+        console.error('❌ Error calculating 5-parameter route:', error);
         return -1;
     }
 }
 
 /**
- * Validate Japanese text input
+ * Enhanced Japanese text validation with comprehensive character set support
+ * Requirements: REQ-CLI-003.3, REQ-CLI-006.3
+ * 
+ * @param text Input text to validate
+ * @returns true if text contains valid Japanese or alphanumeric characters
  */
 function validateJapaneseInput(text: string): boolean {
-    // Check for common Japanese characters (Hiragana, Katakana, Kanji)
-    const japanesePattern = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF\u3400-\u4DBF]/;
-    return japanesePattern.test(text) || /^[a-zA-Z0-9\s\-]+$/.test(text);
+    if (!text || text.trim().length === 0) {
+        return false;
+    }
+    
+    // Comprehensive Japanese character ranges:
+    // - Hiragana: \u3040-\u309F
+    // - Katakana: \u30A0-\u30FF
+    // - CJK Unified Ideographs: \u4E00-\u9FAF
+    // - CJK Extension A: \u3400-\u4DBF
+    // - Katakana Phonetic Extensions: \u31F0-\u31FF
+    // - CJK Symbols and Punctuation: \u3000-\u303F
+    // - Halfwidth and Fullwidth Forms: \uFF00-\uFFEF
+    const japanesePattern = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF\u3400-\u4DBF\u31F0-\u31FF\u3000-\u303F\uFF00-\uFFEF]/;
+    
+    // Allow Japanese characters, ASCII alphanumeric, spaces, hyphens, and common punctuation
+    const validPattern = /^[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF\u3400-\u4DBF\u31F0-\u31FF\u3000-\u303F\uFF00-\uFFEFa-zA-Z0-9\s\-\(\)・]+$/;
+    
+    return japanesePattern.test(text) || validPattern.test(text);
 }
 
 /**
- * Sanitize and validate station/line names
+ * Advanced input sanitization with Japanese text preservation
+ * Requirements: REQ-CLI-003.3 - input validation and sanitization
+ * 
+ * @param input Raw input string
+ * @returns Sanitized string safe for processing
  */
 function sanitizeInput(input: string): string {
-    // Remove potentially problematic characters while preserving Japanese
-    return input.trim().replace(/[\r\n\t]+/g, ' ');
+    if (!input) {
+        return '';
+    }
+    
+    // Remove control characters but preserve Japanese text
+    let sanitized = input
+        .trim()
+        .replace(/[\r\n\t]+/g, ' ')           // Convert line breaks to spaces
+        .replace(/[\x00-\x08\x0B-\x1F\x7F]/g, '')  // Remove control characters except tab/newline
+        .replace(/\s{2,}/g, ' ');             // Collapse multiple spaces
+    
+    // Validate length to prevent excessive input
+    if (sanitized.length > 200) {
+        console.warn(`Warning: Input truncated from ${sanitized.length} to 200 characters`);
+        sanitized = sanitized.substring(0, 200);
+    }
+    
+    return sanitized;
+}
+
+/**
+ * Get fuzzy matching suggestions for invalid station names
+ * Requirements: REQ-CLI-003.3 - provide fuzzy matching suggestions for invalid station names
+ * 
+ * @param invalidName The invalid station name
+ * @returns Array of up to 3 suggested station names
+ */
+function getSuggestedStationNames(invalidName: string): string[] {
+    const commonStations = [
+        '東京', '新宿', '渋谷', '池袋', '品川', '上野', '大阪', '京都', '名古屋',
+        '横浜', '神戸', '福岡', '仙台', '札幌', '広島', '静岡', '浜松', '岡山',
+        '金沢', '新潟', '長野', '松本', '甲府', '宇都宮', '水戸', '千葉',
+        'さいたま新都心', '大宮', '川崎', '立川', '八王子', '町田', '藤沢',
+        '船橋', '柏', '松戸', '川越', '所沢', '津田沼', '市川', '浦和',
+        '赤羽', '北千住', '秋葉原', '有楽町', '新橋', '田町', '五反田',
+        '目黒', '恵比寿', '原宿', '代々木', '中野', '高円寺', '荻窪',
+        '吉祥寺', '三鷹', '国分寺', '国立', '日野', '豊田', '高尾'
+    ];
+    
+    const suggestions: string[] = [];
+    const cleanInput = invalidName.toLowerCase().trim();
+    
+    // Phase 1: Direct substring matching
+    for (const station of commonStations) {
+        if (station.includes(invalidName) || 
+            invalidName.includes(station) ||
+            station.toLowerCase().includes(cleanInput)) {
+            suggestions.push(station);
+            if (suggestions.length >= 3) break;
+        }
+    }
+    
+    // Phase 2: Character similarity matching if not enough found
+    if (suggestions.length < 3) {
+        const candidates = commonStations
+            .filter(station => !suggestions.includes(station))
+            .map(station => ({
+                name: station,
+                similarity: calculateJapaneseSimilarity(invalidName, station)
+            }))
+            .filter(candidate => candidate.similarity > 0.3)
+            .sort((a, b) => b.similarity - a.similarity);
+        
+        for (const candidate of candidates) {
+            suggestions.push(candidate.name);
+            if (suggestions.length >= 3) break;
+        }
+    }
+    
+    return suggestions;
+}
+
+/**
+ * Get fuzzy matching suggestions for invalid line names  
+ * Requirements: REQ-CLI-003.3 - provide fuzzy matching suggestions for invalid line names
+ * 
+ * @param invalidName The invalid line name
+ * @returns Array of up to 3 suggested line names
+ */
+function getSuggestedLineNames(invalidName: string): string[] {
+    const commonLines = [
+        '東海道線', '山手線', '中央線', '京浜東北線', '総武線', '常磐線',
+        '埼京線', '湘南新宿ライン', '上野東京ライン', '東海道新幹線',
+        '東北新幹線', '上越新幹線', '北陸新幹線', '山陽新幹線',
+        '東急東横線', '小田急線', '京王線', '西武池袋線', '東武東上線',
+        '京急本線', '相鉄線', '東西線', '丸ノ内線', '日比谷線',
+        '銀座線', '副都心線', '有楽町線', '南北線', '千代田線',
+        '半蔵門線', '都営浅草線', '都営三田線', '都営新宿線', '都営大江戸線',
+        '京成線', '京成スカイライナー', 'つくばエクスプレス', 'りんかい線',
+        'ゆりかもめ', '多摩都市モノレール', '日暮里舎人ライナー'
+    ];
+    
+    const suggestions: string[] = [];
+    const cleanInput = invalidName.toLowerCase().trim();
+    
+    // Phase 1: Direct substring matching
+    for (const line of commonLines) {
+        if (line.includes(invalidName) || 
+            invalidName.includes(line) ||
+            line.toLowerCase().includes(cleanInput)) {
+            suggestions.push(line);
+            if (suggestions.length >= 3) break;
+        }
+    }
+    
+    // Phase 2: Character similarity matching if not enough found
+    if (suggestions.length < 3) {
+        const candidates = commonLines
+            .filter(line => !suggestions.includes(line))
+            .map(line => ({
+                name: line,
+                similarity: calculateJapaneseSimilarity(invalidName, line)
+            }))
+            .filter(candidate => candidate.similarity > 0.2)
+            .sort((a, b) => b.similarity - a.similarity);
+        
+        for (const candidate of candidates) {
+            suggestions.push(candidate.name);
+            if (suggestions.length >= 3) break;
+        }
+    }
+    
+    return suggestions;
+}
+
+/**
+ * Calculate similarity between Japanese text strings
+ * Optimized for Japanese characters and transportation names
+ * 
+ * @param str1 First string to compare
+ * @param str2 Second string to compare
+ * @returns Similarity score between 0 and 1
+ */
+function calculateJapaneseSimilarity(str1: string, str2: string): number {
+    if (!str1 || !str2) return 0;
+    if (str1 === str2) return 1;
+    
+    const s1 = str1.toLowerCase();
+    const s2 = str2.toLowerCase();
+    
+    // Character-based similarity for Japanese text
+    const chars1 = Array.from(s1);
+    const chars2 = Array.from(s2);
+    
+    let matches = 0;
+    const longer = chars1.length > chars2.length ? chars1 : chars2;
+    const shorter = chars1.length > chars2.length ? chars2 : chars1;
+    
+    for (const char of shorter) {
+        const index = longer.indexOf(char);
+        if (index >= 0) {
+            matches++;
+            longer.splice(index, 1); // Remove to avoid double counting
+        }
+    }
+    
+    // Weighted similarity: favor matches in shorter strings
+    const maxLength = Math.max(str1.length, str2.length);
+    const minLength = Math.min(str1.length, str2.length);
+    
+    const similarity = (matches * 2) / (chars1.length + chars2.length);
+    const lengthBonus = minLength / maxLength; // Bonus for similar lengths
+    
+    return similarity * 0.8 + lengthBonus * 0.2;
+}
+
+/**
+ * Enhanced validation with detailed error reporting and suggestions
+ * Requirements: REQ-CLI-006.3 - provide specific correction suggestions for common mistakes
+ * 
+ * @param input User input to validate
+ * @param type Type of input ('station' or 'line')
+ * @returns Validation result with suggestions
+ */
+interface ValidationResult {
+    isValid: boolean;
+    sanitized: string;
+    suggestions: string[];
+    errorMessage?: string;
+}
+
+function validateWithSuggestions(input: string, type: 'station' | 'line'): ValidationResult {
+    if (!input || input.trim().length === 0) {
+        return {
+            isValid: false,
+            sanitized: '',
+            suggestions: [],
+            errorMessage: `Empty ${type} name provided`
+        };
+    }
+    
+    const sanitized = sanitizeInput(input);
+    
+    if (!validateJapaneseInput(sanitized)) {
+        const suggestions = type === 'station' 
+            ? getSuggestedStationNames(sanitized)
+            : getSuggestedLineNames(sanitized);
+            
+        return {
+            isValid: false,
+            sanitized,
+            suggestions,
+            errorMessage: `Invalid ${type} name: "${sanitized}"`
+        };
+    }
+    
+    return {
+        isValid: true,
+        sanitized,
+        suggestions: []
+    };
 }
 
 /**
@@ -266,9 +683,25 @@ async function fromStream(filename: string, optionNum: number, module: FarertMod
                 break;
             }
             
-            // Validate Japanese input
+            // Enhanced validation with fuzzy matching suggestions
             if (!validateJapaneseInput(line)) {
-                console.warn(`Warning: Potentially invalid input: ${line}`);
+                console.warn(`⚠️ Warning: Potentially invalid input: ${line}`);
+                
+                // Try to provide suggestions for the entire line
+                const tokens = line.split(/\s+/).filter(t => t.length > 0);
+                for (let i = 0; i < tokens.length; i++) {
+                    const token = tokens[i];
+                    const type = (i % 2 === 0) ? 'station' : 'line';
+                    const validation = validateWithSuggestions(token, type);
+                    
+                    if (!validation.isValid && validation.suggestions.length > 0) {
+                        console.warn(`   Suggestions for "${token}" (${type}):`);
+                        validation.suggestions.forEach((suggestion, idx) => {
+                            console.warn(`     ${idx + 1}. ${suggestion}`);
+                        });
+                    }
+                }
+                console.warn('');
             }
             
             // Sanitize input
@@ -407,15 +840,45 @@ async function main(): Promise<number> {
         // Route as command line direct
         console.log(`🚂 Processing command line route with ${remainingArgs.length} parameters`);
         
-        // Validate Japanese input for all arguments
-        for (const arg of remainingArgs) {
+        // Enhanced validation for all arguments with fuzzy matching
+        let hasValidationErrors = false;
+        
+        for (let i = 0; i < remainingArgs.length; i++) {
+            const arg = remainingArgs[i];
+            
             if (!arg || arg.trim().length === 0) {
-                console.error('❌ Error: Empty parameter detected');
-                return -1;
+                console.error('❌ Error: Empty parameter detected at position', i + 1);
+                hasValidationErrors = true;
+                continue;
             }
-            if (!validateJapaneseInput(arg)) {
-                console.warn(`⚠️ Warning: Potentially invalid input: ${arg}`);
+            
+            // Determine if this is likely a station or line based on position
+            const type = (i % 2 === 0) ? 'station' : 'line';
+            const validation = validateWithSuggestions(arg, type);
+            
+            if (!validation.isValid) {
+                console.error(`❌ Parameter ${i + 1} (${type}): ${validation.errorMessage}`);
+                
+                if (validation.suggestions.length > 0) {
+                    console.error(`   Similar ${type} names:`);
+                    validation.suggestions.forEach((suggestion, idx) => {
+                        console.error(`     ${idx + 1}. ${suggestion}`);
+                    });
+                }
+                
+                hasValidationErrors = true;
+            } else {
+                // Update argument with sanitized version
+                remainingArgs[i] = validation.sanitized;
             }
+        }
+        
+        if (hasValidationErrors) {
+            console.error('');
+            console.error('Please correct the invalid parameters and try again.');
+            console.error('Use valid Japanese station and line names.');
+            console.error('Example: node main.js 東京 東海道線 品川');
+            return -1;
         }
         
         parseCommandLine(remainingArgs.length + 1, [''].concat(remainingArgs), optionRev === 1);
