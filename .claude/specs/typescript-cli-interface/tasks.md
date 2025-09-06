@@ -102,7 +102,7 @@ These tasks follow CLAUDE.md requirements for 100% C++ compatibility, maintain t
   - _Leverage: existing printHelp() function structure_
   - _Requirements: REQ-CLI-006.1, REQ-CLI-006.2, REQ-CLI-006.4_
 
-- [ ] 9. Implement robust error handling with specific error codes
+- [x] 9. Implement robust error handling with specific error codes
   - File: src/cli/types.ts, src/cli/main.ts
   - Create CLIErrorCode enum with specific error codes for different failure scenarios
   - Implement ErrorHandler class with Japanese text support and error formatting
@@ -111,7 +111,7 @@ These tasks follow CLAUDE.md requirements for 100% C++ compatibility, maintain t
   - _Leverage: existing CLIError class, error handling patterns in main.ts_
   - _Requirements: REQ-CLI-003.1, REQ-CLI-003.2, REQ-CLI-003.4_
 
-- [ ] 10. Add CLI environment validation and configuration management
+- [x] 10. Add CLI environment validation and configuration management
   - File: src/cli/main.ts
   - Enhance validateCliEnvironment() with comprehensive dependency checking
   - Add CLI_DEBUG and CLI_WASM_PATH environment variable support
