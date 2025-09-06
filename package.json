@@ -34,7 +34,13 @@
     "ci:test": "npm run ci:build && npm run ci:test-exec",
     "ci:test-exec": "npm run cli:exec && echo '✅ CI Test Execution: SUCCESS (Exit Code: 0)' || (echo '❌ CI Test Execution: FAILED (Exit Code: 1)' && exit 1)",
     "ci:check-env": "node -e \"console.log('🔍 CI Environment Check:'); const checks=[{name:'Node.js',cmd:()=>process.version,required:'>=14.0.0'},{name:'NPM',cmd:()=>require('child_process').execSync('npm -v',{encoding:'utf8'}).trim(),required:'>=6.0.0'}]; let allPassed=true; checks.forEach(check=>{try{const version=check.cmd(); console.log('  ✅',check.name+':',version); if(check.required && !version.match(/\\d+/)) allPassed=false;}catch(e){console.log('  ❌',check.name+': NOT FOUND'); allPassed=false;}}); if(!allPassed){console.error('❌ CI Environment checks failed'); process.exit(1);} console.log('✅ CI Environment: All checks passed');\"",
-    "ci:status": "node -e \"const fs=require('fs'),path=require('path'); console.log('📊 CI Build Status Report:'); console.log('=========================================='); const artifacts=[{name:'WebAssembly JS',path:'dist/farert.js'},{name:'WebAssembly WASM',path:'dist/farert.wasm'},{name:'CLI Build',path:'dist/cli/cli/main.js'}]; let allPresent=true; artifacts.forEach(a=>{const exists=fs.existsSync(a.path); console.log('  '+(exists?'✅':'❌')+' '+a.name+': '+(exists?'PRESENT':'MISSING')); if(!exists) allPresent=false;}); console.log('------------------------------------------'); console.log('📋 Overall Status: '+(allPresent?'✅ READY':'❌ INCOMPLETE')); if(!allPresent) process.exit(1);\""
+    "ci:status": "node -e \"const fs=require('fs'),path=require('path'); console.log('📊 CI Build Status Report:'); console.log('=========================================='); const artifacts=[{name:'WebAssembly JS',path:'dist/farert.js'},{name:'WebAssembly WASM',path:'dist/farert.wasm'},{name:'CLI Build',path:'dist/cli/cli/main.js'}]; let allPresent=true; artifacts.forEach(a=>{const exists=fs.existsSync(a.path); console.log('  '+(exists?'✅':'❌')+' '+a.name+': '+(exists?'PRESENT':'MISSING')); if(!exists) allPresent=false;}); console.log('------------------------------------------'); console.log('📋 Overall Status: '+(allPresent?'✅ READY':'❌ INCOMPLETE')); if(!allPresent) process.exit(1);\",",
+    "test:pipeline": "node scripts/cli-test-pipeline.js",
+    "test:pipeline:verbose": "node scripts/cli-test-pipeline.js --verbose",
+    "test:pipeline:cli": "node scripts/cli-test-pipeline.js --test-pattern cli",
+    "test:pipeline:skip-build": "node scripts/cli-test-pipeline.js --skip-build",
+    "ci:pipeline": "node scripts/cli-test-pipeline.js --verbose",
+    "ci:pipeline:fast": "node scripts/cli-test-pipeline.js --skip-build --verbose"
   },
   "keywords": [
     "webassembly",
