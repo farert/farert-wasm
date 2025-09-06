@@ -8,6 +8,7 @@
 
 import { FarertModule } from './types';
 import { TestOutputWriter } from './test_output';
+import { performanceMonitor } from './performance_monitor';
 import { executeRouteTest } from './route_test';
 // import { executeAutoRoute } from './auto_route'; // Commented out - not used in actual C++ source
 import {
@@ -23,6 +24,7 @@ import {
 
 /**
  * Test execution statistics and results tracking
+ * Enhanced with performance monitoring (Task 12)
  */
 interface TestExecutionStats {
     totalTests: number;
@@ -31,6 +33,8 @@ interface TestExecutionStats {
     errors: TestFailure[];
     executionStartTime: number;
     executionEndTime?: number;
+    performanceWarnings?: string[];
+    memoryPeakUsage?: number;
 }
 
 /**
@@ -460,11 +464,24 @@ export async function executeCompleteTestSuite(module: FarertModule): Promise<vo
     // Create output writer (equivalent to opening test_result.txt in original)
     const output = new TestOutputWriter('test_result.txt');
     
+    // Initialize performance monitoring for test suite (Task 12)
+    performanceMonitor.mark('test_suite_complete_start');
+    stats.performanceWarnings = [];
+    
     try {
         // Write timestamp (equivalent to original timestamp output)
         output.write('timestamp: ');
         showTime(Math.floor(startTime / 1000), output);
         output.write('\\n');
+        
+        // Write performance monitoring header (Task 12)
+        if (performanceMonitor.getConfig().enabled) {
+            output.write('\\n=== Performance Monitoring Enabled ===\\n');
+            const memoryCheck = performanceMonitor.checkMemoryLimits();
+            output.write(`Memory Status: ${memoryCheck.withinLimits ? 'OK' : 'WARNING'}\\n`);
+            output.write(`Current RSS: ${memoryCheck.currentUsage.rss}MB\\n`);
+            output.write('=========================================\\n\\n');
+        }
         
         // Execute all test suites in EXACT original order
         // This order MUST match the original C++ test_exec.cpp for result compatibility
