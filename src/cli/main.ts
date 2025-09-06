@@ -19,6 +19,7 @@ import { configManager } from './config_manager';
 import { performanceMonitor } from './performance_monitor';
 import { executeRouteTest } from './route_test';
 import { executeAutoRoute } from './auto_route';
+import { initializeSignalHandling } from './signal_handler';
 import * as fs from 'fs';
 
 // Import complete test suite (when ready)
@@ -323,18 +324,38 @@ async function handle5ParameterRoute(args: string[], module: FarertModule): Prom
     let hasValidationErrors = false;
     
     for (const param of validationResults) {
-        const validation = validateWithSuggestions(param.value, param.type);
+        const validation = validateWithSuggestions(param.value, param.type, module);
         
         if (!validation.isValid) {
             hasValidationErrors = true;
-            console.error(`❌ ${param.name}: ${validation.errorMessage}`);
+            
+            // Security: Sanitize error message to prevent exposure of sensitive data
+            const sanitizedError = sanitizeErrorMessage(validation.errorMessage || 'Invalid input');
+            console.error(`❌ ${param.name}: ${sanitizedError}`);
+            
+            // Log security status if suspicious or dangerous
+            if (validation.securityStatus === 'dangerous') {
+                logSecurityEvent('input_validation', `Dangerous input detected in ${param.type}`, 'high');
+            } else if (validation.securityStatus === 'suspicious') {
+                logSecurityEvent('input_validation', `Suspicious input pattern in ${param.type}`, 'medium');
+            }
             
             if (validation.suggestions.length > 0) {
                 console.error(`   Similar ${param.type} names:`);
                 validation.suggestions.forEach((suggestion, index) => {
-                    console.error(`     ${index + 1}. ${suggestion}`);
+                    // Security: Validate suggestions before displaying
+                    const safeSuggestion = sanitizeInput(suggestion);
+                    if (safeSuggestion && validateJapaneseInput(safeSuggestion)) {
+                        console.error(`     ${index + 1}. ${safeSuggestion}`);
+                    }
                 });
             }
+            
+            // Show database check status for transparency
+            if (validation.databaseChecked !== undefined) {
+                console.error(`   Database validation: ${validation.databaseChecked ? 'performed' : 'skipped'}`);
+            }
+            
             console.error('');
         }
     }
@@ -347,7 +368,7 @@ async function handle5ParameterRoute(args: string[], module: FarertModule): Prom
     
     // Use sanitized values for route calculation
     const sanitizedArgs = validationResults.map(param => 
-        validateWithSuggestions(param.value, param.type).sanitized
+        validateWithSuggestions(param.value, param.type, module).sanitized
     );
     
     const routeString = sanitizedArgs.join(' ');
@@ -364,36 +385,95 @@ async function handle5ParameterRoute(args: string[], module: FarertModule): Prom
 }
 
 /**
- * Enhanced Japanese text validation with comprehensive character set support
- * Requirements: REQ-CLI-003.3, REQ-CLI-006.3
+ * Enhanced Japanese input validation with comprehensive security and encoding verification
+ * Requirements: REQ-CLI-003.5 - comprehensive input validation with security measures
+ * Security features:
+ * - Character encoding validation
+ * - Length limits with security considerations
+ * - Malicious pattern detection
+ * - Database-safe character filtering
  * 
  * @param text Input text to validate
- * @returns true if text contains valid Japanese or alphanumeric characters
+ * @returns true if text contains valid Japanese or alphanumeric characters and passes security checks
  */
 function validateJapaneseInput(text: string): boolean {
     if (!text || text.trim().length === 0) {
         return false;
     }
     
-    // Comprehensive Japanese character ranges:
+    // Security: Length validation with strict limits
+    if (text.length > 150) {
+        console.warn('🚨 Security: Input exceeds maximum length limit');
+        return false;
+    }
+    
+    // Security: Check for potential encoding attacks
+    try {
+        // Verify UTF-8 encoding integrity
+        const encoded = Buffer.from(text, 'utf8');
+        const decoded = encoded.toString('utf8');
+        if (decoded !== text) {
+            console.warn('🚨 Security: Invalid UTF-8 encoding detected');
+            return false;
+        }
+    } catch (error) {
+        console.warn('🚨 Security: Character encoding validation failed');
+        return false;
+    }
+    
+    // Security: Detect potentially malicious patterns
+    const maliciousPatterns = [
+        /null|undefined|NaN/i,       // JavaScript injection attempts
+        /\\[ux][0-9a-fA-F]/i,        // Unicode/hex escape attempts
+        /__proto__|prototype/i,      // Prototype pollution attempts
+        /javascript:|data:|vbscript:/i, // URI scheme injection
+        /<[^>]*>/,                   // HTML/XML tag injection
+    ];
+    
+    for (const pattern of maliciousPatterns) {
+        if (pattern.test(text)) {
+            console.warn('🚨 Security: Potentially malicious pattern detected in input');
+            return false;
+        }
+    }
+    
+    // Comprehensive Japanese character ranges with security filtering:
     // - Hiragana: \u3040-\u309F
-    // - Katakana: \u30A0-\u30FF
+    // - Katakana: \u30A0-\u30FF 
     // - CJK Unified Ideographs: \u4E00-\u9FAF
     // - CJK Extension A: \u3400-\u4DBF
     // - Katakana Phonetic Extensions: \u31F0-\u31FF
-    // - CJK Symbols and Punctuation: \u3000-\u303F
-    // - Halfwidth and Fullwidth Forms: \uFF00-\uFFEF
-    const japanesePattern = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF\u3400-\u4DBF\u31F0-\u31FF\u3000-\u303F\uFF00-\uFFEF]/;
+    // - CJK Symbols and Punctuation: \u3000-\u303F (filtered for safety)
+    // - Halfwidth and Fullwidth Forms: \uFF00-\uFFEF (filtered for safety)
+    const japanesePattern = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF\u3400-\u4DBF\u31F0-\u31FF]/;
     
-    // Allow Japanese characters, ASCII alphanumeric, spaces, hyphens, and common punctuation
-    const validPattern = /^[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF\u3400-\u4DBF\u31F0-\u31FF\u3000-\u303F\uFF00-\uFFEFa-zA-Z0-9\s\-\(\)・]+$/;
+    // Strict pattern allowing only safe characters for database operations
+    // Removed potentially dangerous punctuation and symbols
+    const safePattern = /^[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF\u3400-\u4DBF\u31F0-\u31FF\u3000-\u3006\u3012-\u3013\u3020a-zA-Z0-9\s\-\(\)・ー]+$/;
     
-    return japanesePattern.test(text) || validPattern.test(text);
+    // Must contain Japanese characters OR be purely ASCII alphanumeric
+    const hasJapanese = japanesePattern.test(text);
+    const isValidFormat = safePattern.test(text);
+    
+    if (!isValidFormat) {
+        console.warn(`⚠️  Input validation failed: contains unsafe characters`);
+        return false;
+    }
+    
+    // For station/line names, require either Japanese characters or be purely alphanumeric
+    const isPureAlphanumeric = /^[a-zA-Z0-9\s\-]+$/.test(text);
+    
+    return hasJapanese || isPureAlphanumeric;
 }
 
 /**
- * Advanced input sanitization with Japanese text preservation
- * Requirements: REQ-CLI-003.3 - input validation and sanitization
+ * Advanced input sanitization with comprehensive security measures
+ * Requirements: REQ-CLI-003.5 - comprehensive input sanitization and validation
+ * Security features:
+ * - Command injection prevention
+ * - Length and encoding validation
+ * - Character filtering for safety
+ * - Path traversal prevention
  * 
  * @param input Raw input string
  * @returns Sanitized string safe for processing
@@ -403,18 +483,52 @@ function sanitizeInput(input: string): string {
         return '';
     }
     
-    // Remove control characters but preserve Japanese text
+    // Security: Check for potential command injection patterns
+    const dangerousPatterns = [
+        /[;&|`$(){}\[\]]/,           // Shell metacharacters
+        /<[^>]*script[^>]*>/i,       // Script tags
+        /\\x[0-9a-fA-F]{2}/,         // Hex escape sequences
+        /\\[0-7]{1,3}/,             // Octal escape sequences
+        /%[0-9a-fA-F]{2}/,          // URL encoded characters
+        /\.\.[\\/]/,               // Path traversal attempts
+        /^\s*[-+]/,                 // Leading command flags
+        /exec|eval|system|cmd/i     // Suspicious function names
+    ];
+    
+    for (const pattern of dangerousPatterns) {
+        if (pattern.test(input)) {
+            console.warn('🚨 Security: Potentially dangerous input pattern detected and sanitized');
+            // Log for security monitoring but don't expose the actual pattern
+            console.warn('⚠️  Input contains characters that could be used for command injection');
+            break;
+        }
+    }
+    
+    // Enhanced character sanitization
     let sanitized = input
         .trim()
-        .replace(/[\r\n\t]+/g, ' ')           // Convert line breaks to spaces
-        .replace(/[\x00-\x08\x0B-\x1F\x7F]/g, '')  // Remove control characters except tab/newline
-        .replace(/\s{2,}/g, ' ');             // Collapse multiple spaces
+        // Remove all control characters (including potential injection vectors)
+        .replace(/[\x00-\x1F\x7F-\x9F]/g, '')
+        // Convert line breaks to spaces
+        .replace(/[\r\n\t]+/g, ' ')
+        // Remove shell metacharacters that could enable injection
+        .replace(/[;&|`$(){}\[\]<>"']/g, '')
+        // Remove backslashes (path traversal prevention)
+        .replace(/\\/g, '')
+        // Remove URL encoding attempts
+        .replace(/%[0-9a-fA-F]{2}/g, '')
+        // Collapse multiple spaces
+        .replace(/\s{2,}/g, ' ');
     
-    // Validate length to prevent excessive input
-    if (sanitized.length > 200) {
-        console.warn(`Warning: Input truncated from ${sanitized.length} to 200 characters`);
-        sanitized = sanitized.substring(0, 200);
+    // Strict length validation with security considerations
+    const maxLength = 150; // Reduced from 200 for better security
+    if (sanitized.length > maxLength) {
+        console.warn(`🚨 Security: Input truncated from ${sanitized.length} to ${maxLength} characters`);
+        sanitized = sanitized.substring(0, maxLength);
     }
+    
+    // Additional security: Remove leading/trailing dangerous characters
+    sanitized = sanitized.replace(/^[-+.]+|[-+.]+$/g, '');
     
     return sanitized;
 }
@@ -525,6 +639,102 @@ function getSuggestedLineNames(invalidName: string): string[] {
 }
 
 /**
+ * Security utility functions for preventing sensitive data exposure
+ * Requirements: REQ-CLI-003.5 - prevent exposure of sensitive database information
+ */
+function sanitizeErrorMessage(message: string, context?: any): string {
+    if (!message) return 'An error occurred';
+    
+    // Remove potentially sensitive database information
+    const sensitivePatterns = [
+        /sqlite3?[^\s]*/gi,           // SQLite references
+        /database[^\s]*path[^\s]*/gi, // Database paths
+        /\b\d+\.\d+\.\d+\.\d+\b/g,   // IP addresses
+        /\/[^\s]*\.db\b/gi,          // Database file paths
+        /password|secret|key|token/gi, // Credential keywords
+        /\broot\b|\badmin\b/gi,       // Admin references
+        /error code \d+/gi,           // Specific error codes
+        /line \d+ column \d+/gi,      // SQL line/column info
+        /table '[^']*'/gi,            // Table names
+        /column '[^']*'/gi            // Column names
+    ];
+    
+    let sanitized = message;
+    
+    for (const pattern of sensitivePatterns) {
+        sanitized = sanitized.replace(pattern, '[REDACTED]');
+    }
+    
+    // Security: Don't expose internal object structures
+    if (context) {
+        console.debug('Context information available but not exposed for security');
+    }
+    
+    // Truncate extremely long error messages
+    if (sanitized.length > 200) {
+        sanitized = sanitized.substring(0, 197) + '...';
+    }
+    
+    return sanitized;
+}
+
+function logSecurityEvent(
+    eventType: 'input_validation' | 'command_injection' | 'database_access' | 'encoding_attack',
+    details: string,
+    severity: 'low' | 'medium' | 'high' = 'medium'
+) {
+    const timestamp = new Date().toISOString();
+    const sanitizedDetails = sanitizeErrorMessage(details);
+    
+    // Log to console with appropriate security prefix
+    const prefix = severity === 'high' ? '🚨' : severity === 'medium' ? '⚠️' : '🛡️';
+    console.warn(`${prefix} Security Event [${eventType}] at ${timestamp}`);
+    console.warn(`   Details: ${sanitizedDetails}`);
+    
+    // In production, this would also log to a secure audit system
+    // For now, we ensure no sensitive data is exposed in console output
+}
+
+function validateFileSystemAccess(path: string): boolean {
+    if (!path || typeof path !== 'string') {
+        logSecurityEvent('input_validation', 'Invalid path provided', 'high');
+        return false;
+    }
+    
+    // Security: Only allow access to project directory and OS temp files
+    const allowedPaths = [
+        process.cwd(),                    // Project directory
+        require('os').tmpdir(),           // OS temp directory
+        '/tmp',                          // Unix temp directory
+        process.env.TEMP,                // Windows temp directory
+        process.env.TMP                  // Alternative temp directory
+    ].filter(Boolean);
+    
+    // Check for path traversal attempts
+    const normalizedPath = require('path').resolve(path);
+    const isPathTraversal = path.includes('..') || path.includes('~') || path.match(/^[\/\\]/);
+    
+    if (isPathTraversal) {
+        logSecurityEvent('input_validation', 'Path traversal attempt detected', 'high');
+        return false;
+    }
+    
+    // Check if path is within allowed directories
+    const isAllowed = allowedPaths.some(allowedPath => {
+        if (!allowedPath) return false;
+        const allowedResolved = require('path').resolve(allowedPath);
+        return normalizedPath.startsWith(allowedResolved);
+    });
+    
+    if (!isAllowed) {
+        logSecurityEvent('input_validation', 'File access outside allowed directories', 'high');
+        return false;
+    }
+    
+    return true;
+}
+
+/**
  * Calculate similarity between Japanese text strings
  * Optimized for Japanese characters and transportation names
  * 
@@ -533,15 +743,24 @@ function getSuggestedLineNames(invalidName: string): string[] {
  * @returns Similarity score between 0 and 1
  */
 function calculateJapaneseSimilarity(str1: string, str2: string): number {
-    if (!str1 || !str2) return 0;
-    if (str1 === str2) return 1;
+    // Security: Validate inputs to prevent processing malicious data
+    if (!str1 || !str2 || typeof str1 !== 'string' || typeof str2 !== 'string') {
+        return 0;
+    }
     
-    const s1 = str1.toLowerCase();
-    const s2 = str2.toLowerCase();
+    // Security: Limit string length to prevent DoS attacks
+    const maxLength = 100;
+    const s1 = str1.length > maxLength ? str1.substring(0, maxLength) : str1;
+    const s2 = str2.length > maxLength ? str2.substring(0, maxLength) : str2;
+    
+    if (s1 === s2) return 1;
+    
+    const normalizedS1 = s1.toLowerCase();
+    const normalizedS2 = s2.toLowerCase();
     
     // Character-based similarity for Japanese text
-    const chars1 = Array.from(s1);
-    const chars2 = Array.from(s2);
+    const chars1 = Array.from(normalizedS1);
+    const chars2 = Array.from(normalizedS2);
     
     let matches = 0;
     const longer = chars1.length > chars2.length ? chars1 : chars2;
@@ -556,42 +775,72 @@ function calculateJapaneseSimilarity(str1: string, str2: string): number {
     }
     
     // Weighted similarity: favor matches in shorter strings
-    const maxLength = Math.max(str1.length, str2.length);
-    const minLength = Math.min(str1.length, str2.length);
+    const maxCompareLength = Math.max(s1.length, s2.length);
+    const minCompareLength = Math.min(s1.length, s2.length);
     
     const similarity = (matches * 2) / (chars1.length + chars2.length);
-    const lengthBonus = minLength / maxLength; // Bonus for similar lengths
+    const lengthBonus = minCompareLength / maxCompareLength; // Bonus for similar lengths
     
     return similarity * 0.8 + lengthBonus * 0.2;
 }
 
 /**
- * Enhanced validation with detailed error reporting and suggestions
- * Requirements: REQ-CLI-006.3 - provide specific correction suggestions for common mistakes
+ * Enhanced validation with comprehensive database checking and security measures
+ * Requirements: REQ-CLI-003.5 - comprehensive station/line name validation with database checking
+ * Security features:
+ * - Database-backed validation
+ * - Sanitized input processing
+ * - Detailed security logging
+ * - Error message sanitization
  * 
  * @param input User input to validate
  * @param type Type of input ('station' or 'line')
- * @returns Validation result with suggestions
+ * @param module Optional WebAssembly module for database checking
+ * @returns Validation result with suggestions and security status
  */
 interface ValidationResult {
     isValid: boolean;
     sanitized: string;
     suggestions: string[];
     errorMessage?: string;
+    securityStatus?: 'safe' | 'suspicious' | 'dangerous';
+    databaseChecked?: boolean;
 }
 
-function validateWithSuggestions(input: string, type: 'station' | 'line'): ValidationResult {
+function validateWithSuggestions(
+    input: string, 
+    type: 'station' | 'line', 
+    module?: any
+): ValidationResult {
     if (!input || input.trim().length === 0) {
         return {
             isValid: false,
             sanitized: '',
             suggestions: [],
-            errorMessage: `Empty ${type} name provided`
+            errorMessage: `Empty ${type} name provided`,
+            securityStatus: 'safe',
+            databaseChecked: false
         };
     }
     
+    // Security: Perform initial sanitization
     const sanitized = sanitizeInput(input);
     
+    // Security: Check if input was heavily modified during sanitization
+    const wasHeavilySanitized = (input.length - sanitized.length) > (input.length * 0.3);
+    if (wasHeavilySanitized) {
+        console.warn('🚨 Security: Input was heavily sanitized, potential security concern');
+        return {
+            isValid: false,
+            sanitized: '',
+            suggestions: [],
+            errorMessage: `Input contains suspicious content and was rejected for security`,
+            securityStatus: 'dangerous',
+            databaseChecked: false
+        };
+    }
+    
+    // Security: Validate character encoding and patterns
     if (!validateJapaneseInput(sanitized)) {
         const suggestions = type === 'station' 
             ? getSuggestedStationNames(sanitized)
@@ -601,14 +850,73 @@ function validateWithSuggestions(input: string, type: 'station' | 'line'): Valid
             isValid: false,
             sanitized,
             suggestions,
-            errorMessage: `Invalid ${type} name: "${sanitized}"`
+            errorMessage: `Invalid ${type} name: characters not allowed`,
+            securityStatus: 'suspicious',
+            databaseChecked: false
+        };
+    }
+    
+    // Database validation if WebAssembly module is available
+    let databaseValidation = false;
+    let databaseChecked = false;
+    
+    if (module && typeof module === 'object') {
+        try {
+            if (type === 'station' && typeof module.getStationId === 'function') {
+                const stationId = module.getStationId(sanitized);
+                databaseValidation = stationId > 0;
+                databaseChecked = true;
+                
+                if (!databaseValidation) {
+                    console.warn(`⚠️  Database validation failed: Station "${sanitized}" not found in database`);
+                }
+            } else if (type === 'line' && typeof module.getLineId === 'function') {
+                const lineId = module.getLineId(sanitized);
+                databaseValidation = lineId > 0;
+                databaseChecked = true;
+                
+                if (!databaseValidation) {
+                    console.warn(`⚠️  Database validation failed: Line "${sanitized}" not found in database`);
+                }
+            }
+        } catch (error) {
+            // Security: Log database access attempts but don't expose internal details
+            console.warn('🚨 Security: Database validation error occurred');
+            console.warn('   Database access may be compromised or module is invalid');
+            
+            return {
+                isValid: false,
+                sanitized: '',
+                suggestions: [],
+                errorMessage: `Database validation failed due to security constraints`,
+                securityStatus: 'dangerous',
+                databaseChecked: false
+            };
+        }
+    }
+    
+    // If database checking was performed and failed, provide suggestions
+    if (databaseChecked && !databaseValidation) {
+        const suggestions = type === 'station' 
+            ? getSuggestedStationNames(sanitized)
+            : getSuggestedLineNames(sanitized);
+            
+        return {
+            isValid: false,
+            sanitized,
+            suggestions,
+            errorMessage: `${type} "${sanitized}" not found in database`,
+            securityStatus: 'safe',
+            databaseChecked: true
         };
     }
     
     return {
         isValid: true,
         sanitized,
-        suggestions: []
+        suggestions: [],
+        securityStatus: 'safe',
+        databaseChecked
     };
 }
 
@@ -711,6 +1019,11 @@ async function runCompleteTestSuite(module: FarertModule): Promise<void> {
  */
 async function fromStream(filename: string, optionNum: number, module: FarertModule): Promise<void> {
     try {
+        // Security: Validate file system access before reading
+        if (!validateFileSystemAccess(filename)) {
+            throw new Error('File access denied for security reasons');
+        }
+        
         const content = fs.readFileSync(filename, 'utf8');
         const lines = content.split('\n');
         
@@ -740,13 +1053,24 @@ async function fromStream(filename: string, optionNum: number, module: FarertMod
                 for (let i = 0; i < tokens.length; i++) {
                     const token = tokens[i];
                     const type = (i % 2 === 0) ? 'station' : 'line';
-                    const validation = validateWithSuggestions(token, type);
+                    const validation = validateWithSuggestions(token, type, module);
                     
                     if (!validation.isValid && validation.suggestions.length > 0) {
-                        console.warn(`   Suggestions for "${token}" (${type}):`);
+                        // Security: Sanitize token before displaying
+                        const safeToken = sanitizeErrorMessage(token);
+                        console.warn(`   Suggestions for "${safeToken}" (${type}):`);
                         validation.suggestions.forEach((suggestion, idx) => {
-                            console.warn(`     ${idx + 1}. ${suggestion}`);
+                            // Security: Validate suggestions before displaying
+                            const safeSuggestion = sanitizeInput(suggestion);
+                            if (safeSuggestion && validateJapaneseInput(safeSuggestion)) {
+                                console.warn(`     ${idx + 1}. ${safeSuggestion}`);
+                            }
                         });
+                        
+                        // Log security events for suspicious inputs
+                        if (validation.securityStatus === 'suspicious' || validation.securityStatus === 'dangerous') {
+                            logSecurityEvent('input_validation', `Invalid input pattern in file processing`, 'medium');
+                        }
                     }
                 }
                 console.warn('');
@@ -785,6 +1109,17 @@ async function fromStream(filename: string, optionNum: number, module: FarertMod
  * Requirements: REQ-CLI-002.5 - CLI performance requirements
  */
 async function main(): Promise<number> {
+    // Initialize enhanced signal handling early (Task 13 - Signal Handling)
+    initializeSignalHandling({
+        enabled: true,
+        gracefulShutdownTimeout: 10000,    // 10 seconds
+        dbConnectionTimeout: 3000,         // 3 seconds per requirement
+        cleanupTimeout: 5000,              // 5 seconds
+        forceExitOnTimeout: true,
+        memoryCleanupEnabled: true,
+        logLevel: configManager.getConfiguration().debug ? 'debug' : 'info'
+    });
+    
     // Initialize performance monitoring (Task 12 - Performance Monitoring)
     performanceMonitor.mark('cli_startup_begin');
     try {
@@ -1035,22 +1370,46 @@ async function main(): Promise<number> {
             
             // Determine if this is likely a station or line based on position
             const type = (i % 2 === 0) ? 'station' : 'line';
-            const validation = validateWithSuggestions(arg, type);
+            const validation = validateWithSuggestions(arg, type, module);
             
             if (!validation.isValid) {
-                console.error(`❌ Parameter ${i + 1} (${type}): ${validation.errorMessage}`);
+                // Security: Sanitize error message to prevent sensitive data exposure
+                const sanitizedError = sanitizeErrorMessage(validation.errorMessage || 'Invalid input');
+                console.error(`❌ Parameter ${i + 1} (${type}): ${sanitizedError}`);
+                
+                // Log security events for dangerous inputs
+                if (validation.securityStatus === 'dangerous') {
+                    logSecurityEvent('command_injection', `Dangerous input in CLI parameter ${i + 1}`, 'high');
+                } else if (validation.securityStatus === 'suspicious') {
+                    logSecurityEvent('input_validation', `Suspicious input pattern in CLI parameter ${i + 1}`, 'medium');
+                }
                 
                 if (validation.suggestions.length > 0) {
                     console.error(`   Similar ${type} names:`);
                     validation.suggestions.forEach((suggestion, idx) => {
-                        console.error(`     ${idx + 1}. ${suggestion}`);
+                        // Security: Validate suggestions before displaying
+                        const safeSuggestion = sanitizeInput(suggestion);
+                        if (safeSuggestion && validateJapaneseInput(safeSuggestion)) {
+                            console.error(`     ${idx + 1}. ${safeSuggestion}`);
+                        }
                     });
+                }
+                
+                // Show database validation status for transparency
+                if (validation.databaseChecked !== undefined) {
+                    const dbStatus = validation.databaseChecked ? 'performed' : 'skipped';
+                    console.error(`   Database validation: ${dbStatus}`);
                 }
                 
                 hasValidationErrors = true;
             } else {
-                // Update argument with sanitized version
+                // Update argument with sanitized version for security
                 remainingArgs[i] = validation.sanitized;
+                
+                // Log successful database validation in debug mode
+                if (validation.databaseChecked && configManager.getConfiguration().debug) {
+                    console.log(`[DEBUG] Database validation passed for ${type}: "${validation.sanitized}"`);
+                }
             }
         }
         
@@ -1129,72 +1488,21 @@ function validateCliEnvironment(): void {
     }
 }
 
-// Error handlers (equivalent to C++ exception handling)
-// REQ-CLI-003.4 - JavaScript exception handling with stack trace preservation
-process.on('uncaughtException', (error) => {
-    const systemError = new SystemError(
-        'Uncaught JavaScript exception occurred',
-        error,
-        {
-            errorName: error.name,
-            errorCode: (error as any).code,
-            signal: (error as any).signal,
-            syscall: (error as any).syscall,
-            errno: (error as any).errno,
-            path: (error as any).path
-        }
-    );
-    
-    console.error(systemError.getFormattedMessage());
-    
-    const config = configManager.getConfiguration();
-    if (config.debug) {
-        console.error('\n[DEBUG] Original stack trace:');
-        console.error(error.stack);
-        console.error('\n[DEBUG] Environment Report:');
-        console.error(configManager.getEnvironmentReport());
-    }
-    
-    process.exit(systemError.code);
-});
+// Signal handling and error handlers are now managed by the enhanced signal handler (Task 13)
+// REQ-CLI-003.4 - Comprehensive error handling with graceful shutdown, timeout handling,
+// WebAssembly memory cleanup, and database connection management
+// See signal_handler.ts for implementation details including:
+// - SIGINT/SIGTERM signal handling with proper cleanup
+// - Uncaught exception and unhandled rejection handling
+// - Database connection timeout detection (3 seconds per requirements)
+// - WebAssembly module error isolation and recovery
+// - Memory cleanup and garbage collection
+// - Operation timeout handling for long-running processes
+// Uncaught exception handling is now managed by signal_handler.ts
 
-process.on('unhandledRejection', (reason, promise) => {
-    const systemError = new CLIError(
-        'Unhandled promise rejection occurred',
-        CLIErrorCode.UNHANDLED_REJECTION,
-        {
-            reason: reason instanceof Error ? reason.message : String(reason),
-            reasonStack: reason instanceof Error ? reason.stack : undefined,
-            promise: String(promise),
-            location: 'Global unhandled rejection handler'
-        }
-    );
-    
-    console.error(systemError.getFormattedMessage());
-    
-    const config = configManager.getConfiguration();
-    if (config.debug) {
-        console.error('\n[DEBUG] Promise:', promise);
-        console.error('[DEBUG] Reason:', reason);
-        if (reason instanceof Error && reason.stack) {
-            console.error('[DEBUG] Reason stack trace:');
-            console.error(reason.stack);
-        }
-    }
-    
-    process.exit(systemError.code);
-});
+// Unhandled rejection handling is now managed by signal_handler.ts
 
-// Graceful shutdown handlers
-process.on('SIGINT', () => {
-    console.log('\n\u26a0\ufe0f Received SIGINT. Cleaning up...');
-    process.exit(0);
-});
-
-process.on('SIGTERM', () => {
-    console.log('\n\u26a0\ufe0f Received SIGTERM. Cleaning up...');
-    process.exit(0);
-});
+// SIGINT/SIGTERM handlers are now managed by signal_handler.ts with comprehensive cleanup
 
 // Execute main and exit with appropriate code
 // REQ-CLI-003.4 - Enhanced main execution with proper error handling
