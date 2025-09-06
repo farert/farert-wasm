@@ -1,8 +1,8 @@
-# Implementation Plan - Frontend API Layer
+# Implementation Plan - Frontend API Layer (Svelte Focus)
 
 ## Task Overview
 
-The Frontend API Layer creates a comprehensive, framework-agnostic TypeScript SDK that wraps the existing 39 WebAssembly APIs and 5 Object Classes to enable rapid development of railway fare calculation applications in React, Vue, Angular, and vanilla JavaScript environments. This implementation builds upon the completed C++ WebAssembly core and object class system while adding intelligent caching, framework-specific integrations, and enhanced developer experience.
+The Frontend API Layer creates a comprehensive, Svelte-first TypeScript SDK that wraps the existing 39 WebAssembly APIs and 5 Object Classes to enable rapid development of railway fare calculation applications in Svelte/SvelteKit environments with secondary support for other frameworks. This implementation builds upon the completed C++ WebAssembly core and object class system while adding intelligent caching, Svelte reactive stores, and enhanced developer experience.
 
 ## Steering Document Compliance
 
@@ -16,10 +16,12 @@ Tech.md alignment through:
 - Using existing Emscripten build system and WebAssembly module loading
 - Leveraging established TypeScript patterns from `src/cli/types.ts`
 - Maintaining Node.js and browser compatibility requirements
-- Building incrementally from core SDK to framework-specific layers
+- Building incrementally from core SDK to Svelte-specific layers
 
 ## Atomic Task Requirements
+
 **Each task must meet these criteria for optimal agent execution:**
+
 - **File Scope**: Touches 1-3 related files maximum
 - **Time Boxing**: Completable in 15-30 minutes
 - **Single Purpose**: One testable outcome per task
@@ -27,6 +29,7 @@ Tech.md alignment through:
 - **Agent-Friendly**: Clear input/output with minimal context switching
 
 ## Task Format Guidelines
+
 - Use checkbox format: `- [ ] Task number. Task description`
 - **Specify files**: Always include exact file paths to create/modify
 - **Include implementation details** as bullet points
@@ -131,7 +134,7 @@ Tech.md alignment through:
   - _Leverage: src/sdk/core/object-classes.ts cRoute wrappers_
   - _Requirements: REQ-API-005_
 
-- [ ] 11. Create fare formatting utilities in src/sdk/utils/fare-utils.ts
+- [x] 11. Create fare formatting utilities in src/sdk/utils/fare-utils.ts
   - File: src/sdk/utils/fare-utils.ts
   - Implement currency formatting for Japanese yen
   - Add fare breakdown display formatting
@@ -140,114 +143,94 @@ Tech.md alignment through:
   - _Leverage: src/sdk/core/object-classes.ts FareInfo wrappers_
   - _Requirements: REQ-API-005_
 
-### Phase 3: React Integration Layer
+### Phase 3: Svelte Integration Layer
 
-- [ ] 12. Create React context provider in src/sdk/react/farert-provider.tsx
-  - File: src/sdk/react/farert-provider.tsx
-  - Implement React Context for SDK instance sharing
-  - Add initialization status and error boundary integration
-  - Create provider props for configuration options
-  - Purpose: Central React state management for SDK
+- [ ] 12. Create Svelte SDK context in src/sdk/svelte/context.ts
+  - File: src/sdk/svelte/context.ts
+  - Implement Svelte context for SDK instance sharing
+  - Add context key definitions and provider utilities
+  - Create initialization status tracking
+  - Purpose: Central Svelte state management for SDK
   - _Leverage: src/sdk/core/farert-sdk.ts_
   - _Requirements: REQ-API-003_
 
-- [ ] 13. Create station search hook in src/sdk/react/use-station-search.ts
-  - File: src/sdk/react/use-station-search.ts
-  - Implement useStationSearch with debounced search queries
+- [ ] 13. Create Svelte stores in src/sdk/svelte/stores.ts
+  - File: src/sdk/svelte/stores.ts
+  - Implement reactive stores for stations, routes, and fare calculations
+  - Add derived stores for computed values and loading states
+  - Create store actions for common operations
+  - Purpose: Svelte-native reactive state management
+  - _Leverage: src/sdk/utils/station-utils.ts, src/sdk/utils/route-utils.ts_
+  - _Requirements: REQ-API-003_
+
+- [ ] 14. Create station search store in src/sdk/svelte/station-search-store.ts
+  - File: src/sdk/svelte/station-search-store.ts
+  - Implement debounced station search with reactive results
   - Add loading states, error handling, and pagination
-  - Create automatic caching with React Query patterns
-  - Purpose: Efficient station search with React state management
-  - _Leverage: src/sdk/utils/station-utils.ts, src/sdk/react/farert-provider.tsx_
+  - Create automatic caching with Svelte store patterns
+  - Purpose: Efficient station search with Svelte reactivity
+  - _Leverage: src/sdk/utils/station-utils.ts, src/sdk/svelte/context.ts_
   - _Requirements: REQ-API-003_
 
-- [ ] 14. Create fare calculation hook in src/sdk/react/use-fare-calculation.ts
-  - File: src/sdk/react/use-fare-calculation.ts
-  - Implement useFareCalculation with automatic route dependency tracking
-  - Add caching for identical routes and error boundary integration
-  - Create calculation history with undo/redo functionality
-  - Purpose: Reactive fare calculations with proper React lifecycle
-  - _Leverage: src/sdk/utils/route-utils.ts, src/sdk/utils/fare-utils.ts_
-  - _Requirements: REQ-API-003_
-
-- [ ] 15. Create route builder hook in src/sdk/react/use-route-builder.ts
-  - File: src/sdk/react/use-route-builder.ts
-  - Implement useRouteBuilder with validation and state management
-  - Add drag-and-drop interface helpers and route optimization
+- [ ] 15. Create route builder store in src/sdk/svelte/route-builder-store.ts
+  - File: src/sdk/svelte/route-builder-store.ts
+  - Implement route building with validation and state management
+  - Add drag-and-drop state helpers and route optimization
   - Create automatic validation with error/warning display
-  - Purpose: Interactive route building with React patterns
+  - Purpose: Interactive route building with Svelte reactivity
   - _Leverage: src/sdk/utils/route-utils.ts, src/sdk/core/object-classes.ts_
   - _Requirements: REQ-API-003_
 
-- [ ] 16. Create React components in src/sdk/react/components/
-  - Files: src/sdk/react/components/station-selector.tsx, route-builder.tsx, fare-display.tsx
+- [ ] 16. Create SvelteKit adapter in src/sdk/svelte/sveltekit-adapter.ts
+  - File: src/sdk/svelte/sveltekit-adapter.ts
+  - Implement SvelteKit load functions for server-side data loading
+  - Add state serialization and hydration support
+  - Create static generation helpers for reference data
+  - Purpose: SvelteKit SSR and static generation support
+  - _Leverage: src/sdk/core/farert-sdk.ts_
+  - _Requirements: REQ-API-004_
+
+- [ ] 17. Create Svelte components in src/sdk/svelte/components/
+  - Files: src/sdk/svelte/components/StationSelector.svelte, RouteBuilder.svelte, FareDisplay.svelte
   - Implement StationSelector with autocomplete and accessibility
   - Create RouteBuilder with drag-and-drop and validation display
   - Add FareDisplay with breakdown visualization
-  - Purpose: Ready-to-use React components for common tasks
-  - _Leverage: React hooks from previous tasks_
+  - Purpose: Ready-to-use Svelte components for common tasks
+  - _Leverage: Svelte stores from previous tasks_
   - _Requirements: REQ-API-003_
 
-### Phase 4: Vue Composition API Layer
+### Phase 4: Secondary Framework Support
 
-- [ ] 17. Create Vue plugin in src/sdk/vue/farert-plugin.ts
-  - File: src/sdk/vue/farert-plugin.ts
-  - Implement Vue 3 plugin for SDK instance registration
-  - Add global properties and injection keys
-  - Create plugin configuration and initialization options
-  - Purpose: Vue-native SDK integration with provide/inject
-  - _Leverage: src/sdk/core/farert-sdk.ts_
-  - _Requirements: REQ-API-004_
-
-- [ ] 18. Create station data composable in src/sdk/vue/use-station-data.ts
-  - File: src/sdk/vue/use-station-data.ts
-  - Implement useStationData with reactive refs and computed properties
-  - Add automatic reactivity when station ID changes
-  - Create proper cleanup and memory leak prevention
-  - Purpose: Reactive station data with Vue's reactivity system
-  - _Leverage: src/sdk/utils/station-utils.ts_
-  - _Requirements: REQ-API-004_
-
-- [ ] 19. Create route calculator composable in src/sdk/vue/use-route-calculator.ts
-  - File: src/sdk/vue/use-route-calculator.ts
-  - Implement useRouteCalculator with reactive route building
-  - Add automatic fare recalculation on route changes
-  - Create computed properties for validation status
-  - Purpose: Reactive route calculations with Vue patterns
-  - _Leverage: src/sdk/utils/route-utils.ts, src/sdk/utils/fare-utils.ts_
-  - _Requirements: REQ-API-004_
-
-- [ ] 20. Create fare history composable in src/sdk/vue/use-fare-history.ts
-  - File: src/sdk/vue/use-fare-history.ts
-  - Implement useFareHistory with reactive history management
-  - Add undo/redo functionality with computed state
-  - Create automatic persistence with localStorage integration
-  - Purpose: Historical fare tracking with reactive undo/redo
-  - _Leverage: src/sdk/core/object-classes.ts FareInfo wrappers_
-  - _Requirements: REQ-API-004_
-
-### Phase 5: Additional Framework Support
-
-- [ ] 21. Create Angular service in src/sdk/angular/farert.service.ts
-  - File: src/sdk/angular/farert.service.ts
-  - Implement Injectable FarertService with dependency injection
-  - Add RxJS observables for async operations
-  - Create proper Angular lifecycle integration
-  - Purpose: Angular-native service with dependency injection
+- [ ] 18. Create React compatibility layer in src/sdk/react/react-adapter.ts
+  - File: src/sdk/react/react-adapter.ts
+  - Implement React hooks that wrap core SDK functionality
+  - Add React Context provider for SDK instance sharing
+  - Create React-specific error boundary integration
+  - Purpose: Secondary React support using core SDK
   - _Leverage: src/sdk/core/farert-sdk.ts_
   - _Requirements: REQ-API-005_
 
-- [ ] 22. Create Svelte store in src/sdk/svelte/farert-store.ts
-  - File: src/sdk/svelte/farert-store.ts
-  - Implement Svelte stores for SDK state management
-  - Add reactive stores for stations, routes, and fares
-  - Create custom store actions and derived values
-  - Purpose: Svelte-native state management with stores
+- [ ] 19. Create Vue compatibility layer in src/sdk/vue/vue-adapter.ts
+  - File: src/sdk/vue/vue-adapter.ts
+  - Implement Vue composables that wrap core SDK functionality
+  - Add Vue plugin for SDK instance registration
+  - Create Vue-specific reactivity integration
+  - Purpose: Secondary Vue support using core SDK
   - _Leverage: src/sdk/core/farert-sdk.ts_
   - _Requirements: REQ-API-005_
 
-### Phase 6: Performance and Optimization
+- [ ] 20. Create framework detection utility in src/sdk/utils/framework-detector.ts
+  - File: src/sdk/utils/framework-detector.ts
+  - Implement runtime framework detection for optimal loading
+  - Add conditional imports for framework-specific code
+  - Create fallback patterns for unsupported environments
+  - Purpose: Automatic optimization based on detected framework
+  - _Leverage: dynamic import patterns_
+  - _Requirements: REQ-API-005_
 
-- [ ] 23. Create bundle analyzer configuration in src/sdk/build/bundle-analyzer.ts
+### Phase 5: Performance and Optimization
+
+- [ ] 21. Create bundle analyzer configuration in src/sdk/build/bundle-analyzer.ts
   - File: src/sdk/build/bundle-analyzer.ts
   - Implement bundle size analysis and tree-shaking verification
   - Add performance monitoring for initialization time
@@ -256,7 +239,7 @@ Tech.md alignment through:
   - _Leverage: webpack bundle analyzer patterns_
   - _Requirements: Performance requirements_
 
-- [ ] 24. Create lazy loading utilities in src/sdk/core/lazy-loader.ts
+- [ ] 22. Create lazy loading utilities in src/sdk/core/lazy-loader.ts
   - File: src/sdk/core/lazy-loader.ts
   - Implement dynamic import patterns for framework modules
   - Add conditional loading based on framework detection
@@ -265,9 +248,38 @@ Tech.md alignment through:
   - _Leverage: dynamic import patterns_
   - _Requirements: Performance requirements_
 
+### Phase 6: SvelteKit Integration
+
+- [ ] 23. Create SvelteKit page load helpers in src/sdk/sveltekit/load-helpers.ts
+  - File: src/sdk/sveltekit/load-helpers.ts
+  - Implement common load function patterns for station and route pages
+  - Add SEO optimization and metadata generation
+  - Create error handling for page load failures
+  - Purpose: Simplified SvelteKit page development
+  - _Leverage: src/sdk/svelte/sveltekit-adapter.ts_
+  - _Requirements: REQ-API-004_
+
+- [ ] 24. Create SvelteKit static generation in src/sdk/sveltekit/static-generator.ts
+  - File: src/sdk/sveltekit/static-generator.ts
+  - Implement prerendering for all stations and popular routes
+  - Add sitemap generation and SEO optimization
+  - Create build-time data optimization
+  - Purpose: Static site generation for reference data
+  - _Leverage: src/sdk/core/farert-sdk.ts_
+  - _Requirements: REQ-API-004_
+
+- [ ] 25. Create SvelteKit middleware in src/sdk/sveltekit/middleware.ts
+  - File: src/sdk/sveltekit/middleware.ts
+  - Implement server-side SDK initialization
+  - Add request caching and response optimization
+  - Create error handling middleware for API routes
+  - Purpose: Server-side optimization and caching
+  - _Leverage: src/sdk/core/farert-sdk.ts_
+  - _Requirements: REQ-API-004_
+
 ### Phase 7: Development Experience
 
-- [ ] 25. Create TypeScript declaration file in src/sdk/index.d.ts
+- [ ] 26. Create TypeScript declaration file in src/sdk/index.d.ts
   - File: src/sdk/index.d.ts
   - Export all public interfaces and types
   - Add comprehensive JSDoc documentation
@@ -276,7 +288,7 @@ Tech.md alignment through:
   - _Leverage: all interface files from previous tasks_
   - _Requirements: REQ-API-006_
 
-- [ ] 26. Create main SDK export in src/sdk/index.ts
+- [ ] 27. Create main SDK export in src/sdk/index.ts
   - File: src/sdk/index.ts
   - Export all framework integrations and utilities
   - Add version information and initialization helpers
@@ -285,7 +297,7 @@ Tech.md alignment through:
   - _Leverage: all implementation files from previous tasks_
   - _Requirements: REQ-API-006_
 
-- [ ] 27. Create debugging utilities in src/sdk/debug/debug-tools.ts
+- [ ] 28. Create debugging utilities in src/sdk/debug/debug-tools.ts
   - File: src/sdk/debug/debug-tools.ts
   - Implement cache inspection and performance monitoring
   - Add WebAssembly memory usage tracking
@@ -296,7 +308,7 @@ Tech.md alignment through:
 
 ### Phase 8: Comprehensive Testing
 
-- [ ] 28. Create cache performance tests in tests/sdk/cache/cache-performance.test.ts
+- [ ] 29. Create cache performance tests in tests/sdk/cache/cache-performance.test.ts
   - File: tests/sdk/cache/cache-performance.test.ts
   - Test LRU eviction under memory pressure
   - Verify TTL expiration timing accuracy
@@ -305,25 +317,25 @@ Tech.md alignment through:
   - _Leverage: src/sdk/cache/cache-manager.ts_
   - _Requirements: REQ-API-002_
 
-- [ ] 29. Create React integration tests in tests/sdk/react/react-integration.test.tsx
-  - File: tests/sdk/react/react-integration.test.tsx
-  - Test React hooks with React Testing Library
-  - Verify error boundary integration and cleanup
+- [ ] 30. Create Svelte integration tests in tests/sdk/svelte/svelte-integration.test.ts
+  - File: tests/sdk/svelte/svelte-integration.test.ts
+  - Test Svelte stores with @testing-library/svelte
+  - Verify reactivity and lifecycle integration
   - Test component rendering and interaction
-  - Purpose: Ensure React integration works correctly
-  - _Leverage: React Testing Library patterns_
+  - Purpose: Ensure Svelte integration works correctly
+  - _Leverage: @testing-library/svelte patterns_
   - _Requirements: REQ-API-003_
 
-- [ ] 30. Create Vue integration tests in tests/sdk/vue/vue-integration.test.ts
-  - File: tests/sdk/vue/vue-integration.test.ts
-  - Test Vue composables with Vue Test Utils
-  - Verify reactivity and lifecycle integration
-  - Test plugin installation and provide/inject
-  - Purpose: Ensure Vue integration works correctly
-  - _Leverage: Vue Test Utils patterns_
+- [ ] 31. Create SvelteKit integration tests in tests/sdk/sveltekit/sveltekit-integration.test.ts
+  - File: tests/sdk/sveltekit/sveltekit-integration.test.ts
+  - Test SvelteKit load functions and SSR
+  - Verify static generation and hydration
+  - Test page load performance and caching
+  - Purpose: Ensure SvelteKit integration works correctly
+  - _Leverage: SvelteKit testing patterns_
   - _Requirements: REQ-API-004_
 
-- [ ] 31. Create cross-framework compatibility tests in tests/sdk/compatibility/cross-framework.test.ts
+- [ ] 32. Create cross-framework compatibility tests in tests/sdk/compatibility/cross-framework.test.ts
   - File: tests/sdk/compatibility/cross-framework.test.ts
   - Test SDK core functionality in isolated environment
   - Verify framework-agnostic utilities work correctly
@@ -332,7 +344,7 @@ Tech.md alignment through:
   - _Leverage: all framework integration layers_
   - _Requirements: REQ-API-005_
 
-- [ ] 32. Create performance benchmark tests in tests/sdk/performance/benchmarks.test.ts
+- [ ] 33. Create performance benchmark tests in tests/sdk/performance/benchmarks.test.ts
   - File: tests/sdk/performance/benchmarks.test.ts
   - Benchmark SDK initialization time (target: <2s)
   - Test cached API response times (target: <10ms)
@@ -343,28 +355,28 @@ Tech.md alignment through:
 
 ### Phase 9: Documentation and Examples
 
-- [ ] 33. Create React example application in examples/react-example/
-  - Files: examples/react-example/src/App.tsx, examples/react-example/src/components/
-  - Implement complete React application using all hooks
+- [ ] 34. Create SvelteKit example application in examples/sveltekit-example/
+  - Files: examples/sveltekit-example/src/routes/, examples/sveltekit-example/src/lib/
+  - Implement complete SvelteKit application using all stores and components
   - Add realistic Japanese station data and route examples
   - Create user interaction patterns and error handling examples
-  - Purpose: Demonstrate React integration with realistic use cases
-  - _Leverage: src/sdk/react/ hooks and components_
+  - Purpose: Demonstrate SvelteKit integration with realistic use cases
+  - _Leverage: src/sdk/svelte/ stores and components_
   - _Requirements: REQ-API-006_
 
-- [ ] 34. Create Vue example application in examples/vue-example/
-  - Files: examples/vue-example/src/App.vue, examples/vue-example/src/components/
-  - Implement complete Vue application using all composables
-  - Add route building interface and fare comparison features
+- [ ] 35. Create Svelte component library showcase in examples/svelte-components/
+  - Files: examples/svelte-components/src/lib/, examples/svelte-components/src/routes/
+  - Implement component showcase with interactive examples
+  - Add documentation and props tables for each component
   - Create responsive design with Japanese text support
-  - Purpose: Demonstrate Vue integration with realistic use cases
-  - _Leverage: src/sdk/vue/ composables and plugin_
+  - Purpose: Component library documentation and testing
+  - _Leverage: src/sdk/svelte/ components_
   - _Requirements: REQ-API-006_
 
-- [ ] 35. Create API documentation in docs/api-reference.md
+- [ ] 36. Create API documentation in docs/api-reference.md
   - File: docs/api-reference.md
   - Document all public APIs with parameters and return types
-  - Add code examples for each framework integration
+  - Add code examples for Svelte, SvelteKit, and framework-agnostic usage
   - Create troubleshooting guide for common issues
   - Purpose: Comprehensive API reference for developers
   - _Leverage: TypeScript interfaces and JSDoc comments_
@@ -372,7 +384,7 @@ Tech.md alignment through:
 
 ### Phase 10: Production Readiness
 
-- [ ] 36. Create security validation in src/sdk/security/input-validator.ts
+- [ ] 37. Create security validation in src/sdk/security/input-validator.ts
   - File: src/sdk/security/input-validator.ts
   - Implement input sanitization for station names and route parameters
   - Add SQL injection prevention (even though database is read-only)
@@ -381,7 +393,7 @@ Tech.md alignment through:
   - _Leverage: existing validation patterns_
   - _Requirements: Security requirements_
 
-- [ ] 37. Create memory leak prevention in src/sdk/core/memory-manager.ts
+- [ ] 38. Create memory leak prevention in src/sdk/core/memory-manager.ts
   - File: src/sdk/core/memory-manager.ts
   - Implement automatic cleanup of WebAssembly resources
   - Add event listener cleanup and reference counting
@@ -390,16 +402,16 @@ Tech.md alignment through:
   - _Leverage: WebAssembly memory management patterns_
   - _Requirements: Reliability requirements_
 
-- [ ] 38. Create production build configuration in build/sdk-build.js
+- [ ] 39. Create production build configuration in build/sdk-build.js
   - File: build/sdk-build.js
-  - Configure webpack for optimal bundle splitting
+  - Configure webpack/Vite for optimal bundle splitting
   - Add minification and tree-shaking optimization
-  - Create separate builds for different frameworks
+  - Create separate builds for Svelte and framework-agnostic usage
   - Purpose: Optimized production builds meeting size requirements
   - _Leverage: existing build configuration_
   - _Requirements: Performance requirements_
 
-- [ ] 39. Create final integration validation in tests/integration/full-stack.test.ts
+- [ ] 40. Create final integration validation in tests/integration/full-stack.test.ts
   - File: tests/integration/full-stack.test.ts
   - Test complete workflow from SDK initialization to fare calculation
   - Verify all framework integrations work end-to-end
