@@ -138,7 +138,7 @@ These tasks follow CLAUDE.md requirements for 100% C++ compatibility, maintain t
   - _Leverage: existing showTime function, TestOutputWriter_
   - _Requirements: REQ-CLI-002.5, CLI performance requirements_
 
-- [ ] 13. Implement signal handling for graceful shutdown
+- [x] 13. Implement signal handling for graceful shutdown
   - File: src/cli/main.ts  
   - Enhance existing SIGINT/SIGTERM handlers with WebAssembly memory cleanup
   - Add proper database connection cleanup on process termination
@@ -147,7 +147,7 @@ These tasks follow CLAUDE.md requirements for 100% C++ compatibility, maintain t
   - _Leverage: existing process signal handlers, wasmLoader cleanup methods_
   - _Requirements: REQ-CLI-003.4, reliability requirements_
 
-- [ ] 14. Add comprehensive input sanitization and validation
+- [x] 14. Add comprehensive input sanitization and validation
   - File: src/cli/main.ts
   - Enhance sanitizeInput function with command injection prevention
   - Add input length validation and character encoding verification  
