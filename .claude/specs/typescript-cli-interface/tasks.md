@@ -120,7 +120,7 @@ These tasks follow CLAUDE.md requirements for 100% C++ compatibility, maintain t
   - _Leverage: existing validateCliEnvironment function, Node.js version checking_
   - _Requirements: REQ-CLI-004.1, REQ-CLI-004.3, REQ-CLI-004.5_
 
-- [ ] 11. Fix npm scripts and build integration paths
+- [x] 11. Fix npm scripts and build integration paths
   - File: package.json
   - Update cli:exec script to use correct output path dist/cli/main.js
   - Add cli:debug script with CLI_DEBUG environment variable
@@ -129,7 +129,7 @@ These tasks follow CLAUDE.md requirements for 100% C++ compatibility, maintain t
   - _Leverage: existing npm scripts structure, TypeScript compilation setup_
   - _Requirements: REQ-CLI-005.1, REQ-CLI-005.2, REQ-CLI-005.4_
 
-- [ ] 12. Create performance monitoring and memory usage tracking
+- [x] 12. Create performance monitoring and memory usage tracking
   - File: src/cli/test_exec_complete.ts
   - Add execution time tracking for individual test suites
   - Implement WebAssembly memory usage monitoring during test execution

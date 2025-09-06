@@ -16,6 +16,7 @@ import {
   EnvironmentValidationError
 } from './types';
 import { configManager } from './config_manager';
+import { performanceMonitor } from './performance_monitor';
 import { executeRouteTest } from './route_test';
 import { executeAutoRoute } from './auto_route';
 import * as fs from 'fs';
@@ -780,12 +781,22 @@ async function fromStream(filename: string, optionNum: number, module: FarertMod
 
 /**
  * Main function - faithful recreation of testmain.cpp main()
- * Enhanced with comprehensive command support and error handling
+ * Enhanced with comprehensive command support, error handling, and performance monitoring
+ * Requirements: REQ-CLI-002.5 - CLI performance requirements
  */
 async function main(): Promise<number> {
+    // Initialize performance monitoring (Task 12 - Performance Monitoring)
+    performanceMonitor.mark('cli_startup_begin');
     try {
-        // Validate CLI environment first
+        // Validate CLI environment first with performance monitoring
+        performanceMonitor.mark('env_validation_start');
         validateCliEnvironment();
+        performanceMonitor.mark('env_validation_end');
+        const envValidationMeasurement = performanceMonitor.measure('env_validation_start', 'env_validation_end');
+        
+        if (configManager.getConfiguration().debug && envValidationMeasurement) {
+            console.log(`[PERF] Environment validation: ${envValidationMeasurement.duration}ms`);
+        }
     } catch (error) {
         if (error instanceof CLIError) {
             console.error(error.getFormattedMessage());
@@ -845,7 +856,11 @@ async function main(): Promise<number> {
             console.log('Initializing WebAssembly module...');
         }
         
+        // Monitor WebAssembly loading performance (Task 12)
+        const wasmMonitor = performanceMonitor.monitorWASMInit();
+        wasmMonitor.markLoadStart();
         module = await wasmLoader.loadModule();
+        wasmMonitor.markLoadEnd();
         
         if (config.debug) {
             console.log('[DEBUG] WebAssembly module loaded, initializing database...');
@@ -854,7 +869,10 @@ async function main(): Promise<number> {
             console.log('Opening database connection...');
         }
         
+        // Monitor database initialization performance (Task 12)
+        wasmMonitor.markDBInitStart();
         const dbResult = await wasmLoader.initializeDatabase();
+        wasmMonitor.markDBInitEnd();
         if (!dbResult) {
             // Should not reach here as initializeDatabase throws on failure
             throw new CLIError(
@@ -866,6 +884,23 @@ async function main(): Promise<number> {
         if (config.debug) {
             console.log('[DEBUG] WebAssembly and database initialization completed');
             configManager.logMemoryUsage('Post-Init');
+            
+            // Report WASM initialization performance (Task 12)
+            const wasmResults = wasmMonitor.getResults();
+            wasmResults.forEach(measurement => {
+                const status = measurement.passed ? '✅' : '❌';
+                console.log(`[PERF] ${status} ${measurement.name}: ${measurement.duration}ms`);
+            });
+        }
+        
+        // Check CLI startup performance requirement (< 2 seconds)
+        performanceMonitor.monitorCLIStartup();
+        
+        // Check memory limits after initialization
+        const memoryCheck = performanceMonitor.checkMemoryLimits();
+        if (!memoryCheck.withinLimits && config.debug) {
+            console.warn('[PERF] Memory warnings after initialization:');
+            memoryCheck.warnings.forEach(warning => console.warn(`[PERF]   ⚠️  ${warning}`));
         }
     } catch (error) {
         if (error instanceof CLIError) {
@@ -899,20 +934,57 @@ async function main(): Promise<number> {
         const option = argv[argIndex];
         
         if (option === '-exec') {
-            // Execute all test patterns (equivalent to test_exec())
+            // Execute all test patterns (equivalent to test_exec()) with performance monitoring
             try {
                 console.log('🚀 Starting complete test suite execution...');
+                
+                // Monitor test suite execution performance (Task 12 - REQ-CLI-002.5)
+                performanceMonitor.mark('test_suite_complete_start');
                 await runCompleteTestSuite(module);
+                
+                const testMeasurement = performanceMonitor.monitorTestSuite('complete');
+                
                 console.log('✅ Complete test suite execution finished');
+                
+                // Report test suite performance if debug mode is enabled
+                if (configManager.getConfiguration().debug && testMeasurement) {
+                    const status = testMeasurement.passed ? '✅' : '❌';
+                    const duration = (testMeasurement.duration / 1000).toFixed(2);
+                    console.log(`[PERF] ${status} Test suite execution: ${duration}s (requirement: <30s)`);
+                    
+                    // Check memory usage after test suite
+                    const memoryCheck = performanceMonitor.checkMemoryLimits();
+                    if (memoryCheck.warnings.length > 0) {
+                        console.warn('[PERF] Memory warnings after test suite:');
+                        memoryCheck.warnings.forEach(warning => console.warn(`[PERF]   ⚠️  ${warning}`));
+                    }
+                }
+                
                 return 0;
             } catch (error) {
                 console.error('❌ Test execution failed:', error);
                 return -1;
             }
         } else if (option === '-5') {
-            // Handle 5-parameter route calculation
+            // Handle 5-parameter route calculation with performance monitoring
             const routeArgs = argv.slice(argIndex + 1);
-            return await handle5ParameterRoute(routeArgs, module);
+            
+            // Monitor route calculation performance (Task 12 - REQ-CLI-002.5)
+            const routeDesc = routeArgs.join(' ');
+            const routeMonitor = performanceMonitor.monitorRouteCalculation(routeDesc);
+            
+            routeMonitor.start();
+            const result = await handle5ParameterRoute(routeArgs, module);
+            const measurement = routeMonitor.end();
+            
+            // Report route calculation performance if debug mode is enabled
+            if (configManager.getConfiguration().debug && measurement) {
+                const status = measurement.passed ? '✅' : '❌';
+                const duration = (measurement.duration / 1000).toFixed(3);
+                console.log(`[PERF] ${status} Route calculation: ${duration}s (requirement: <1s)`);
+            }
+            
+            return result;
         } else {
             // Parse numeric options with optional 'r' suffix
             let numStr = option.substring(1);

@@ -28,7 +28,6 @@
     "dist",
     "tests",
     "**/*.test.ts",
-    "src/sdk/**/*.tsx",
-    "src/sdk/**/*.jsx"
+    "src/sdk/**/*"
   ]
 }
