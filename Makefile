@@ -1,5 +1,5 @@
 # Emscripten環境の確認と設定
-EMSDK_ENV = ~/priv/farert.repos/emsdk/emsdk_env.sh
+EMSDK_ENV = ../emsdk/emsdk_env.sh
 
 # Emscripten環境チェック
 check_emsdk:

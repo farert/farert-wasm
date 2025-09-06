@@ -2,9 +2,9 @@
 # Emscripten環境設定スクリプト
 # 使用方法: source setup_env.sh
 
-if [ -f ~/priv/farert.repos/emsdk/emsdk_env.sh ]; then
+if [ -f ../emsdk/emsdk_env.sh ]; then
     echo "Emscripten環境を設定中..."
-    source ~/priv/farert.repos/emsdk/emsdk_env.sh
+    source ../emsdk/emsdk_env.sh
     echo "✅ Emscripten環境が設定されました"
     echo "📍 em++パス: $(which em++)"
 else

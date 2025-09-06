@@ -8,7 +8,14 @@
  */
 
 import { wasmLoader } from './wasm_loader';
-import { FarertModule } from './types';
+import { 
+  FarertModule, 
+  CLIError, 
+  CLIErrorCode, 
+  SystemError,
+  EnvironmentValidationError
+} from './types';
+import { configManager } from './config_manager';
 import { executeRouteTest } from './route_test';
 import { executeAutoRoute } from './auto_route';
 import * as fs from 'fs';
@@ -49,6 +56,8 @@ function printUsage(programName: string): void {
     console.error('                  4: only special rules');
     console.error('                  5: only special rules + no return');
     console.error('                  r: reverse route order');
+    console.error('      --env-report: Show environment validation report');
+    console.error('      --env-debug : Enable debug mode for this session');
     console.error('');
     console.error('ARGUMENTS:');
     console.error('      <file>          : Route description file');
@@ -284,13 +293,19 @@ function printHelp(): void {
  */
 async function handle5ParameterRoute(args: string[], module: FarertModule): Promise<number> {
     if (args.length !== 5) {
-        console.error('❌ Error: -5 command requires exactly 5 parameters:');
-        console.error('Usage: -5 <station1> <line1> <station2> <line2> <station3>');
-        console.error('Example: -5 東京 東海道線 品川 東海道線 新大阪');
-        console.error('');
-        console.error('Valid Japanese station names: 東京, 新宿, 大阪, etc.');
-        console.error('Valid line names: 東海道線, 山手線, 中央線, etc.');
-        return -1;
+        const error = new CLIError(
+            '-5 command requires exactly 5 parameters',
+            CLIErrorCode.PARAMETER_COUNT_MISMATCH,
+            {
+                providedCount: args.length,
+                expectedCount: 5,
+                providedArgs: args,
+                usage: '-5 <station1> <line1> <station2> <line2> <station3>',
+                example: '-5 東京 東海道線 品川 東海道線 新大阪'
+            }
+        );
+        console.error(error.getFormattedMessage());
+        return error.code;
     }
     
     const [station1, line1, station2, line2, station3] = args;
@@ -597,6 +612,38 @@ function validateWithSuggestions(input: string, type: 'station' | 'line'): Valid
 }
 
 /**
+ * Enhanced validation function that throws InputValidationError
+ * REQ-CLI-003.3 - Enhanced input validation with specific error codes
+ * Currently unused but kept for future strict validation needs
+ */
+// function validateInputStrict(input: string, type: 'station' | 'line'): string {
+//     if (!input || input.trim().length === 0) {
+//         throw new InputValidationError(
+//             `Empty ${type} name provided`,
+//             input || '',
+//             type
+//         );
+//     }
+//     
+//     const sanitized = sanitizeInput(input);
+//     
+//     if (!validateJapaneseInput(sanitized)) {
+//         const suggestions = type === 'station' 
+//             ? getSuggestedStationNames(sanitized)
+//             : getSuggestedLineNames(sanitized);
+//             
+//         throw new InputValidationError(
+//             `Invalid ${type} name: "${sanitized}"`,
+//             sanitized,
+//             type,
+//             suggestions
+//         );
+//     }
+//     
+//     return sanitized;
+// }
+
+/**
  * Helper functions for route processing (equivalent to original utility functions)
  */
 function numOfWord(buf: string): number {
@@ -736,9 +783,27 @@ async function fromStream(filename: string, optionNum: number, module: FarertMod
  * Enhanced with comprehensive command support and error handling
  */
 async function main(): Promise<number> {
-    // Validate CLI environment first
-    if (!validateCliEnvironment()) {
-        return -1;
+    try {
+        // Validate CLI environment first
+        validateCliEnvironment();
+    } catch (error) {
+        if (error instanceof CLIError) {
+            console.error(error.getFormattedMessage());
+            
+            // Show environment report for troubleshooting if validation failed
+            if (error instanceof EnvironmentValidationError) {
+                const config = configManager.getConfiguration();
+                if (config.debug || config.verbose) {
+                    console.error('\n' + configManager.getEnvironmentReport());
+                }
+            }
+            
+            return error.code;
+        }
+        
+        const systemError = new SystemError('Environment validation failed', error instanceof Error ? error : new Error(String(error)));
+        console.error(systemError.getFormattedMessage());
+        return systemError.code;
     }
     
     const argv = process.argv;
@@ -746,36 +811,80 @@ async function main(): Promise<number> {
     let optionNum = 0;
     let optionRev = 0;
     
-    // Handle help commands early (no WebAssembly needed)
+    // Handle special commands early (no WebAssembly needed)
     if (argc >= 3) {
         const firstArg = argv[2];
         if (firstArg === '-h' || firstArg === '--help' || firstArg === '-help') {
             printHelp();
             return 0;
         }
+        
+        // Handle environment report command
+        if (firstArg === '--env-report') {
+            console.log(configManager.getEnvironmentReport());
+            return 0;
+        }
+        
+        // Handle debug mode enablement
+        if (firstArg === '--env-debug') {
+            configManager.updateConfiguration({ debug: true, memoryMonitoring: true });
+            console.log('[DEBUG] Debug mode enabled for this session');
+            configManager.logMemoryUsage('Debug Mode Enabled');
+        }
     }
     
     // Initialize WebAssembly (equivalent to database initialization)
     let module: FarertModule;
     try {
-        console.log('Initializing WebAssembly module...');
+        const config = configManager.getConfiguration();
+        
+        if (config.debug) {
+            console.log('[DEBUG] Starting WebAssembly module initialization...');
+            configManager.logMemoryUsage('Pre-WASM Load');
+        } else {
+            console.log('Initializing WebAssembly module...');
+        }
+        
         module = await wasmLoader.loadModule();
         
-        console.log('Opening database connection...');
-        const dbResult = module.openDatabase();
+        if (config.debug) {
+            console.log('[DEBUG] WebAssembly module loaded, initializing database...');
+            configManager.logMemoryUsage('Pre-DB Init');
+        } else {
+            console.log('Opening database connection...');
+        }
+        
+        const dbResult = await wasmLoader.initializeDatabase();
         if (!dbResult) {
-            console.error('❌ Cannot open database');
-            console.error('Please ensure the WebAssembly build is complete with: npm run build');
-            return -1;
+            // Should not reach here as initializeDatabase throws on failure
+            throw new CLIError(
+                'Database initialization returned false',
+                CLIErrorCode.DB_CONNECTION_FAILED
+            );
         }
-        console.log('✅ Database connection established');
+        
+        if (config.debug) {
+            console.log('[DEBUG] WebAssembly and database initialization completed');
+            configManager.logMemoryUsage('Post-Init');
+        }
     } catch (error) {
-        console.error('❌ Failed to initialize WebAssembly module:');
-        if (error instanceof Error) {
-            console.error('   ', error.message);
+        if (error instanceof CLIError) {
+            console.error(error.getFormattedMessage());
+            return error.code;
         }
-        console.error('Please run: npm run build');
-        return -1;
+        
+        // Wrap unexpected errors as system errors
+        const systemError = new SystemError(
+            'Failed to initialize WebAssembly module',
+            error instanceof Error ? error : new Error(String(error)),
+            {
+                step: 'WebAssembly module initialization',
+                platform: process.platform,
+                nodeVersion: process.version
+            }
+        );
+        console.error(systemError.getFormattedMessage());
+        return systemError.code;
     }
     
     if (argc < 3) {
@@ -896,10 +1005,22 @@ async function main(): Promise<number> {
     
     // Cleanup
     try {
+        const config = configManager.getConfiguration();
+        
         module.closeDatabase();
-        console.log('✅ Database connection closed');
+        
+        if (config.debug) {
+            console.log('[DEBUG] Database connection closed');
+            configManager.logMemoryUsage('Final Cleanup');
+        } else {
+            console.log('✅ Database connection closed');
+        }
     } catch (error) {
         console.warn('⚠️ Warning during cleanup:', error);
+        const config = configManager.getConfiguration();
+        if (config.debug && error instanceof Error) {
+            console.warn('[DEBUG] Cleanup error details:', error.stack);
+        }
     }
     
     return 0;
@@ -907,30 +1028,89 @@ async function main(): Promise<number> {
 
 /**
  * CLI entry point validation and initialization
+ * Requirements: REQ-CLI-004.1, REQ-CLI-004.3, REQ-CLI-004.5
+ * Enhanced environment validation with comprehensive file checks and configuration management
  */
-function validateCliEnvironment(): boolean {
-    // Check Node.js version
-    const nodeVersion = process.version;
-    const majorVersion = parseInt(nodeVersion.substring(1).split('.')[0]);
-    
-    if (majorVersion < 14) {
-        console.error('❌ Error: Node.js 14.0.0 or higher is required');
-        console.error(`Current version: ${nodeVersion}`);
-        return false;
+function validateCliEnvironment(): void {
+    try {
+        // Use the comprehensive validation from config manager
+        configManager.validateAndThrowOnError();
+        
+        // Log configuration info if debug mode
+        const config = configManager.getConfiguration();
+        if (config.debug) {
+            console.log('[DEBUG] CLI Environment validation completed successfully');
+            console.log('[DEBUG] Configuration:');
+            console.log(`[DEBUG]   Debug mode: ${config.debug}`);
+            console.log(`[DEBUG]   Memory monitoring: ${config.memoryMonitoring}`);
+            console.log(`[DEBUG]   Custom WASM path: ${config.wasmPath || 'None'}`);
+            console.log(`[DEBUG]   Platform: ${config.platform}`);
+            console.log(`[DEBUG]   Node.js: ${config.nodeVersion}`);
+        }
+    } catch (error) {
+        if (error instanceof EnvironmentValidationError) {
+            // Show detailed validation report
+            console.error(error.getDetailedReport());
+            throw error;
+        }
+        throw error;
     }
-    
-    return true;
 }
 
 // Error handlers (equivalent to C++ exception handling)
+// REQ-CLI-003.4 - JavaScript exception handling with stack trace preservation
 process.on('uncaughtException', (error) => {
-    console.error('Uncaught exception:', error);
-    process.exit(1);
+    const systemError = new SystemError(
+        'Uncaught JavaScript exception occurred',
+        error,
+        {
+            errorName: error.name,
+            errorCode: (error as any).code,
+            signal: (error as any).signal,
+            syscall: (error as any).syscall,
+            errno: (error as any).errno,
+            path: (error as any).path
+        }
+    );
+    
+    console.error(systemError.getFormattedMessage());
+    
+    const config = configManager.getConfiguration();
+    if (config.debug) {
+        console.error('\n[DEBUG] Original stack trace:');
+        console.error(error.stack);
+        console.error('\n[DEBUG] Environment Report:');
+        console.error(configManager.getEnvironmentReport());
+    }
+    
+    process.exit(systemError.code);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-    console.error('Unhandled rejection at:', promise, 'reason:', reason);
-    process.exit(1);
+    const systemError = new CLIError(
+        'Unhandled promise rejection occurred',
+        CLIErrorCode.UNHANDLED_REJECTION,
+        {
+            reason: reason instanceof Error ? reason.message : String(reason),
+            reasonStack: reason instanceof Error ? reason.stack : undefined,
+            promise: String(promise),
+            location: 'Global unhandled rejection handler'
+        }
+    );
+    
+    console.error(systemError.getFormattedMessage());
+    
+    const config = configManager.getConfiguration();
+    if (config.debug) {
+        console.error('\n[DEBUG] Promise:', promise);
+        console.error('[DEBUG] Reason:', reason);
+        if (reason instanceof Error && reason.stack) {
+            console.error('[DEBUG] Reason stack trace:');
+            console.error(reason.stack);
+        }
+    }
+    
+    process.exit(systemError.code);
 });
 
 // Graceful shutdown handlers
@@ -945,12 +1125,35 @@ process.on('SIGTERM', () => {
 });
 
 // Execute main and exit with appropriate code
+// REQ-CLI-003.4 - Enhanced main execution with proper error handling
 main().then((exitCode) => {
     process.exit(exitCode);
 }).catch((error) => {
-    console.error('\u274c Main execution failed:', error);
-    if (error instanceof Error && error.stack) {
-        console.error('Stack trace:', error.stack);
+    let systemError: CLIError;
+    
+    if (error instanceof CLIError) {
+        systemError = error;
+    } else {
+        systemError = new SystemError(
+            'Main execution failed with unexpected error',
+            error instanceof Error ? error : new Error(String(error)),
+            {
+                location: 'main() promise catch handler',
+                nodeVersion: process.version,
+                platform: process.platform
+            }
+        );
     }
-    process.exit(1);
+    
+    console.error(systemError.getFormattedMessage());
+    
+    const config = configManager.getConfiguration();
+    if (config.debug && error instanceof Error && error.stack) {
+        console.error('\n[DEBUG] Main execution error stack trace:');
+        console.error(error.stack);
+        console.error('\n[DEBUG] Final Environment Report:');
+        console.error(configManager.getEnvironmentReport());
+    }
+    
+    process.exit(systemError.code);
 });
