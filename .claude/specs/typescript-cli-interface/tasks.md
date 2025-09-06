@@ -25,6 +25,10 @@ These tasks follow CLAUDE.md requirements for 100% C++ compatibility, maintain t
 
 ## Tasks
 
+各タスクの終了時に、git commit すること。
+コミットメッセージは conventional commits 形式で書いてください
+
+
 - [x] 1. Fix TypeScript compilation issues in test_exec_complete.ts
   - File: src/cli/test_exec_complete.ts
   - Remove unused variable warnings by using parameters or marking with underscore
@@ -93,7 +97,7 @@ These tasks follow CLAUDE.md requirements for 100% C++ compatibility, maintain t
   - _Leverage: existing validateJapaneseInput function, sanitizeInput function_
   - _Requirements: REQ-CLI-003.3, REQ-CLI-006.3_
 
-- [ ] 8. Create comprehensive CLI help system with Japanese examples
+- [x] 8. Create comprehensive CLI help system with Japanese examples
   - File: src/cli/main.ts
   - Enhance printHelp() function with detailed Japanese station and line examples
   - Add troubleshooting section with common error scenarios and solutions
@@ -156,7 +160,7 @@ These tasks follow CLAUDE.md requirements for 100% C++ compatibility, maintain t
   - _Leverage: existing sanitizeInput and validateJapaneseInput functions_
   - _Requirements: REQ-CLI-003.5, security requirements_
 
-- [ ] 15. Create CLI integration tests with exact C++ result comparison
+- [x] 15. Create CLI integration tests with exact C++ result comparison
   - File: src/cli/test_integration.ts
   - Implement automated comparison of CLI output with expected C++ results
   - Add test cases for all CLI commands (-exec, -5, -h, file input, direct route)
@@ -165,7 +169,7 @@ These tasks follow CLAUDE.md requirements for 100% C++ compatibility, maintain t
   - _Leverage: existing test execution patterns, CLI command implementations_
   - _Requirements: REQ-CLI-002.2, REQ-CLI-002.3, 100% compatibility requirement_
 
-- [ ] 16. Enhance test output formatting to match C++ format exactly
+- [x] 16. Enhance test output formatting to match C++ format exactly
   - File: src/cli/test_output.ts
   - Update writeRouteTestResult method to match exact C++ output format
   - Add timestamp formatting to match original test_exec.cpp format
@@ -174,7 +178,7 @@ These tasks follow CLAUDE.md requirements for 100% C++ compatibility, maintain t
   - _Leverage: existing TestOutputWriter methods, showTime function_
   - _Requirements: REQ-CLI-002.2, REQ-CLI-002.5_
 
-- [ ] 17. Add comprehensive CLI documentation and usage examples  
+- [x] 17. Add comprehensive CLI documentation and usage examples  
   - File: README_CLI.md
   - Create step-by-step installation and build instructions
   - Document all CLI commands with Japanese examples using real station names
@@ -183,7 +187,7 @@ These tasks follow CLAUDE.md requirements for 100% C++ compatibility, maintain t
   - _Leverage: existing help text in main.ts, CLAUDE.md project documentation_
   - _Requirements: REQ-CLI-006.2, REQ-CLI-006.4, REQ-CLI-006.5_
 
-- [ ] 18. Optimize WebAssembly loading and database initialization performance
+- [x] 18. Optimize WebAssembly loading and database initialization performance
   - File: src/cli/wasm_loader.ts
   - Add caching for repeated WebAssembly module loads
   - Implement connection pooling for database operations
@@ -192,7 +196,7 @@ These tasks follow CLAUDE.md requirements for 100% C++ compatibility, maintain t
   - _Leverage: existing WasmLoader class, database initialization logic_
   - _Requirements: Performance requirements, REQ-CLI-004.1_
 
-- [ ] 19. Create automated CLI testing pipeline integration
+- [x] 19. Create automated CLI testing pipeline integration
   - File: src/cli/test_cli.ts  
   - Implement automated CLI command execution and output validation
   - Add CI/CD pipeline integration with proper exit codes
