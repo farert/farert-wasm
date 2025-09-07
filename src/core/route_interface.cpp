@@ -35,12 +35,25 @@ RouteItemWrapper::RouteItemWrapper(const RouteItem* item) {
         salesKm = 0;
         indexOfAggregate = 0;
     }
+    
+    // Initialize lifecycle management (Task 25: REQ-OBJ-007)
+    magicValue = MemorySafetyValidator::MAGIC_VALUE_VALID;
+    refCounter = new RefCounter();
 }
 
 // Additional RouteItemWrapper methods for C++ compatibility (REQ-OBJ-002, REQ-OBJ-003)
 
 // Enhanced getRouteDescription with RouteUtility integration
 std::string RouteItemWrapper::getRouteDescription() const {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        if (isDestroyed()) {
+            return "[ERROR: RouteItem object was destroyed - cannot access getRouteDescription()]";
+        } else {
+            return "[ERROR: RouteItem object corrupted - invalid magic value]";
+        }
+    }
+    
     std::string description;
     
     // Format: "Line: [LineName], Station: [StationName]"
@@ -83,6 +96,11 @@ std::string RouteItemWrapper::getRouteDescription() const {
 
 // Validate station ID with detailed error reporting
 int RouteItemWrapper::validateStationId(int stationId) const {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return -1000;  // Object invalid/destroyed - return distinct error code
+    }
+    
     if (stationId <= 0) return -1;  // Invalid: station ID must be positive
     
     // Check if station ID exists in database (optional validation)
@@ -94,6 +112,11 @@ int RouteItemWrapper::validateStationId(int stationId) const {
 
 // Validate line ID with detailed error reporting  
 int RouteItemWrapper::validateLineId(int lineId) const {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return -1000;  // Object invalid/destroyed - return distinct error code
+    }
+    
     if (lineId < 0) return -1;  // Invalid: line ID must be non-negative
     
     // Line ID = 0 is valid for starting points
@@ -108,6 +131,11 @@ int RouteItemWrapper::validateLineId(int lineId) const {
 
 // Validate flag value with detailed error reporting
 int RouteItemWrapper::validateFlag(int flag) const {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return -1000;  // Object invalid/destroyed - return distinct error code
+    }
+    
     if (flag < 0) return -1;  // Invalid: flag cannot be negative
     if (flag > 0xFFFF) return -2;  // Invalid: flag exceeds SPECIFICFLAG range
     return 0;  // Valid
@@ -117,6 +145,11 @@ int RouteItemWrapper::validateFlag(int flag) const {
 
 // Station ID setter with validation
 int RouteItemWrapper::setStationIdWithValidation(int id) {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return -1000;  // Object invalid/destroyed - return distinct error code
+    }
+    
     int result = validateStationId(id);
     if (result >= -1) {  // Accept both valid (0) and warning (-2) cases
         stationId = id;
@@ -127,6 +160,11 @@ int RouteItemWrapper::setStationIdWithValidation(int id) {
 
 // Line ID setter with validation
 int RouteItemWrapper::setLineIdWithValidation(int id) {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return -1000;  // Object invalid/destroyed - return distinct error code
+    }
+    
     int result = validateLineId(id);
     if (result >= -1) {  // Accept both valid (0) and warning (-2) cases
         lineId = id;
@@ -137,6 +175,11 @@ int RouteItemWrapper::setLineIdWithValidation(int id) {
 
 // Flag setter with validation
 int RouteItemWrapper::setFlagWithValidation(int f) {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return -1000;  // Object invalid/destroyed - return distinct error code
+    }
+    
     int result = validateFlag(f);
     if (result == 0) {  // Only accept fully valid flags
         flag = f;
@@ -146,6 +189,11 @@ int RouteItemWrapper::setFlagWithValidation(int f) {
 
 // Fare setter with validation
 int RouteItemWrapper::setFareWithValidation(int f) {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return -1000;  // Object invalid/destroyed - return distinct error code
+    }
+    
     if (f < 0) return -1;  // Invalid: fare cannot be negative
     fare = f;
     return 0;  // Valid
@@ -153,6 +201,11 @@ int RouteItemWrapper::setFareWithValidation(int f) {
 
 // Sales km setter with validation
 int RouteItemWrapper::setSalesKmWithValidation(int km) {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return -1000;  // Object invalid/destroyed - return distinct error code
+    }
+    
     if (km < 0) return -1;  // Invalid: distance cannot be negative
     salesKm = km;
     return 0;  // Valid
@@ -160,6 +213,11 @@ int RouteItemWrapper::setSalesKmWithValidation(int km) {
 
 // Index setter with validation
 int RouteItemWrapper::setIndexOfAggregateWithValidation(int index) {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return -1000;  // Object invalid/destroyed - return distinct error code
+    }
+    
     if (index < 0) return -1;  // Invalid: index cannot be negative
     indexOfAggregate = index;
     return 0;  // Valid
@@ -169,6 +227,11 @@ int RouteItemWrapper::setIndexOfAggregateWithValidation(int index) {
 
 // Check if this forms a valid route connection with another RouteItemWrapper
 bool RouteItemWrapper::canConnectTo(const RouteItemWrapper& nextItem) const {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid() || !nextItem.isValid()) {
+        return false;  // Cannot connect invalid/destroyed objects
+    }
+    
     // Basic validation: this item's station should match next item's connection point
     // This is simplified logic - actual route validation would be more complex
     return (stationId > 0 && nextItem.stationId > 0 && 
@@ -177,6 +240,11 @@ bool RouteItemWrapper::canConnectTo(const RouteItemWrapper& nextItem) const {
 
 // Check if this route item is compatible with a specific line
 bool RouteItemWrapper::isCompatibleWithLine(int targetLineId) const {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return false;  // Invalid/destroyed object cannot be compatible
+    }
+    
     if (lineId == 0) return true;  // Starting point is compatible with any line
     if (targetLineId == 0) return true;  // Target starting point is always compatible
     
@@ -193,6 +261,11 @@ bool RouteItemWrapper::isCompatibleWithLine(int targetLineId) const {
 
 // Check if this represents a transfer point
 bool RouteItemWrapper::isTransferPoint() const {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return false;  // Invalid/destroyed object cannot be transfer point
+    }
+    
     if (stationId <= 0) return false;
     
     // A transfer point serves multiple lines
@@ -202,6 +275,11 @@ bool RouteItemWrapper::isTransferPoint() const {
 
 // Check if this is a terminal station
 bool RouteItemWrapper::isTerminalStation() const {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return false;  // Invalid/destroyed object cannot be terminal station
+    }
+    
     if (stationId <= 0) return false;
     
     // Use RouteUtility to check if it's a terminal
@@ -211,6 +289,11 @@ bool RouteItemWrapper::isTerminalStation() const {
 
 // Check if this route item has any special flags set
 bool RouteItemWrapper::hasSpecialFlags() const {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return false;  // Invalid/destroyed object has no flags
+    }
+    
     return flag != 0;
 }
 
@@ -218,6 +301,11 @@ bool RouteItemWrapper::hasSpecialFlags() const {
 
 // Deep equality check (including calculated values)
 bool RouteItemWrapper::deepEquals(const RouteItemWrapper& other) const {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid() || !other.isValid()) {
+        return false;  // Invalid/destroyed objects cannot be equal
+    }
+    
     return lineId == other.lineId && 
            stationId == other.stationId &&
            flag == other.flag &&
@@ -228,6 +316,11 @@ bool RouteItemWrapper::deepEquals(const RouteItemWrapper& other) const {
 
 // Sort key generation for array operations
 int RouteItemWrapper::getSortKey() const {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return INT_MAX;  // Invalid/destroyed objects sort last
+    }
+    
     // Generate a sort key based on station ID and line ID
     // This can be used for efficient sorting in cRouteList operations
     return (stationId << 16) | (lineId & 0xFFFF);
@@ -235,92 +328,246 @@ int RouteItemWrapper::getSortKey() const {
 
 // Distance calculation helper (for route optimization)
 int RouteItemWrapper::estimateDistanceTo(const RouteItemWrapper& other) const {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid() || !other.isValid()) {
+        return INT_MAX;  // Invalid/destroyed objects have infinite distance
+    }
+    
     // This is a placeholder - actual implementation would use geographic data
     // For now, return a simple ID-based estimate
     return abs(stationId - other.stationId) + abs(lineId - other.lineId);
 }
 
+// Lifecycle management implementation for RouteWrapper (Task 25: REQ-OBJ-007)
+void RouteWrapper::initializeLifecycle() {
+    magicValue = MemorySafetyValidator::MAGIC_VALUE_VALID;
+    refCounter = new RefCounter();
+}
+
+void RouteWrapper::cleanupRoute() {
+    if (route) {
+        delete route;
+        route = nullptr;
+    }
+}
+
 // RouteWrapper implementation
 RouteWrapper::RouteWrapper() {
     route = new Route();
+    initializeLifecycle();
 }
 
 RouteWrapper::RouteWrapper(const RouteWrapper& source) {
+    // Validate source object
+    if (!source.isValid()) {
+        route = new Route();
+        initializeLifecycle();
+        return;
+    }
+    
     route = new Route(*source.route);
+    
+    // Share reference counter
+    magicValue = source.magicValue;
+    refCounter = source.refCounter;
+    if (source.refCounter) {
+        source.refCounter->count++;
+    }
 }
 
 RouteWrapper::RouteWrapper(const RouteListWrapper& source) {
     // TODO: Implement constructor from RouteListWrapper
     route = new Route();
+    initializeLifecycle();
 }
 
 RouteWrapper::RouteWrapper(const RouteWrapper& source, int count) {
+    // Validate source object
+    if (!source.isValid()) {
+        route = new Route();
+        initializeLifecycle();
+        return;
+    }
+    
     // TODO: Implement constructor with count parameter
     route = new Route(*source.route);
+    
+    // Share reference counter
+    magicValue = source.magicValue;
+    refCounter = source.refCounter;
+    if (source.refCounter) {
+        source.refCounter->count++;
+    }
 }
 
 RouteWrapper::~RouteWrapper() {
-    delete route;
+    if (isValid()) {
+        decrementRef();
+    } else {
+        // Clean up route even if object is invalid
+        cleanupRoute();
+    }
 }
 
 void RouteWrapper::sync(const CalcRouteWrapper& source) {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return;  // Cannot sync invalid/destroyed object - fail silently for C++ compatibility
+    }
+    if (!source.isValid()) {
+        return;  // Cannot sync from invalid/destroyed source - fail silently
+    }
+    
     // TODO: Implement sync with CalcRouteWrapper
 }
 
 void RouteWrapper::assign(const RouteListWrapper& source) {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return;  // Cannot assign to invalid/destroyed object - fail silently for C++ compatibility
+    }
+    if (!source.isValid()) {
+        return;  // Cannot assign from invalid/destroyed source - fail silently
+    }
+    
     // TODO: Implement assign from RouteListWrapper
 }
 
 int RouteWrapper::addRoute(int stationId) {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return -1000;  // Object invalid/destroyed - return distinct error code
+    }
+    
     return route->add(stationId);
 }
 
 int RouteWrapper::addRoute(int lineId, int stationId) {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return -1000;  // Object invalid/destroyed - return distinct error code
+    }
+    
     return route->add(lineId, stationId);
 }
 
 void RouteWrapper::removeTail() {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return;  // Cannot remove from invalid/destroyed object - fail silently for C++ compatibility
+    }
+    
     route->removeTail();
 }
 
 // Basic route operations
 void RouteWrapper::removeAll() {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return;  // Cannot remove from invalid/destroyed object - fail silently for C++ compatibility
+    }
+    
     route->removeAll();
 }
 
 int RouteWrapper::autoRoute(int useLine, int arriveStationId) {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return -1000;  // Object invalid/destroyed - return distinct error code
+    }
+    
     // TODO: Implement autoRoute functionality
     return 0;
 }
 
 int RouteWrapper::typeOfPassedLine(int offset) {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return -1000;  // Object invalid/destroyed - return distinct error code
+    }
+    
     // TODO: Implement typeOfPassedLine functionality
     return 0;
 }
 
 int RouteWrapper::setupRoute(const std::string& routeString) {
-    return route->setup_route(routeString.c_str());
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return -1000;  // Object invalid/destroyed - return distinct error code
+    }
+    
+    // Enhanced input validation with detailed error reporting
+    if (routeString.empty()) {
+        return -1; // Empty route string
+    }
+    
+    // Parse the route string to validate components before setup
+    ValidationResult validation = validateRouteString(routeString);
+    if (!validation.isValid) {
+        // Log validation errors with suggestions
+        // In a production system, this would integrate with logging framework
+        return -2; // Invalid route components detected
+    }
+    
+    // Proceed with original setup if validation passes
+    int result = route->setup_route(routeString.c_str());
+    
+    // Additional validation after setup
+    if (result == 0) {
+        ValidationResult postSetupValidation = validateRoute();
+        if (!postSetupValidation.isValid) {
+            // Route setup succeeded but route is invalid
+            return -3; // Route construction created invalid state
+        }
+    }
+    
+    return result;
 }
 
 // Route settings
 int RouteWrapper::setDetour(bool enabled) {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return -1000;  // Object invalid/destroyed - return distinct error code
+    }
+    
     return route->setDetour(enabled);
 }
 
 void RouteWrapper::setNoRule(bool enabled) {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return;  // Cannot set rule on invalid/destroyed object - fail silently for C++ compatibility
+    }
+    
     route->setNoRule(enabled);
 }
 
 void RouteWrapper::setNotSameKokuraHakataShinZai(bool enabled) {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return;  // Cannot set rule on invalid/destroyed object - fail silently for C++ compatibility
+    }
+    
     route->setNotSameKokuraHakataShinZai(enabled);
 }
 
 bool RouteWrapper::isNotSameKokuraHakataShinZai() const {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return false;  // Invalid/destroyed object has no rules
+    }
+    
     return route->isNotSameKokuraHakataShinZai();
 }
 
 // Additional route properties
 RouteItemWrapper RouteWrapper::getRouteItem(int index) const {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return RouteItemWrapper();  // Return default-initialized RouteItemWrapper for invalid/destroyed object
+    }
+    
     const std::vector<RouteItem>& routeItems = route->routeList();
     
     // Validate index bounds
@@ -334,6 +581,11 @@ RouteItemWrapper RouteWrapper::getRouteItem(int index) const {
 }
 
 RouteItem* RouteWrapper::getRouteItemPtr(int index) const {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return nullptr;  // Return null pointer for invalid/destroyed object
+    }
+    
     const std::vector<RouteItem>& routeItems = route->routeList();
     
     // Validate index bounds
@@ -347,6 +599,14 @@ RouteItem* RouteWrapper::getRouteItemPtr(int index) const {
 
 // Route item manipulation methods (REQ-OBJ-003, REQ-OBJ-004)
 void RouteWrapper::insertItem(int index, const RouteItemWrapper& item) {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return;  // Cannot insert into invalid/destroyed object - fail silently for C++ compatibility
+    }
+    if (!item.isValid()) {
+        return;  // Cannot insert invalid/destroyed item - fail silently
+    }
+    
     if (!route) return;
     
     std::vector<RouteItem>& routeItems = const_cast<std::vector<RouteItem>&>(route->routeList());
@@ -364,6 +624,11 @@ void RouteWrapper::insertItem(int index, const RouteItemWrapper& item) {
 }
 
 void RouteWrapper::removeItem(int index) {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return;  // Cannot remove from invalid/destroyed object - fail silently for C++ compatibility
+    }
+    
     if (!route) return;
     
     std::vector<RouteItem>& routeItems = const_cast<std::vector<RouteItem>&>(route->routeList());
@@ -378,47 +643,450 @@ void RouteWrapper::removeItem(int index) {
 }
 
 int RouteWrapper::lastLineId() const {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return -1;  // Invalid/destroyed object has no line ID
+    }
+    
     // TODO: Implement lastLineId functionality
     return 0;
 }
 
 bool RouteWrapper::isReverseAllow() const {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return false;  // Invalid/destroyed object does not allow reverse
+    }
+    
     // TODO: Implement isReverseAllow functionality
     return true;
 }
 
 bool RouteWrapper::isOsakakanDetourEnable() const {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return false;  // Invalid/destroyed object has no detour enabled
+    }
+    
     // TODO: Implement isOsakakanDetourEnable functionality
     return false;
 }
 
 bool RouteWrapper::isOsakakanDetourShortcut() const {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return false;  // Invalid/destroyed object has no detour shortcut
+    }
+    
     // TODO: Implement isOsakakanDetourShortcut functionality
     return false;
 }
 
 int RouteWrapper::reverseRoute() {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return -1000;  // Object invalid/destroyed - return distinct error code
+    }
+    
     return route->reverse();
 }
 
 int RouteWrapper::getRouteCount() const {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return -1;  // Invalid/destroyed object has no route count
+    }
+    
     return route->routeList().size();
 }
 
 int RouteWrapper::startStationId() const {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return -1;  // Invalid/destroyed object has no start station
+    }
+    
     return route->departureStationId();
 }
 
 int RouteWrapper::lastStationId() const {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return -1;  // Invalid/destroyed object has no last station
+    }
+    
     return route->arriveStationId();
 }
 
 bool RouteWrapper::isEnd() const {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return false;  // Invalid/destroyed object is not ended
+    }
+    
     return route->isEnd();
 }
 
 std::string RouteWrapper::routeScript() const {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        if (isDestroyed()) {
+            return "[ERROR: Route object was destroyed - cannot access routeScript()]";
+        } else {
+            return "[ERROR: Route object corrupted - invalid magic value]";
+        }
+    }
+    
     return route->route_script();
+}
+
+// Validation methods implementation (Task 19)
+
+/**
+ * Comprehensive route validation method
+ * REQ-OBJ-002, REQ-OBJ-004: Enhanced validation with detailed error reporting
+ * 
+ * @return ValidationResult containing validation status and detailed error information
+ */
+ValidationResult RouteWrapper::validateRoute() const {
+    ValidationResult result(true);
+    
+    if (!route) {
+        result.isValid = false;
+        result.errorMessage = "Route object is null";
+        result.errorMessageJa = "ルートオブジェクトがnullです";
+        result.suggestions.push_back("Initialize route object before validation");
+        result.suggestions.push_back("ルートオブジェクトを初期化してください");
+        return result;
+    }
+    
+    // Get route items for validation
+    const std::vector<RouteItem>& routeItems = route->routeList();
+    
+    // Validate route has at least one segment
+    if (routeItems.empty()) {
+        result.isValid = false;
+        result.errorMessage = "Route contains no segments";
+        result.errorMessageJa = "ルートにセグメントが含まれていません";
+        result.suggestions.push_back("Add at least one station to the route");
+        result.suggestions.push_back("ルートに少なくとも1つの駅を追加してください");
+        return result;
+    }
+    
+    // Validate individual route segments
+    for (size_t i = 0; i < routeItems.size(); ++i) {
+        const RouteItem& item = routeItems[i];
+        
+        // Validate station ID
+        if (item.stationId <= 0) {
+            result.isValid = false;
+            result.errorMessage = "Invalid station ID found in route";
+            result.errorMessageJa = "ルートに無効な駅IDが見つかりました";
+            result.suggestions.push_back("Check station ID at position " + std::to_string(i + 1));
+            result.suggestions.push_back("位置" + std::to_string(i + 1) + "の駅IDを確認してください");
+            
+            // Add fuzzy matching suggestions for station names
+            std::string stationName = RouteUtility::getStationName(item.stationId);
+            if (!stationName.empty()) {
+                std::vector<std::string> suggestions = generateStationNameSuggestions(stationName);
+                for (const auto& suggestion : suggestions) {
+                    result.suggestions.push_back("Did you mean: " + suggestion);
+                    result.suggestions.push_back("候補: " + suggestion);
+                }
+            }
+            
+            result.context["invalid_station_position"] = std::to_string(i + 1);
+            result.context["invalid_station_id"] = std::to_string(item.stationId);
+            return result;
+        }
+        
+        // Validate line ID (line ID = 0 is valid for starting points)
+        if (item.lineId < 0) {
+            result.isValid = false;
+            result.errorMessage = "Invalid line ID found in route";
+            result.errorMessageJa = "ルートに無効な路線IDが見つかりました";
+            result.suggestions.push_back("Check line ID at position " + std::to_string(i + 1));
+            result.suggestions.push_back("位置" + std::to_string(i + 1) + "の路線IDを確認してください");
+            
+            // Add fuzzy matching suggestions for line names
+            if (item.lineId > 0) {
+                std::string lineName = RouteUtility::getLineName(item.lineId);
+                if (!lineName.empty()) {
+                    std::vector<std::string> suggestions = generateLineNameSuggestions(lineName);
+                    for (const auto& suggestion : suggestions) {
+                        result.suggestions.push_back("Did you mean: " + suggestion);
+                        result.suggestions.push_back("候補: " + suggestion);
+                    }
+                }
+            }
+            
+            result.context["invalid_line_position"] = std::to_string(i + 1);
+            result.context["invalid_line_id"] = std::to_string(item.lineId);
+            return result;
+        }
+        
+        // Validate route connectivity (except for first item)
+        if (i > 0 && item.lineId > 0) {
+            // Check if the line serves the station
+            std::vector<int> linesAtStation = RouteUtility::getLineIdsFromStation(item.stationId);
+            bool lineServesStation = false;
+            for (int lineId : linesAtStation) {
+                if (lineId == item.lineId) {
+                    lineServesStation = true;
+                    break;
+                }
+            }
+            
+            if (!lineServesStation) {
+                result.isValid = false;
+                result.errorMessage = "Line does not serve station in route segment";
+                result.errorMessageJa = "指定された路線が駅を経由していません";
+                
+                std::string stationName = RouteUtility::getStationName(item.stationId);
+                std::string lineName = RouteUtility::getLineName(item.lineId);
+                
+                result.suggestions.push_back("Verify that " + lineName + " serves " + stationName);
+                result.suggestions.push_back(lineName + "が" + stationName + "を経由することを確認してください");
+                
+                // Suggest alternative lines that serve this station
+                if (linesAtStation.size() > 0) {
+                    result.suggestions.push_back("Alternative lines for " + stationName + ":");
+                    result.suggestions.push_back(stationName + "の代替路線:");
+                    for (size_t j = 0; j < std::min(linesAtStation.size(), size_t(3)); ++j) {
+                        std::string altLineName = RouteUtility::getLineName(linesAtStation[j]);
+                        if (!altLineName.empty()) {
+                            result.suggestions.push_back("  - " + altLineName);
+                        }
+                    }
+                }
+                
+                result.context["station_name"] = stationName;
+                result.context["line_name"] = lineName;
+                result.context["segment_position"] = std::to_string(i + 1);
+                return result;
+            }
+        }
+        
+        // Validate connection between consecutive segments
+        if (i > 0) {
+            const RouteItem& prevItem = routeItems[i - 1];
+            
+            // Check if stations are connected via specified lines
+            if (!validateStationConnection(prevItem, item)) {
+                result.isValid = false;
+                result.errorMessage = "Invalid connection between route segments";
+                result.errorMessageJa = "ルートセグメント間の接続が無効です";
+                
+                std::string prevStationName = RouteUtility::getStationName(prevItem.stationId);
+                std::string currStationName = RouteUtility::getStationName(item.stationId);
+                
+                result.suggestions.push_back("Check connection between " + prevStationName + " and " + currStationName);
+                result.suggestions.push_back(prevStationName + "と" + currStationName + "間の接続を確認してください");
+                
+                result.context["prev_station"] = prevStationName;
+                result.context["current_station"] = currStationName;
+                result.context["segment_position"] = std::to_string(i + 1);
+                return result;
+            }
+        }
+    }
+    
+    // Validate route has proper start and end points
+    if (!route->isEnd()) {
+        // This might be a warning rather than an error for incomplete routes
+        result.suggestions.push_back("Route appears to be incomplete - consider adding more segments");
+        result.suggestions.push_back("ルートが不完全のようです - セグメントの追加を検討してください");
+    }
+    
+    // Additional validation: Check for circular routes
+    std::set<int> visitedStations;
+    for (const RouteItem& item : routeItems) {
+        if (visitedStations.count(item.stationId) > 0) {
+            // Circular route detected - this might be intentional for some routes
+            result.suggestions.push_back("Circular route detected - verify this is intentional");
+            result.suggestions.push_back("循環ルートが検出されました - 意図的であることを確認してください");
+            break;
+        }
+        visitedStations.insert(item.stationId);
+    }
+    
+    return result;
+}
+
+/**
+ * Validate route string components before setup
+ * REQ-OBJ-004: Input validation with fuzzy matching suggestions
+ * 
+ * @param routeString The route string to validate
+ * @return ValidationResult containing validation status and suggestions
+ */
+ValidationResult RouteWrapper::validateRouteString(const std::string& routeString) const {
+    ValidationResult result(true);
+    
+    if (routeString.empty()) {
+        result.isValid = false;
+        result.errorMessage = "Route string is empty";
+        result.errorMessageJa = "ルート文字列が空です";
+        result.suggestions.push_back("Provide a valid route string in format: 'Station Line Station Line ...'");
+        result.suggestions.push_back("有効なルート文字列を提供してください: '駅名 路線名 駅名 路線名 ...'");
+        return result;
+    }
+    
+    // Parse route string into tokens
+    std::vector<std::string> tokens = parseRouteString(routeString);
+    
+    if (tokens.empty()) {
+        result.isValid = false;
+        result.errorMessage = "No valid tokens found in route string";
+        result.errorMessageJa = "ルート文字列に有効なトークンが見つかりません";
+        result.suggestions.push_back("Check route string format and encoding");
+        result.suggestions.push_back("ルート文字列の形式とエンコーディングを確認してください");
+        return result;
+    }
+    
+    // Validate alternating pattern: station, line, station, line, ...
+    for (size_t i = 0; i < tokens.size(); ++i) {
+        const std::string& token = tokens[i];
+        
+        if (i % 2 == 0) {
+            // Even indices should be station names
+            int stationId = RouteUtility::getStationId(token);
+            if (stationId <= 0) {
+                result.isValid = false;
+                result.errorMessage = "Invalid station name: " + token;
+                result.errorMessageJa = "無効な駅名: " + token;
+                
+                // Generate fuzzy matching suggestions
+                std::vector<std::string> suggestions = generateStationNameSuggestions(token);
+                for (const auto& suggestion : suggestions) {
+                    result.suggestions.push_back("Did you mean: " + suggestion);
+                    result.suggestions.push_back("候補: " + suggestion);
+                }
+                
+                result.context["invalid_token"] = token;
+                result.context["token_position"] = std::to_string(i + 1);
+                result.context["expected_type"] = "station";
+                return result;
+            }
+        } else {
+            // Odd indices should be line names
+            int lineId = RouteUtility::getLineIdFromName(token);
+            if (lineId <= 0) {
+                result.isValid = false;
+                result.errorMessage = "Invalid line name: " + token;
+                result.errorMessageJa = "無効な路線名: " + token;
+                
+                // Generate fuzzy matching suggestions
+                std::vector<std::string> suggestions = generateLineNameSuggestions(token);
+                for (const auto& suggestion : suggestions) {
+                    result.suggestions.push_back("Did you mean: " + suggestion);
+                    result.suggestions.push_back("候補: " + suggestion);
+                }
+                
+                result.context["invalid_token"] = token;
+                result.context["token_position"] = std::to_string(i + 1);
+                result.context["expected_type"] = "line";
+                return result;
+            }
+        }
+    }
+    
+    return result;
+}
+
+/**
+ * Parse route string into individual tokens
+ * Helper method for validateRouteString
+ */
+std::vector<std::string> RouteWrapper::parseRouteString(const std::string& routeString) const {
+    std::vector<std::string> tokens;
+    std::istringstream iss(routeString);
+    std::string token;
+    
+    // Simple whitespace-based tokenization
+    while (iss >> token) {
+        if (!token.empty()) {
+            tokens.push_back(token);
+        }
+    }
+    
+    return tokens;
+}
+
+/**
+ * Validate connection between two route segments
+ * Helper method for validateRoute
+ */
+bool RouteWrapper::validateStationConnection(const RouteItem& from, const RouteItem& to) const {
+    // If the line ID is 0, it's a starting point and always valid
+    if (to.lineId == 0) {
+        return true;
+    }
+    
+    // Check if the line connects the two stations
+    std::vector<int> stationsOnLine = RouteUtility::getStationIdsOfLine(to.lineId);
+    
+    bool fromStationOnLine = false;
+    bool toStationOnLine = false;
+    
+    for (int stationId : stationsOnLine) {
+        if (stationId == from.stationId) fromStationOnLine = true;
+        if (stationId == to.stationId) toStationOnLine = true;
+    }
+    
+    return fromStationOnLine && toStationOnLine;
+}
+
+/**
+ * Generate fuzzy matching suggestions for station names
+ * Helper method using existing RouteUtility methods
+ */
+std::vector<std::string> RouteWrapper::generateStationNameSuggestions(const std::string& invalidName) const {
+    std::vector<std::string> suggestions;
+    
+    // Use existing RouteUtility method for fuzzy matching
+    std::vector<int> matchedStationIds = RouteUtility::keyMatchStations(invalidName);
+    
+    for (int stationId : matchedStationIds) {
+        if (suggestions.size() >= 3) break; // Limit to 3 suggestions
+        
+        std::string stationName = RouteUtility::getStationName(stationId);
+        if (!stationName.empty()) {
+            suggestions.push_back(stationName);
+        }
+    }
+    
+    return suggestions;
+}
+
+/**
+ * Generate fuzzy matching suggestions for line names
+ * Helper method using string similarity
+ */
+std::vector<std::string> RouteWrapper::generateLineNameSuggestions(const std::string& invalidName) const {
+    std::vector<std::string> suggestions;
+    
+    // Common line names for fuzzy matching
+    std::vector<std::string> commonLines = {
+        "東海道線", "山手線", "京浜東北線", "中央線", "総武線", "常磐線",
+        "東北線", "高崎線", "宇都宮線", "上野東京ライン", "湘南新宿ライン",
+        "埼京線", "武蔵野線", "京葉線", "南武線", "横浜線", "根岸線",
+        "東海道新幹線", "東北新幹線", "上越新幹線", "北陸新幹線",
+        "阪急神戸線", "阪急宝塚線", "阪急京都線", "阪神本線", "近鉄奈良線",
+        "南海本線", "南海高野線", "京阪本線", "御堂筋線", "谷町線"
+    };
+    
+    // Simple substring matching for suggestions
+    for (const std::string& line : commonLines) {
+        if (suggestions.size() >= 3) break;
+        
+        if (line.find(invalidName) != std::string::npos || 
+            invalidName.find(line) != std::string::npos) {
+            suggestions.push_back(line);
+        }
+    }
+    
+    return suggestions;
 }
 
 // RouteListWrapper implementation
@@ -431,24 +1099,57 @@ RouteListWrapper::~RouteListWrapper() {
 }
 
 int RouteListWrapper::startStationId() const {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return -1;  // Invalid/destroyed object has no start station
+    }
+    
     return routeList->departureStationId();
 }
 
 int RouteListWrapper::lastStationId() const {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return -1;  // Invalid/destroyed object has no last station
+    }
+    
     return routeList->arriveStationId();
 }
 
 std::string RouteListWrapper::routeScript() const {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        if (isDestroyed()) {
+            return "[ERROR: RouteList object was destroyed - cannot access routeScript()]";
+        } else {
+            return "[ERROR: RouteList object corrupted - invalid magic value]";
+        }
+    }
+    
     // TODO: Implement route script generation
     return "";
 }
 
 // Array operations (REQ-OBJ-003)
 int RouteListWrapper::count() const {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return -1;  // Invalid/destroyed object has no count
+    }
+    
     return static_cast<int>(routeList->routeList().size());
 }
 
 RouteItemWrapper RouteListWrapper::at(int index) const {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        if (isDestroyed()) {
+            throw std::runtime_error("RouteList object was destroyed - cannot access at()");
+        } else {
+            throw std::runtime_error("RouteList object corrupted - invalid magic value");
+        }
+    }
+    
     const auto& routeVector = routeList->routeList();
     if (index < 0 || index >= static_cast<int>(routeVector.size())) {
         throw std::out_of_range("Route index out of bounds");
@@ -457,6 +1158,15 @@ RouteItemWrapper RouteListWrapper::at(int index) const {
 }
 
 void RouteListWrapper::remove(int index) {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        if (isDestroyed()) {
+            throw std::runtime_error("RouteList object was destroyed - cannot access remove()");
+        } else {
+            throw std::runtime_error("RouteList object corrupted - invalid magic value");
+        }
+    }
+    
     auto& routeVector = const_cast<std::vector<RouteItem>&>(routeList->routeList());
     if (index < 0 || index >= static_cast<int>(routeVector.size())) {
         throw std::out_of_range("Route index out of bounds");
@@ -465,6 +1175,11 @@ void RouteListWrapper::remove(int index) {
 }
 
 void RouteListWrapper::removeAll() {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return;  // Cannot remove from invalid/destroyed object - fail silently for C++ compatibility
+    }
+    
     auto& routeVector = const_cast<std::vector<RouteItem>&>(routeList->routeList());
     routeVector.clear();
     // Reset route flag to default state
@@ -472,6 +1187,18 @@ void RouteListWrapper::removeAll() {
 }
 
 void RouteListWrapper::insert(int index, const RouteItemWrapper& item) {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        if (isDestroyed()) {
+            throw std::runtime_error("RouteList object was destroyed - cannot access insert()");
+        } else {
+            throw std::runtime_error("RouteList object corrupted - invalid magic value");
+        }
+    }
+    if (!item.isValid()) {
+        throw std::invalid_argument("Cannot insert invalid/destroyed RouteItemWrapper");
+    }
+    
     auto& routeVector = const_cast<std::vector<RouteItem>&>(routeList->routeList());
     if (index < 0 || index > static_cast<int>(routeVector.size())) {
         throw std::out_of_range("Route index out of bounds");
@@ -482,15 +1209,33 @@ void RouteListWrapper::insert(int index, const RouteItemWrapper& item) {
 }
 
 void RouteListWrapper::assign(const RouteListWrapper& source) {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return;  // Cannot assign to invalid/destroyed object - fail silently for C++ compatibility
+    }
+    if (!source.isValid()) {
+        return;  // Cannot assign from invalid/destroyed source - fail silently
+    }
+    
     routeList->assign(*source.routeList);
 }
 
 // Route flag access methods
 RouteFlag RouteListWrapper::getRouteFlag() const {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return RouteFlag();  // Return default RouteFlag for invalid/destroyed object
+    }
+    
     return routeList->getRouteFlag();
 }
 
 void RouteListWrapper::setRouteFlag(const RouteFlag& flag) {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return;  // Cannot set flag on invalid/destroyed object - fail silently for C++ compatibility
+    }
+    
     routeList->refRouteFlag() = flag;
 }
 
@@ -516,15 +1261,40 @@ CalcRouteWrapper::~CalcRouteWrapper() {
 }
 
 void CalcRouteWrapper::sync(const RouteWrapper& route) {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return;  // Cannot sync invalid/destroyed object - fail silently for C++ compatibility
+    }
+    if (!route.isValid()) {
+        return;  // Cannot sync from invalid/destroyed source - fail silently
+    }
+    
     calcRoute->sync(*route.route);
 }
 
 void CalcRouteWrapper::sync(const RouteWrapper& route, int count) {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return;  // Cannot sync invalid/destroyed object - fail silently for C++ compatibility
+    }
+    if (!route.isValid()) {
+        return;  // Cannot sync from invalid/destroyed source - fail silently
+    }
+    
     // TODO: Implement sync with count parameter
     calcRoute->sync(*route.route);
 }
 
 std::string CalcRouteWrapper::calcFare() {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        if (isDestroyed()) {
+            return "{\"result\":-1000,\"errorCode\":-1000,\"errorMessage\":\"CalcRoute object was destroyed - cannot calculate fare\",\"errorMessageJa\":\"CalcRouteオブジェクトが破棄されました - 運賃計算できません\"}";
+        } else {
+            return "{\"result\":-1001,\"errorCode\":-1001,\"errorMessage\":\"CalcRoute object corrupted - invalid magic value\",\"errorMessageJa\":\"CalcRouteオブジェクトが破損しています - 無効なマジック値\"}";
+        }
+    }
+    
     FARE_INFO fi;  // Using 'fi' to match original c_route.mm variable name
     int fare_result;
 
@@ -533,18 +1303,247 @@ std::string CalcRouteWrapper::calcFare() {
     // Create FareInfoData and populate it exactly like original c_route.mm
     FareInfoData result;
     
-    // Original logic from c_route.mm
+    // Enhanced error handling (Task 21: REQ-OBJ-002, REQ-OBJ-006)
+    // Original logic from c_route.mm with detailed error reporting
     switch (fi.resultCode()) {
         case 0:     // success, company begin/first or too many company
             fare_result = 0;
+            result.errorCode = 0;
+            result.errorMessage = "Success";
+            result.errorMessageJa = "成功";
             break;  // OK
+            
         case -1:    /* In completed (吉塚、西小倉における不完全ルート) */
+        {
             fare_result = 1;     //"この経路の片道乗車券は購入できません.続けて経路を指定してください."
+            result.errorCode = -1;
+            result.errorMessage = "Incomplete route - ticket cannot be purchased for this path. Please specify additional route segments.";
+            result.errorMessageJa = "この経路の片道乗車券は購入できません。続けて経路を指定してください。";
+            
+            // Add suggestions for completing the route
+            if (calcRoute && calcRoute->routeList().size() > 0) {
+                const auto& routeItems = calcRoute->routeList();
+                const RouteItem& lastItem = routeItems.back();
+                
+                // Get alternative destinations from the last station
+                std::vector<int> alternativeStations = RouteUtility::getLineIdsFromStation(lastItem.stationId);
+                for (size_t i = 0; i < std::min(alternativeStations.size(), size_t(3)); ++i) {
+                    int lineId = alternativeStations[i];
+                    std::vector<int> stationsOnLine = RouteUtility::getStationIdsOfLine(lineId);
+                    for (size_t j = 0; j < std::min(stationsOnLine.size(), size_t(2)); ++j) {
+                        int stationId = stationsOnLine[j];
+                        if (stationId != lastItem.stationId) {
+                            std::string stationName = RouteUtility::getStationName(stationId);
+                            if (!stationName.empty()) {
+                                result.suggestedStations.push_back(stationName);
+                                if (result.suggestedStations.size() >= 5) break;
+                            }
+                        }
+                    }
+                    if (result.suggestedStations.size() >= 5) break;
+                }
+            }
             break;
-        default:
+        }
+            
+        case -2:    /* Route is empty */
+        {
+            fare_result = -2;
+            result.errorCode = -2;
+            result.errorMessage = "Route is empty - no stations specified. Please add stations to create a valid route.";
+            result.errorMessageJa = "ルートが空です。駅を追加して有効なルートを作成してください。";
+            
+            // Suggest popular starting stations
+            result.suggestedStations.push_back("東京");
+            result.suggestedStations.push_back("新宿");
+            result.suggestedStations.push_back("渋谷");
+            result.suggestedStations.push_back("大阪");
+            result.suggestedStations.push_back("京都");
+            
             lastFareResult = -1;
-            return "{}"; /* -2:empty or -3:fail - return empty JSON */
-            break;
+            
+            // Return error JSON with detailed information
+            std::string errorJson2;
+            errorJson2 += "{";
+            errorJson2 += "\"result\":" + std::to_string(result.result) + ",";
+            errorJson2 += "\"errorCode\":" + std::to_string(result.errorCode) + ",";
+            errorJson2 += "\"errorMessage\":\"" + result.errorMessage + "\",";
+            errorJson2 += "\"errorMessageJa\":\"" + result.errorMessageJa + "\",";
+            errorJson2 += "\"suggestedStations\":[";
+            for (size_t i = 0; i < result.suggestedStations.size(); ++i) {
+                if (i > 0) errorJson2 += ",";
+                errorJson2 += "\"" + result.suggestedStations[i] + "\"";
+            }
+            errorJson2 += "]}";
+            return errorJson2;
+        }
+            
+        case -3:    /* Route calculation failed */
+        {
+            fare_result = -3;
+            result.errorCode = -3;
+            result.errorMessage = "Route calculation failed - invalid route configuration. Please check station and line connections.";
+            result.errorMessageJa = "ルート計算に失敗しました。駅と路線の接続を確認してください。";
+            
+            // Analyze route and provide specific suggestions
+            if (calcRoute && calcRoute->routeList().size() > 0) {
+                const auto& routeItems = calcRoute->routeList();
+                
+                // Check for invalid station connections
+                for (size_t i = 1; i < routeItems.size(); ++i) {
+                    const RouteItem& prevItem = routeItems[i-1];
+                    const RouteItem& currItem = routeItems[i];
+                    
+                    // Check if line serves both stations
+                    if (currItem.lineId > 0) {
+                        std::vector<int> stationsOnLine = RouteUtility::getStationIdsOfLine(currItem.lineId);
+                        bool prevStationFound = false, currStationFound = false;
+                        
+                        for (int stationId : stationsOnLine) {
+                            if (stationId == prevItem.stationId) prevStationFound = true;
+                            if (stationId == currItem.stationId) currStationFound = true;
+                        }
+                        
+                        if (!prevStationFound || !currStationFound) {
+                            std::string prevStationName = RouteUtility::getStationName(prevItem.stationId);
+                            std::string currStationName = RouteUtility::getStationName(currItem.stationId);
+                            std::string lineName = RouteUtility::getLineName(currItem.lineId);
+                            
+                            if (!prevStationName.empty()) result.suggestedStations.push_back(prevStationName);
+                            if (!currStationName.empty()) result.suggestedStations.push_back(currStationName);
+                            
+                            // Add context information to error message
+                            if (!lineName.empty() && !prevStationName.empty() && !currStationName.empty()) {
+                                result.errorMessage += std::string(" Connection issue between ") + prevStationName + " and " + currStationName + " via " + lineName + ".";
+                                result.errorMessageJa += " " + lineName + "経由の" + prevStationName + "と" + currStationName + "間の接続に問題があります。";
+                            }
+                            break;
+                        }
+                    }
+                }
+                
+                // If no specific issues found, suggest alternative routes
+                if (result.suggestedStations.empty()) {
+                    const RouteItem& firstItem = routeItems[0];
+                    const RouteItem& lastItem = routeItems.back();
+                    
+                    std::string startStationName = RouteUtility::getStationName(firstItem.stationId);
+                    std::string endStationName = RouteUtility::getStationName(lastItem.stationId);
+                    
+                    if (!startStationName.empty()) result.suggestedStations.push_back(startStationName);
+                    if (!endStationName.empty()) result.suggestedStations.push_back(endStationName);
+                }
+            }
+            
+            lastFareResult = -1;
+            
+            // Return error JSON with detailed information
+            std::string errorJson3;
+            errorJson3 += "{";
+            errorJson3 += "\"result\":" + std::to_string(result.result) + ",";
+            errorJson3 += "\"errorCode\":" + std::to_string(result.errorCode) + ",";
+            errorJson3 += "\"errorMessage\":\"" + result.errorMessage + "\",";
+            errorJson3 += "\"errorMessageJa\":\"" + result.errorMessageJa + "\",";
+            errorJson3 += "\"suggestedStations\":[";
+            for (size_t i = 0; i < result.suggestedStations.size(); ++i) {
+                if (i > 0) errorJson3 += ",";
+                errorJson3 += "\"" + result.suggestedStations[i] + "\"";
+            }
+            errorJson3 += "]}";
+            return errorJson3;
+        }
+            
+        case -4:    /* Database access error */
+        {
+            fare_result = -4;
+            result.errorCode = -4;
+            result.errorMessage = "Database access error - unable to retrieve route information. Please check system configuration.";
+            result.errorMessageJa = "データベースアクセスエラー。ルート情報を取得できません。システム設定を確認してください。";
+            
+            lastFareResult = -1;
+            
+            // Return error JSON with detailed information
+            std::string errorJson4;
+            errorJson4 += "{";
+            errorJson4 += "\"result\":" + std::to_string(result.result) + ",";
+            errorJson4 += "\"errorCode\":" + std::to_string(result.errorCode) + ",";
+            errorJson4 += "\"errorMessage\":\"" + result.errorMessage + "\",";
+            errorJson4 += "\"errorMessageJa\":\"" + result.errorMessageJa + "\"";
+            errorJson4 += "}";
+            return errorJson4;
+        }
+            
+        case -5:    /* Insufficient route data */
+        {
+            fare_result = -5;
+            result.errorCode = -5;
+            result.errorMessage = "Insufficient route data - route requires at least two stations. Please add more stations.";
+            result.errorMessageJa = "ルートデータが不十分です。最低2つの駅が必要です。駅を追加してください。";
+            
+            // Suggest completing the route
+            if (calcRoute && calcRoute->routeList().size() > 0) {
+                const auto& routeItems = calcRoute->routeList();
+                const RouteItem& lastItem = routeItems.back();
+                std::string lastStationName = RouteUtility::getStationName(lastItem.stationId);
+                
+                if (!lastStationName.empty()) {
+                    result.suggestedStations.push_back(lastStationName);
+                    
+                    // Get nearby stations
+                    std::vector<int> linesAtStation = RouteUtility::getLineIdsFromStation(lastItem.stationId);
+                    for (size_t i = 0; i < std::min(linesAtStation.size(), size_t(2)); ++i) {
+                        std::vector<int> nearbyStations = RouteUtility::getStationIdsOfLine(linesAtStation[i]);
+                        for (size_t j = 0; j < std::min(nearbyStations.size(), size_t(3)); ++j) {
+                            if (nearbyStations[j] != lastItem.stationId) {
+                                std::string nearbyStationName = RouteUtility::getStationName(nearbyStations[j]);
+                                if (!nearbyStationName.empty()) {
+                                    result.suggestedStations.push_back(nearbyStationName);
+                                    if (result.suggestedStations.size() >= 5) break;
+                                }
+                            }
+                        }
+                        if (result.suggestedStations.size() >= 5) break;
+                    }
+                }
+            }
+            
+            lastFareResult = -1;
+            
+            // Return error JSON with detailed information
+            std::string errorJson5;
+            errorJson5 += "{";
+            errorJson5 += "\"result\":" + std::to_string(result.result) + ",";
+            errorJson5 += "\"errorCode\":" + std::to_string(result.errorCode) + ",";
+            errorJson5 += "\"errorMessage\":\"" + result.errorMessage + "\",";
+            errorJson5 += "\"errorMessageJa\":\"" + result.errorMessageJa + "\",";
+            errorJson5 += "\"suggestedStations\":[";
+            for (size_t i = 0; i < result.suggestedStations.size(); ++i) {
+                if (i > 0) errorJson5 += ",";
+                errorJson5 += "\"" + result.suggestedStations[i] + "\"";
+            }
+            errorJson5 += "]}";
+            return errorJson5;
+        }
+            
+        default:    /* Unknown error */
+        {
+            fare_result = fi.resultCode(); // Preserve original error code
+            result.errorCode = fi.resultCode();
+            result.errorMessage = std::string("Unknown fare calculation error (code: ") + std::to_string(fi.resultCode()) + "). Please verify route configuration.";
+            result.errorMessageJa = std::string("未知の運賃計算エラー (コード: ") + std::to_string(fi.resultCode()) + ")。ルート設定を確認してください。";
+            
+            lastFareResult = -1;
+            
+            // Return error JSON with detailed information
+            std::string errorJsonDefault;
+            errorJsonDefault += "{";
+            errorJsonDefault += "\"result\":" + std::to_string(result.result) + ",";
+            errorJsonDefault += "\"errorCode\":" + std::to_string(result.errorCode) + ",";
+            errorJsonDefault += "\"errorMessage\":\"" + result.errorMessage + "\",";
+            errorJsonDefault += "\"errorMessageJa\":\"" + result.errorMessageJa + "\"";
+            errorJsonDefault += "}";
+            return errorJsonDefault;
+        }
     }
 
     // Store the result code for later use
@@ -623,9 +1622,12 @@ std::string CalcRouteWrapper::calcFare() {
     result.isEnableRule115 = calcRoute->refRouteFlag().isEnableRule115();
     result.isSpecificFare = (fi.getTicketAvailDays() > 1);  // Alternative check
     
-    // Convert FareInfoData to JSON string
+    // Convert FareInfoData to JSON string (including error handling fields for successful results)
     std::string json = "{";
     json += "\"result\":" + std::to_string(result.result) + ",";
+    json += "\"errorCode\":" + std::to_string(result.errorCode) + ",";
+    json += "\"errorMessage\":\"" + result.errorMessage + "\",";
+    json += "\"errorMessageJa\":\"" + result.errorMessageJa + "\",";
     json += "\"isResultCompanyBeginEnd\":" + std::string(result.isResultCompanyBeginEnd ? "true" : "false") + ",";
     json += "\"isResultCompanyMultipassed\":" + std::string(result.isResultCompanyMultipassed ? "true" : "false") + ",";
     json += "\"beginStationId\":" + std::to_string(result.beginStationId) + ",";
@@ -685,6 +1687,17 @@ std::string CalcRouteWrapper::calcFare() {
 }
 
 FareInfoData CalcRouteWrapper::calcFareObject() {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        FareInfoData errorResult;
+        if (isDestroyed()) {
+            errorResult.setError(-1000, "CalcRoute object was destroyed - cannot calculate fare", "CalcRouteオブジェクトが破棄されました - 運賃計算できません");
+        } else {
+            errorResult.setError(-1001, "CalcRoute object corrupted - invalid magic value", "CalcRouteオブジェクトが破損しています - 無効なマジック値");
+        }
+        return errorResult;
+    }
+    
     FARE_INFO fi;  // Using 'fi' to match original c_route.mm variable name
     int fare_result;
 
@@ -693,18 +1706,175 @@ FareInfoData CalcRouteWrapper::calcFareObject() {
     // Create FareInfoData and populate it exactly like original c_route.mm
     FareInfoData result;
     
-    // Original logic from c_route.mm
+    // Enhanced error handling (Task 21: REQ-OBJ-002, REQ-OBJ-006)
+    // Original logic from c_route.mm with detailed error reporting
     switch (fi.resultCode()) {
         case 0:     // success, company begin/first or too many company
             fare_result = 0;
+            result.errorCode = 0;
+            result.errorMessage = "Success";
+            result.errorMessageJa = "成功";
             break;  // OK
+            
         case -1:    /* In completed (吉塚、西小倉における不完全ルート) */
             fare_result = 1;     //"この経路の片道乗車券は購入できません.続けて経路を指定してください."
+            result.errorCode = -1;
+            result.errorMessage = "Incomplete route - ticket cannot be purchased for this path. Please specify additional route segments.";
+            result.errorMessageJa = "この経路の片道乗車券は購入できません。続けて経路を指定してください。";
+            
+            // Add suggestions for completing the route
+            if (calcRoute && calcRoute->routeList().size() > 0) {
+                const auto& routeItems = calcRoute->routeList();
+                const RouteItem& lastItem = routeItems.back();
+                
+                // Get alternative destinations from the last station
+                std::vector<int> alternativeStations = RouteUtility::getLineIdsFromStation(lastItem.stationId);
+                for (size_t i = 0; i < std::min(alternativeStations.size(), size_t(3)); ++i) {
+                    int lineId = alternativeStations[i];
+                    std::vector<int> stationsOnLine = RouteUtility::getStationIdsOfLine(lineId);
+                    for (size_t j = 0; j < std::min(stationsOnLine.size(), size_t(2)); ++j) {
+                        int stationId = stationsOnLine[j];
+                        if (stationId != lastItem.stationId) {
+                            std::string stationName = RouteUtility::getStationName(stationId);
+                            if (!stationName.empty()) {
+                                result.suggestedStations.push_back(stationName);
+                                if (result.suggestedStations.size() >= 5) break;
+                            }
+                        }
+                    }
+                    if (result.suggestedStations.size() >= 5) break;
+                }
+            }
             break;
-        default:
+            
+        case -2:    /* Route is empty */
+            fare_result = -2;
+            result.errorCode = -2;
+            result.errorMessage = "Route is empty - no stations specified. Please add stations to create a valid route.";
+            result.errorMessageJa = "ルートが空です。駅を追加して有効なルートを作成してください。";
+            
+            // Suggest popular starting stations
+            result.suggestedStations.push_back("東京");
+            result.suggestedStations.push_back("新宿");
+            result.suggestedStations.push_back("渋谷");
+            result.suggestedStations.push_back("大阪");
+            result.suggestedStations.push_back("京都");
+            
             lastFareResult = -1;
-            return result; /* -2:empty or -3:fail - return empty FareInfoData */
-            break;
+            return result; /* Return with detailed error information */
+            
+        case -3:    /* Route calculation failed */
+            fare_result = -3;
+            result.errorCode = -3;
+            result.errorMessage = "Route calculation failed - invalid route configuration. Please check station and line connections.";
+            result.errorMessageJa = "ルート計算に失敗しました。駅と路線の接続を確認してください。";
+            
+            // Analyze route and provide specific suggestions
+            if (calcRoute && calcRoute->routeList().size() > 0) {
+                const auto& routeItems = calcRoute->routeList();
+                
+                // Check for invalid station connections
+                for (size_t i = 1; i < routeItems.size(); ++i) {
+                    const RouteItem& prevItem = routeItems[i-1];
+                    const RouteItem& currItem = routeItems[i];
+                    
+                    // Check if line serves both stations
+                    if (currItem.lineId > 0) {
+                        std::vector<int> stationsOnLine = RouteUtility::getStationIdsOfLine(currItem.lineId);
+                        bool prevStationFound = false, currStationFound = false;
+                        
+                        for (int stationId : stationsOnLine) {
+                            if (stationId == prevItem.stationId) prevStationFound = true;
+                            if (stationId == currItem.stationId) currStationFound = true;
+                        }
+                        
+                        if (!prevStationFound || !currStationFound) {
+                            std::string prevStationName = RouteUtility::getStationName(prevItem.stationId);
+                            std::string currStationName = RouteUtility::getStationName(currItem.stationId);
+                            std::string lineName = RouteUtility::getLineName(currItem.lineId);
+                            
+                            if (!prevStationName.empty()) result.suggestedStations.push_back(prevStationName);
+                            if (!currStationName.empty()) result.suggestedStations.push_back(currStationName);
+                            
+                            // Add context information to error message
+                            if (!lineName.empty() && !prevStationName.empty() && !currStationName.empty()) {
+                                result.errorMessage += std::string(" Connection issue between ") + prevStationName + " and " + currStationName + " via " + lineName + ".";
+                                result.errorMessageJa += " " + lineName + "経由の" + prevStationName + "と" + currStationName + "間の接続に問題があります。";
+                            }
+                            break;
+                        }
+                    }
+                }
+                
+                // If no specific issues found, suggest alternative routes
+                if (result.suggestedStations.empty()) {
+                    const RouteItem& firstItem = routeItems[0];
+                    const RouteItem& lastItem = routeItems.back();
+                    
+                    std::string startStationName = RouteUtility::getStationName(firstItem.stationId);
+                    std::string endStationName = RouteUtility::getStationName(lastItem.stationId);
+                    
+                    if (!startStationName.empty()) result.suggestedStations.push_back(startStationName);
+                    if (!endStationName.empty()) result.suggestedStations.push_back(endStationName);
+                }
+            }
+            
+            lastFareResult = -1;
+            return result; /* Return with detailed error information */
+            
+        case -4:    /* Database access error */
+            fare_result = -4;
+            result.errorCode = -4;
+            result.errorMessage = "Database access error - unable to retrieve route information. Please check system configuration.";
+            result.errorMessageJa = "データベースアクセスエラー。ルート情報を取得できません。システム設定を確認してください。";
+            
+            lastFareResult = -1;
+            return result; /* Return with detailed error information */
+            
+        case -5:    /* Insufficient route data */
+            fare_result = -5;
+            result.errorCode = -5;
+            result.errorMessage = "Insufficient route data - route requires at least two stations. Please add more stations.";
+            result.errorMessageJa = "ルートデータが不十分です。最低2つの駅が必要です。駅を追加してください。";
+            
+            // Suggest completing the route
+            if (calcRoute && calcRoute->routeList().size() > 0) {
+                const auto& routeItems = calcRoute->routeList();
+                const RouteItem& lastItem = routeItems.back();
+                std::string lastStationName = RouteUtility::getStationName(lastItem.stationId);
+                
+                if (!lastStationName.empty()) {
+                    result.suggestedStations.push_back(lastStationName);
+                    
+                    // Get nearby stations
+                    std::vector<int> linesAtStation = RouteUtility::getLineIdsFromStation(lastItem.stationId);
+                    for (size_t i = 0; i < std::min(linesAtStation.size(), size_t(2)); ++i) {
+                        std::vector<int> nearbyStations = RouteUtility::getStationIdsOfLine(linesAtStation[i]);
+                        for (size_t j = 0; j < std::min(nearbyStations.size(), size_t(3)); ++j) {
+                            if (nearbyStations[j] != lastItem.stationId) {
+                                std::string nearbyStationName = RouteUtility::getStationName(nearbyStations[j]);
+                                if (!nearbyStationName.empty()) {
+                                    result.suggestedStations.push_back(nearbyStationName);
+                                    if (result.suggestedStations.size() >= 5) break;
+                                }
+                            }
+                        }
+                        if (result.suggestedStations.size() >= 5) break;
+                    }
+                }
+            }
+            
+            lastFareResult = -1;
+            return result; /* Return with detailed error information */
+            
+        default:    /* Unknown error */
+            fare_result = fi.resultCode(); // Preserve original error code
+            result.errorCode = fi.resultCode();
+            result.errorMessage = std::string("Unknown fare calculation error (code: ") + std::to_string(fi.resultCode()) + "). Please verify route configuration.";
+            result.errorMessageJa = std::string("未知の運賃計算エラー (コード: ") + std::to_string(fi.resultCode()) + ")。ルート設定を確認してください。";
+            
+            lastFareResult = -1;
+            return result; /* Return with detailed error information */
     }
 
     // Store the result code for later use
@@ -787,6 +1957,15 @@ FareInfoData CalcRouteWrapper::calcFareObject() {
 }
 
 std::string CalcRouteWrapper::showFare() const {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        if (isDestroyed()) {
+            return "[ERROR: CalcRoute object was destroyed - cannot show fare]";
+        } else {
+            return "[ERROR: CalcRoute object corrupted - invalid magic value]";
+        }
+    }
+    
     // Original implementation from c_route.mm
     FARE_INFO fi;
     calcRoute->calcFare(&fi);
@@ -795,64 +1974,128 @@ std::string CalcRouteWrapper::showFare() const {
 
 // Options and settings
 bool CalcRouteWrapper::isEnableLongRoute() const {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return false;  // Invalid/destroyed object has no long route enabled
+    }
+    
     // Original implementation from c_route.mm
     return calcRoute->getRouteFlag().isEnableLongRoute();
 }
 
 bool CalcRouteWrapper::isRule115specificTerm() const {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return false;  // Invalid/destroyed object has no rule 115 specific term
+    }
+    
     // Original implementation from c_route.mm
     return calcRoute->getRouteFlag().isRule115specificTerm();
 }
 
 void CalcRouteWrapper::setSpecificTermRule115(bool enable) {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return;  // Cannot set rule on invalid/destroyed object - fail silently for C++ compatibility
+    }
+    
     // TODO: Implement setSpecificTermRule115 functionality - need to find original method
     // This method may not exist in original c_route.mm
 }
 
 void CalcRouteWrapper::setStartAsCity() {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return;  // Cannot set city on invalid/destroyed object - fail silently for C++ compatibility
+    }
+    
     // Original implementation from c_route.mm
     calcRoute->refRouteFlag().setStartAsCity();
 }
 
 void CalcRouteWrapper::setArriveAsCity() {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return;  // Cannot set city on invalid/destroyed object - fail silently for C++ compatibility
+    }
+    
     // Original implementation from c_route.mm
     calcRoute->refRouteFlag().setArriveAsCity();
 }
 
 void CalcRouteWrapper::setLongRoute(bool flag) {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return;  // Cannot set long route on invalid/destroyed object - fail silently for C++ compatibility
+    }
+    
     // Original implementation from c_route.mm
     calcRoute->refRouteFlag().setLongRoute(flag);
 }
 
 // Route list operations (inherited from RouteList)
 int CalcRouteWrapper::getRouteCount() const {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return -1;  // Invalid/destroyed object has no route count
+    }
+    
     return calcRoute->routeList().size();
 }
 
 int CalcRouteWrapper::startStationId() const {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return -1;  // Invalid/destroyed object has no start station
+    }
+    
     return calcRoute->departureStationId();
 }
 
 int CalcRouteWrapper::lastStationId() const {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return -1;  // Invalid/destroyed object has no last station
+    }
+    
     return calcRoute->arriveStationId();
 }
 
 std::string CalcRouteWrapper::routeScript() const {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        if (isDestroyed()) {
+            return "[ERROR: CalcRoute object was destroyed - cannot access routeScript()]";
+        } else {
+            return "[ERROR: CalcRoute object corrupted - invalid magic value]";
+        }
+    }
+    
     // TODO: Implement route script generation
     return "";
 }
 
 bool CalcRouteWrapper::isOsakakanDetourEnable() const {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return false;  // Invalid/destroyed object has no detour enabled
+    }
+    
     // TODO: Implement isOsakakanDetourEnable functionality
     return false;
 }
 
 bool CalcRouteWrapper::isOsakakanDetour() const {
+    // Object state validation (Task 27: REQ-OBJ-007)
+    if (!isValid()) {
+        return false;  // Invalid/destroyed object has no detour
+    }
+    
     // TODO: Implement isOsakakanDetour functionality
     return false;
 }
 
-// RouteFlagWrapper implementation
+// RouteFlagWrapper lifecycle management implementations (Task 25: REQ-OBJ-007)
 
 // Constructor from C++ RouteFlag (implementation matching header declaration)
 RouteFlagWrapper::RouteFlagWrapper(const RouteFlag* flag) {
@@ -896,6 +2139,36 @@ RouteFlagWrapper::RouteFlagWrapper(const RouteFlag* flag) {
     } else {
         // Handle null pointer case - initialize to default values
         clear();
+    }
+    
+    // Initialize lifecycle management
+    magicValue = MemorySafetyValidator::MAGIC_VALUE_VALID;
+    refCounter = new RefCounter();
+}
+
+// RouteListWrapper lifecycle management methods (Task 25: REQ-OBJ-007)
+void RouteListWrapper::initializeLifecycle() {
+    magicValue = MemorySafetyValidator::MAGIC_VALUE_VALID;
+    refCounter = new RefCounter();
+}
+
+void RouteListWrapper::cleanupRouteList() {
+    if (routeList) {
+        delete routeList;
+        routeList = nullptr;
+    }
+}
+
+// CalcRouteWrapper lifecycle management methods (Task 25: REQ-OBJ-007)
+void CalcRouteWrapper::initializeLifecycle() {
+    magicValue = MemorySafetyValidator::MAGIC_VALUE_VALID;
+    refCounter = new RefCounter();
+}
+
+void CalcRouteWrapper::cleanupCalcRoute() {
+    if (calcRoute) {
+        delete calcRoute;
+        calcRoute = nullptr;
     }
 }
 
@@ -1050,8 +2323,65 @@ std::string RouteUtility::getStationNameEx(int id) {
 }
 
 std::string RouteUtility::getCompanyOrPrefectName(int id) {
-    // TODO: Implement company/prefect name lookup
-    return "";
+    // Delegate to Android-compatible method
+    return companyOrPrefectName(id);
+}
+
+// Android-compatible utility methods implementation (Task 24: REQ-OBJ-005)
+// Based on Android RouteHelper.kt patterns
+
+/**
+ * Get all JR company IDs (matching Android RouteHelper.kt getCompanys())
+ * Returns JR company IDs where id < 0x10000
+ */
+std::vector<int> RouteUtility::getJRCompanys() {
+    std::vector<int> companies; // JR group
+    DBO dbo = RouteUtil::Enum_company_prefect();
+    
+    if (dbo.isvalid()) {
+        while (dbo.moveNext()) {
+            int ident = dbo.getInt(1);
+            if (ident < 0x10000) {
+                companies.push_back(ident);
+            }
+        }
+    }
+    
+    return companies;
+}
+
+/**
+ * Get all prefecture IDs (matching Android RouteHelper.kt getPrefects())
+ * Returns prefecture IDs where id >= 0x10000
+ */
+std::vector<int> RouteUtility::getPrefects() {
+    std::vector<int> prefects; // Prefecture
+    DBO dbo = RouteUtil::Enum_company_prefect();
+    
+    if (dbo.isvalid()) {
+        while (dbo.moveNext()) {
+            int ident = dbo.getInt(1);
+            if (ident < 0x10000) {
+                // ignored - company ID
+            } else {
+                prefects.push_back(ident);
+            }
+        }
+    }
+    
+    return prefects;
+}
+
+/**
+ * Get company or prefecture name by ID (matching Android RouteHelper.kt companyOrPrefectName())
+ * Returns company name for id < 0x10000, prefecture name for id >= 0x10000
+ */
+std::string RouteUtility::companyOrPrefectName(int ident) {
+    if (ident < 0x10000) {
+        return RouteUtil::CompanyName(ident);
+    } else {
+        return RouteUtil::PrefectName(ident);
+    }
 }
 
 // Route storage operations (placeholder implementations - need actual storage backend)

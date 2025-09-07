@@ -25,9 +25,12 @@ Tasks follow CLAUDE.md architecture patterns with inheritance hierarchy `cCalcRo
 
 ## Tasks
 
+- 各タスクの終了時に、git commit すること。
+- コミットメッセージは conventional commits 形式で書いてください
+
 ### Phase 1: C++ Wrapper Classes Foundation
 
-- [ ] 1. Create RouteItemWrapper class in src/include/route_interface.h
+- [x] 1. Create RouteItemWrapper class in src/include/route_interface.h
   - File: src/include/route_interface.h (modify existing)
   - Add RouteItemWrapper class with stationId, lineId, flag properties
   - Implement constructors, copy constructor, assignment operator
@@ -35,7 +38,7 @@ Tasks follow CLAUDE.md architecture patterns with inheritance hierarchy `cCalcRo
   - _Requirements: REQ-OBJ-003_
   - _Leverage: existing FareInfoData structure in route_interface.h_
 
-- [ ] 2. Create RouteFlagWrapper class in src/include/route_interface.h
+- [x] 2. Create RouteFlagWrapper class in src/include/route_interface.h
   - File: src/include/route_interface.h (modify existing)
   - Add RouteFlagWrapper class exposing all RouteFlag public members
   - Implement 30+ boolean properties (no_rule, rule88, rule69, etc.)
@@ -43,7 +46,7 @@ Tasks follow CLAUDE.md architecture patterns with inheritance hierarchy `cCalcRo
   - _Requirements: REQ-OBJ-003_
   - _Leverage: RouteFlag class definition in src/core/alpdb.h lines 247-469_
 
-- [ ] 3. Add RouteItemWrapper methods in src/include/route_interface.h  
+- [x] 3. Add RouteItemWrapper methods in src/include/route_interface.h  
   - File: src/include/route_interface.h (continue from task 1)
   - Implement isValid(), getDisplayName(), refresh() methods
   - Add equality operators (==, is_equal) matching C++ RouteItem
@@ -51,7 +54,7 @@ Tasks follow CLAUDE.md architecture patterns with inheritance hierarchy `cCalcRo
   - _Requirements: REQ-OBJ-003, REQ-OBJ-002_
   - _Leverage: RouteItem class methods in src/core/alpdb.h lines 491-528_
 
-- [ ] 4. Add RouteFlagWrapper management methods in src/include/route_interface.h
+- [x] 4. Add RouteFlagWrapper management methods in src/include/route_interface.h
   - File: src/include/route_interface.h (continue from task 2)
   - Implement 15+ flag management methods (setLongRoute, setStartAsCity, etc.)
   - Add availability check methods (isAvailable*, isEnable*)
@@ -59,7 +62,7 @@ Tasks follow CLAUDE.md architecture patterns with inheritance hierarchy `cCalcRo
   - _Requirements: REQ-OBJ-003, REQ-OBJ-005_
   - _Leverage: RouteFlag public methods in src/core/alpdb.h lines 351-419_
 
-- [ ] 5. Implement RouteItemWrapper class in src/core/route_interface.cpp
+- [x] 5. Implement RouteItemWrapper class in src/core/route_interface.cpp
   - File: src/core/route_interface.cpp (modify existing)
   - Implement all RouteItemWrapper constructors and methods
   - Add proper initialization and validation logic
@@ -67,7 +70,7 @@ Tasks follow CLAUDE.md architecture patterns with inheritance hierarchy `cCalcRo
   - _Requirements: REQ-OBJ-003, REQ-OBJ-002_
   - _Leverage: existing RouteWrapper implementation patterns in route_interface.cpp_
 
-- [ ] 6. Implement RouteFlagWrapper class in src/core/route_interface.cpp
+- [x] 6. Implement RouteFlagWrapper class in src/core/route_interface.cpp
   - File: src/core/route_interface.cpp (modify existing)
   - Implement all RouteFlagWrapper constructors and management methods  
   - Add proper flag state management and validation
@@ -103,7 +106,7 @@ Tasks follow CLAUDE.md architecture patterns with inheritance hierarchy `cCalcRo
 
 ### Phase 3: WebAssembly Bindings Integration
 
-- [ ] 10. Add cRouteItem WebAssembly bindings in src/farert_wasm.cpp
+- [x] 10. Add cRouteItem WebAssembly bindings in src/farert_wasm.cpp
   - File: src/farert_wasm.cpp (modify existing, add after line 611)
   - Add emscripten class binding for RouteItemWrapper as cRouteItem
   - Expose all properties (stationId, lineId, flag) and methods
@@ -111,7 +114,7 @@ Tasks follow CLAUDE.md architecture patterns with inheritance hierarchy `cCalcRo
   - _Requirements: REQ-OBJ-003_
   - _Leverage: existing FareInfoData bindings pattern lines 584-611_
 
-- [ ] 11. Add cRouteFlag WebAssembly bindings in src/farert_wasm.cpp
+- [x] 11. Add cRouteFlag WebAssembly bindings in src/farert_wasm.cpp
   - File: src/farert_wasm.cpp (modify existing, add after cRouteItem)
   - Add emscripten class binding for RouteFlagWrapper as cRouteFlag
   - Expose all 30+ boolean properties and 4 numeric properties
@@ -119,7 +122,7 @@ Tasks follow CLAUDE.md architecture patterns with inheritance hierarchy `cCalcRo
   - _Requirements: REQ-OBJ-003_
   - _Leverage: existing cRoute bindings pattern lines 541-559_
 
-- [ ] 12. Enhance cRouteList bindings with array operations in src/farert_wasm.cpp
+- [x] 12. Enhance cRouteList bindings with array operations in src/farert_wasm.cpp
   - File: src/farert_wasm.cpp (modify existing cRouteList bindings lines 562-566)
   - Add array operation methods (at, count, remove, removeAll, insert, assign)
   - Add route flag access methods (getRouteFlag, setRouteFlag)
@@ -127,7 +130,7 @@ Tasks follow CLAUDE.md architecture patterns with inheritance hierarchy `cCalcRo
   - _Requirements: REQ-OBJ-003_
   - _Leverage: existing cRouteList binding structure lines 562-566_
 
-- [ ] 13. Add RouteItemWrapper access to cRoute bindings in src/farert_wasm.cpp
+- [x] 13. Add RouteItemWrapper access to cRoute bindings in src/farert_wasm.cpp
   - File: src/farert_wasm.cpp (modify existing cRoute bindings lines 541-559)
   - Add getRouteItem method returning RouteItemWrapper
   - Add route item manipulation methods for enhanced route building
@@ -137,7 +140,7 @@ Tasks follow CLAUDE.md architecture patterns with inheritance hierarchy `cCalcRo
 
 ### Phase 4: TypeScript Interface Enhancement
 
-- [ ] 14. Update RouteItemWrapper interface in src/cli/types.ts
+- [x] 14. Update RouteItemWrapper interface in src/cli/types.ts
   - File: src/cli/types.ts (modify existing RouteItemWrapper lines 61-65)
   - Add fare, salesKm, indexOfAggregate properties per CLAUDE.md spec
   - Add isValid(), getDisplayName() methods
@@ -145,7 +148,7 @@ Tasks follow CLAUDE.md architecture patterns with inheritance hierarchy `cCalcRo
   - _Requirements: REQ-OBJ-001, REQ-OBJ-003_
   - _Leverage: existing interface structure in types.ts_
 
-- [ ] 15. Complete RouteFlagWrapper interface in src/cli/types.ts
+- [x] 15. Complete RouteFlagWrapper interface in src/cli/types.ts
   - File: src/cli/types.ts (modify existing RouteFlagWrapper lines 67-127)
   - Add missing boolean properties (osakakan_1dir, osakakan_2dir, osakakan_detour)
   - Add all availability check methods (isAvailableRule*, isEnable*)  
@@ -171,7 +174,7 @@ Tasks follow CLAUDE.md architecture patterns with inheritance hierarchy `cCalcRo
 
 ### Phase 5: Comprehensive Error Handling System
 
-- [ ] 18. Create error handling utilities in src/cli/error_handling.ts
+- [x] 18. Create error handling utilities in src/cli/error_handling.ts
   - File: src/cli/error_handling.ts (create new)
   - Implement RouteConstructionError, RouteCalculationError classes
   - Add fuzzy matching for invalid station names with 3 suggestions
@@ -187,7 +190,7 @@ Tasks follow CLAUDE.md architecture patterns with inheritance hierarchy `cCalcRo
   - _Requirements: REQ-OBJ-002, REQ-OBJ-004_
   - _Leverage: existing RouteUtility station lookup methods_
 
-- [ ] 20. Enhance FareInfoData with error details in src/include/route_interface.h
+- [x] 20. Enhance FareInfoData with error details in src/include/route_interface.h
   - File: src/include/route_interface.h (modify existing FareInfoData)
   - Add errorCode, errorMessage, suggestedStations properties
   - Add enhanced display methods (getFormattedFare, getFareBreakdown)
@@ -205,7 +208,7 @@ Tasks follow CLAUDE.md architecture patterns with inheritance hierarchy `cCalcRo
 
 ### Phase 6: Android Kotlin Compatibility
 
-- [ ] 22. Create Android compatibility validation in src/cli/android_compat.ts
+- [x] 22. Create Android compatibility validation in src/cli/android_compat.ts
   - File: src/cli/android_compat.ts (create new)
   - Implement interfaces matching Android FareInfo.kt structure
   - Add RouteHelper.kt compatibility layer for utility methods
@@ -213,7 +216,7 @@ Tasks follow CLAUDE.md architecture patterns with inheritance hierarchy `cCalcRo
   - _Requirements: REQ-OBJ-005_
   - _Leverage: existing FareInfoData interface structure_
 
-- [ ] 23. Add Android-compatible method signatures in src/cli/types.ts
+- [x] 23. Add Android-compatible method signatures in src/cli/types.ts
   - File: src/cli/types.ts (modify existing interfaces)
   - Add method name aliases for Android Kotlin compatibility
   - Add data type mappings (TypeScript number -> Kotlin Int/Long)
@@ -221,7 +224,7 @@ Tasks follow CLAUDE.md architecture patterns with inheritance hierarchy `cCalcRo
   - _Requirements: REQ-OBJ-005_
   - _Leverage: existing FareInfoData and RouteWrapper interfaces_
 
-- [ ] 24. Implement Android-compatible utility methods in RouteUtility class
+- [x] 24. Implement Android-compatible utility methods in RouteUtility class
   - File: src/core/route_interface.cpp (modify existing RouteUtility methods)
   - Add getJRCompanys(), getPrefects() methods matching RouteHelper.kt
   - Add getKanaFromStationId(), companyOrPrefectName() methods
@@ -239,7 +242,7 @@ Tasks follow CLAUDE.md architecture patterns with inheritance hierarchy `cCalcRo
   - _Requirements: REQ-OBJ-007_
   - _Leverage: existing destructor patterns in RouteWrapper, CalcRouteWrapper_
 
-- [ ] 26. Implement WebAssembly memory management in src/farert_wasm.cpp
+- [x] 26. Implement WebAssembly memory management in src/farert_wasm.cpp
   - File: src/farert_wasm.cpp (add memory management section after bindings)
   - Add proper cleanup methods for long-running applications
   - Implement garbage collection callbacks for object destruction
@@ -257,7 +260,7 @@ Tasks follow CLAUDE.md architecture patterns with inheritance hierarchy `cCalcRo
 
 ### Phase 8: Comprehensive Testing Implementation
 
-- [ ] 28. Create cRouteItem unit tests in src/cli/test_route_item.ts
+- [x] 28. Create cRouteItem unit tests in src/cli/test_route_item.ts
   - File: src/cli/test_route_item.ts (create new)
   - Write tests for property access, validation, and lifecycle
   - Test integration with cRouteList array operations

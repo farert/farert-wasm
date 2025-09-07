@@ -40,6 +40,10 @@ Tech.md alignment through:
 
 ## Tasks
 
+- 各タスクの終了時に、git commit すること。
+- コミットメッセージは conventional commits 形式で書いてください
+
+
 ### Phase 1: Core SDK Foundation
 
 - [ ] 1. Create base SDK interfaces in src/sdk/types/core.ts
