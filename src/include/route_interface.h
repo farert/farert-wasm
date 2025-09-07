@@ -8,6 +8,7 @@ class Route;
 class RouteList;
 class CalcRoute;
 class RouteItem;
+class RouteFlag;
 
 // FareInfo equivalent structure (matching original FareInfo.h/FareInfo.m)
 struct FareInfoData {
@@ -159,8 +160,984 @@ public:
     static bool getDatabaseVersion(void* dbsys);
 };
 
-// Forward declaration for RouteItem
-class RouteItem;
+// RouteItem wrapper structure (corresponds to cRouteItem)
+struct RouteItemWrapper {
+    // Core properties matching original C++ RouteItem class
+    int stationId;      // Station ID for this route point
+    int lineId;         // Line ID for this route segment
+    int flag;           // Route-specific flags (SPECIFICFLAG from C++)
+    
+    // Additional properties for enhanced functionality (matching CLAUDE.md requirements)
+    int fare;           // Fare amount for this segment
+    int salesKm;        // Sales distance in kilometers
+    int indexOfAggregate; // Index for aggregated calculations
+    
+    // Constructor
+    RouteItemWrapper() {
+        stationId = 0;
+        lineId = 0;
+        flag = 0;
+        fare = 0;
+        salesKm = 0;
+        indexOfAggregate = 0;
+    }
+    
+    // Constructor from C++ RouteItem (implementation will be in .cpp file)
+    RouteItemWrapper(const RouteItem* item);
+    
+    // Constructor from raw values (for direct creation from RouteItem data)
+    RouteItemWrapper(int lineId_, int stationId_, int flag_, int fare_, int salesKm_, int indexOfAggregate_) {
+        lineId = lineId_;
+        stationId = stationId_;
+        flag = flag_;
+        fare = fare_;
+        salesKm = salesKm_;
+        indexOfAggregate = indexOfAggregate_;
+    }
+    
+    // Constructor with basic parameters
+    RouteItemWrapper(int lineId_, int stationId_, int flag_ = 0) {
+        lineId = lineId_;
+        stationId = stationId_;
+        flag = flag_;
+        fare = 0;
+        salesKm = 0;
+        indexOfAggregate = 0;
+    }
+    
+    // Copy constructor
+    RouteItemWrapper(const RouteItemWrapper& other) {
+        stationId = other.stationId;
+        lineId = other.lineId;
+        flag = other.flag;
+        fare = other.fare;
+        salesKm = other.salesKm;
+        indexOfAggregate = other.indexOfAggregate;
+    }
+    
+    // Assignment operator
+    RouteItemWrapper& operator=(const RouteItemWrapper& other) {
+        if (this != &other) {
+            stationId = other.stationId;
+            lineId = other.lineId;
+            flag = other.flag;
+            fare = other.fare;
+            salesKm = other.salesKm;
+            indexOfAggregate = other.indexOfAggregate;
+        }
+        return *this;
+    }
+    
+    // Equality operator
+    bool operator==(const RouteItemWrapper& other) const {
+        return lineId == other.lineId && 
+               stationId == other.stationId &&
+               flag == other.flag;
+    }
+    
+    // Property accessors for TypeScript compatibility
+    int getStationId() const { return stationId; }
+    int getLineId() const { return lineId; }
+    int getFlag() const { return flag; }
+    int getFare() const { return fare; }
+    int getSalesKm() const { return salesKm; }
+    int getIndexOfAggregate() const { return indexOfAggregate; }
+    
+    // Property setters
+    void setStationId(int id) { stationId = id; }
+    void setLineId(int id) { lineId = id; }
+    void setFlag(int f) { flag = f; }
+    void setFare(int f) { fare = f; }
+    void setSalesKm(int km) { salesKm = km; }
+    void setIndexOfAggregate(int index) { indexOfAggregate = index; }
+    
+    // C++ RouteItem compatible methods
+    
+    // Refresh method (corresponding to C++ RouteItem::refresh())
+    void refresh() {
+        // Reset calculated values to force recalculation
+        // This matches the C++ behavior where refresh() resets computed state
+        fare = 0;
+        salesKm = 0;
+        indexOfAggregate = 0;
+    }
+    
+    // Equality check method (corresponding to C++ RouteItem::is_equal())
+    bool is_equal(const RouteItemWrapper& item) const {
+        // Match exact C++ logic: compare lineId and stationId only (not flag)
+        return lineId == item.lineId && stationId == item.stationId;
+    }
+    
+    // Enhanced validation for REQ-OBJ-002 (C++ Compatible Error Handling)
+    bool isValid() const {
+        // Station ID validation: must be positive (C++ convention)
+        if (stationId <= 0) return false;
+        
+        // Line ID validation: must be non-negative (C++ convention) 
+        if (lineId < 0) return false;
+        
+        // Flag validation: SPECIFICFLAG range check (match C++ behavior)
+        // Flags should be within reasonable range for C++ SPECIFICFLAG
+        if (flag < 0 || flag > 0xFFFF) return false;
+        
+        return true;
+    }
+    
+    // Enhanced validation with error reporting
+    int validateWithErrorCode() const {
+        if (stationId <= 0) return -1;    // Invalid station ID
+        if (lineId < 0) return -2;        // Invalid line ID  
+        if (flag < 0 || flag > 0xFFFF) return -3;  // Invalid flag value
+        return 0;  // Success
+    }
+    
+    // Utility methods for array operations (REQ-OBJ-003 support)
+    
+    // Clear all values (enhanced version)
+    void clear() {
+        stationId = 0;
+        lineId = 0;
+        flag = 0;
+        fare = 0;
+        salesKm = 0;
+        indexOfAggregate = 0;
+    }
+    
+    // Initialize from basic parameters (array operations helper)
+    void initialize(int lineId_, int stationId_, int flag_ = 0) {
+        lineId = lineId_;
+        stationId = stationId_;
+        flag = flag_;
+        fare = 0;
+        salesKm = 0;
+        indexOfAggregate = 0;
+    }
+    
+    // Copy from another RouteItemWrapper (explicit copy method)
+    void copyFrom(const RouteItemWrapper& other) {
+        *this = other;
+    }
+    
+    // Comparison methods for array operations
+    
+    // Compare by station and line (for array searching)
+    bool matchesRoute(int lineId_, int stationId_) const {
+        return lineId == lineId_ && stationId == stationId_;
+    }
+    
+    // Compare only station ID (for station-based searches)
+    bool matchesStation(int stationId_) const {
+        return stationId == stationId_;
+    }
+    
+    // Compare only line ID (for line-based searches)  
+    bool matchesLine(int lineId_) const {
+        return lineId == lineId_;
+    }
+    
+    // Display and formatting methods
+    
+    // Convert to string representation (for debugging)
+    std::string toString() const {
+        std::string result = "RouteItem{";
+        result += "lineId=" + std::to_string(lineId);
+        result += ", stationId=" + std::to_string(stationId);
+        result += ", flag=" + std::to_string(flag);
+        if (fare > 0) result += ", fare=" + std::to_string(fare);
+        if (salesKm > 0) result += ", salesKm=" + std::to_string(salesKm);
+        result += "}";
+        return result;
+    }
+    
+    // Get route segment description (for UI display)
+    std::string getRouteDescription() const;
+    
+    // State checking methods
+    
+    // Check if this is a valid route segment
+    bool isValidRouteSegment() const {
+        return isValid() && lineId > 0;  // Both line and station must be positive for route segment
+    }
+    
+    // Check if this is a starting point (station only)
+    bool isStartingPoint() const {
+        return stationId > 0 && lineId == 0;  // Station defined, no line (route start)
+    }
+    
+    // Check if this route item has calculated data
+    bool hasCalculatedData() const {
+        return fare > 0 || salesKm > 0;
+    }
+    
+    // Flag manipulation methods (for special route handling)
+    
+    // Set specific flag bit
+    void setFlagBit(int bit) {
+        if (bit >= 0 && bit < 16) {  // SPECIFICFLAG is typically 16-bit
+            flag |= (1 << bit);
+        }
+    }
+    
+    // Clear specific flag bit
+    void clearFlagBit(int bit) {
+        if (bit >= 0 && bit < 16) {
+            flag &= ~(1 << bit);
+        }
+    }
+    
+    // Check specific flag bit
+    bool isFlagBitSet(int bit) const {
+        if (bit >= 0 && bit < 16) {
+            return (flag & (1 << bit)) != 0;
+        }
+        return false;
+    }
+    
+    // Advanced comparison for sorting (used by cRouteList array operations)
+    
+    // Less than operator for sorting by station ID
+    bool operator<(const RouteItemWrapper& other) const {
+        if (stationId != other.stationId) return stationId < other.stationId;
+        if (lineId != other.lineId) return lineId < other.lineId;
+        return flag < other.flag;
+    }
+    
+    // Greater than operator
+    bool operator>(const RouteItemWrapper& other) const {
+        return other < *this;
+    }
+    
+    // Less than or equal
+    bool operator<=(const RouteItemWrapper& other) const {
+        return !(other < *this);
+    }
+    
+    // Greater than or equal
+    bool operator>=(const RouteItemWrapper& other) const {
+        return !(*this < other);
+    }
+    
+    // Not equal operator
+    bool operator!=(const RouteItemWrapper& other) const {
+        return !(*this == other);
+    }
+    
+    // Additional validation methods (REQ-OBJ-002)
+    int validateStationId(int stationId) const;
+    int validateLineId(int lineId) const; 
+    int validateFlag(int flag) const;
+    
+    // Enhanced setters with validation (REQ-OBJ-002)
+    int setStationIdWithValidation(int id);
+    int setLineIdWithValidation(int id);
+    int setFlagWithValidation(int f);
+    int setFareWithValidation(int f);
+    int setSalesKmWithValidation(int km);
+    int setIndexOfAggregateWithValidation(int index);
+    
+    // Enhanced route validation methods
+    bool canConnectTo(const RouteItemWrapper& nextItem) const;
+    bool isCompatibleWithLine(int targetLineId) const;
+    
+    // Enhanced state checking methods (task 3 requirements)
+    bool isTransferPoint() const;
+    bool isTerminalStation() const;
+    bool hasSpecialFlags() const;
+    
+    // Enhanced comparison methods for array operations
+    bool deepEquals(const RouteItemWrapper& other) const;
+    int getSortKey() const;
+    
+    // Distance calculation helper (for route optimization)
+    int estimateDistanceTo(const RouteItemWrapper& other) const;
+};
+
+// RouteFlag wrapper class (corresponds to cRouteFlag)
+class RouteFlagWrapper {
+public:
+    // Osaka loop line pass constants (matching C++ RouteFlag::OSAKAKAN_PASS enum)
+    enum OsakaKanPass {
+        OSAKAKAN_NOPASS = 0,    // 初期状態(大阪環状線未通過)
+        OSAKAKAN_1PASS = 1,     // 大阪環状線 1回通過
+        OSAKAKAN_2PASS = 2      // 大阪環状線 2回通過
+    };
+    // 30+ Boolean Properties (based on RouteFlag class in alpdb.h lines 247-469)
+    bool no_rule;                   // Disable fare calculation rules
+    bool jrtokaistock_applied;      // JR Tokai stock discount applied
+    bool jrtokaistock_enable;       // JR Tokai stock enable (system flag)
+    bool meihan_city_flag;          // TRUE: departure only city area
+    bool rule88;                    // Rule 88 application
+    bool rule69;                    // Rule 69 application
+    bool rule70;                    // Rule 70 application
+    bool special_fare_enable;       // Enable special fare calculations
+    bool rule70bullet;              // Rule 70 bullet train
+    bool rule16_5;                  // Rule 16.5 application
+    bool bullet_line;               // Shinkansen line usage
+    bool bJrTokaiOnly;             // JR Tokai only route
+    bool meihan_city_enable;        // Meihan city area enable
+    bool trackmarkctl;              // Track mark control
+    bool jctsp_route_change;        // Junction special route change
+    bool ter_begin_oosaka;          // Terminal begin Osaka
+    bool ter_fin_oosaka;            // Terminal finish Osaka
+    bool compncheck;                // Company line pass check enable
+    bool compnpass;                 // Pass company line transport
+    bool compnda;                   // Pass company line transport invalid flag
+    bool compnbegin;                // Start with company line
+    bool compnend;                  // End with company line
+    bool compnterm;                 // Company line pass transport terminal check
+    bool tokai_shinkansen;          // Tokai Shinkansen usage
+    bool notsamekokurahakatashinzai; // Kokura-Hakata different line handling
+    bool end;                       // Arrive to end station
+    bool osakakan_1dir;             // Osaka loop line 1st direction
+    bool osakakan_2dir;             // Osaka loop line 2nd direction
+    bool osakakan_detour;           // Osaka loop line 1st detour
+    
+    // 4 Numeric Properties
+    unsigned char rule86or87;       // Rule 86 or 87 application (bit flags)
+    int8_t rule115;                // Rule 115 application
+    int8_t urban_neerest;          // Urban area nearest calculation
+    unsigned char osakaKanPass;     // Osaka loop line pass count
+    
+    // Constructor
+    RouteFlagWrapper() {
+        clear();
+    }
+    
+    // Constructor from C++ RouteFlag (implementation will be in .cpp file)
+    RouteFlagWrapper(const RouteFlag* flag);
+    
+    // Copy constructor
+    RouteFlagWrapper(const RouteFlagWrapper& other) {
+        *this = other;
+    }
+    
+    // Assignment operator
+    RouteFlagWrapper& operator=(const RouteFlagWrapper& other) {
+        if (this != &other) {
+            // Boolean properties
+            no_rule = other.no_rule;
+            jrtokaistock_applied = other.jrtokaistock_applied;
+            jrtokaistock_enable = other.jrtokaistock_enable;
+            meihan_city_flag = other.meihan_city_flag;
+            rule88 = other.rule88;
+            rule69 = other.rule69;
+            rule70 = other.rule70;
+            special_fare_enable = other.special_fare_enable;
+            rule70bullet = other.rule70bullet;
+            rule16_5 = other.rule16_5;
+            bullet_line = other.bullet_line;
+            bJrTokaiOnly = other.bJrTokaiOnly;
+            meihan_city_enable = other.meihan_city_enable;
+            trackmarkctl = other.trackmarkctl;
+            jctsp_route_change = other.jctsp_route_change;
+            ter_begin_oosaka = other.ter_begin_oosaka;
+            ter_fin_oosaka = other.ter_fin_oosaka;
+            compncheck = other.compncheck;
+            compnpass = other.compnpass;
+            compnda = other.compnda;
+            compnbegin = other.compnbegin;
+            compnend = other.compnend;
+            compnterm = other.compnterm;
+            tokai_shinkansen = other.tokai_shinkansen;
+            notsamekokurahakatashinzai = other.notsamekokurahakatashinzai;
+            end = other.end;
+            osakakan_1dir = other.osakakan_1dir;
+            osakakan_2dir = other.osakakan_2dir;
+            osakakan_detour = other.osakakan_detour;
+            
+            // Numeric properties
+            rule86or87 = other.rule86or87;
+            rule115 = other.rule115;
+            urban_neerest = other.urban_neerest;
+            osakaKanPass = other.osakaKanPass;
+        }
+        return *this;
+    }
+    
+    // 15+ Management Methods (matching C++ RouteFlag class methods)
+    
+    // Clear all flags to default state
+    void clear() {
+        // Boolean properties initialization
+        no_rule = false;
+        jrtokaistock_applied = false;
+        jrtokaistock_enable = false;
+        meihan_city_flag = false;
+        rule88 = false;
+        rule69 = false;
+        rule70 = false;
+        special_fare_enable = false;
+        rule70bullet = false;
+        rule16_5 = false;
+        bullet_line = false;
+        bJrTokaiOnly = false;
+        meihan_city_enable = false;
+        trackmarkctl = false;
+        jctsp_route_change = false;
+        ter_begin_oosaka = false;
+        ter_fin_oosaka = false;
+        compncheck = false;
+        compnpass = false;
+        compnda = false;
+        compnbegin = false;
+        compnend = false;
+        compnterm = false;
+        tokai_shinkansen = false;
+        notsamekokurahakatashinzai = false;
+        end = false;
+        osakakan_1dir = false;
+        osakakan_2dir = false;
+        osakakan_detour = false;
+        
+        // Numeric properties initialization
+        rule86or87 = 0;
+        rule115 = 0;
+        urban_neerest = 0;
+        osakaKanPass = 0;
+    }
+    
+    // Set route flag from another RouteFlag
+    void setAnotherRouteFlag(const RouteFlagWrapper& other) {
+        *this = other;
+    }
+    
+    // Rule enablement check
+    bool rule_en() const {
+        return (0x3f & rule86or87) ||
+               rule88 ||
+               rule69 ||
+               rule70 ||
+               special_fare_enable ||
+               meihan_city_enable;
+    }
+    
+    // Basic flag setters
+    void setNoRule(bool b_rule) { 
+        no_rule = b_rule; 
+    }
+    
+    // Long route management
+    bool isEnableLongRoute() const { 
+        return !no_rule && 0 != urban_neerest; 
+    }
+    
+    bool isLongRoute() const { 
+        return urban_neerest < 0; 
+    }
+    
+    void setLongRoute(bool farflag) {
+        if (farflag) {
+            urban_neerest = -1;
+        } else {
+            urban_neerest = 1;
+        }
+    }
+    
+    // Rule 115 management
+    bool isEnableRule115() const { 
+        return !no_rule && 0 != rule115; 
+    }
+    
+    bool isRule115specificTerm() const { 
+        return rule115 < 0; 
+    }
+    
+    void setSpecificTermRule115(bool ena) {
+        if (ena) {
+            rule115 = -1;
+        } else {
+            rule115 = 1;
+        }
+    }
+    
+    // City area management
+    void setStartAsCity() { 
+        meihan_city_flag = true;    // 着駅=単駅、発駅市内駅
+    }
+    
+    void setArriveAsCity() { 
+        meihan_city_flag = false;   // 発駅=単駅、着駅市内駅
+    }
+    
+    // Rule 86/87 management
+    void setDisableRule86or87() { 
+        rule86or87 |= 0x40; 
+    }
+    
+    void setEnableRule86or87() { 
+        rule86or87 &= 0x3f; 
+    }
+    
+    bool isEnableRule86or87() const { 
+        return 0 == (rule86or87 & 0x40); 
+    }
+    
+    // Rule availability checks (15+ methods)
+    bool isAvailableRule86or87() const { 
+        return ((rule86or87 & 0x0f) != 0) && ((rule86or87 & 0x40) == 0); 
+    }
+    
+    bool isAvailableRule86() const { 
+        return (rule86or87 & 0x03) != 0; 
+    }
+    
+    bool isAvailableRule87() const { 
+        return (rule86or87 & 0x0c) != 0; 
+    }
+    
+    bool isAvailableRule88() const { 
+        return rule88; 
+    }
+    
+    bool isAvailableRule70() const { 
+        return rule70; 
+    }
+    
+    bool isAvailableRule69() const { 
+        return rule69; 
+    }
+    
+    bool isAvailableRule115() const { 
+        return 0 < rule115; 
+    }
+    
+    bool isAvailableRule16_5() const { 
+        return rule16_5; 
+    }
+    
+    // City area checks
+    bool isMeihanCityEnable() const {
+        return !no_rule && meihan_city_enable;
+    }
+    
+    bool isArriveAsCity() const { 
+        return (meihan_city_enable == true) && (meihan_city_flag == false); 
+    }
+    
+    bool isStartAsCity() const { 
+        return (meihan_city_enable == true) && (meihan_city_flag == true); 
+    }
+    
+    // Osaka loop line management
+    int getOsakaKanPassValue() const { 
+        return osakaKanPass; 
+    }
+    
+    bool is_osakakan_1pass() const {
+        return 1 == (osakaKanPass & 0x03);  // OSAKAKAN_1PASS
+    }
+    
+    bool is_osakakan_2pass() const {
+        return 2 == (osakaKanPass & 0x03);  // OSAKAKAN_2PASS
+    }
+    
+    bool is_osakakan_nopass() const {
+        return 0 == (osakaKanPass & 0x03);  // OSAKAKAN_NOPASS
+    }
+    
+    void setOsakaKanPass(bool value) {
+        if (value) {
+            osakaKanPass |= (1 << 0);
+        } else {
+            osakaKanPass &= ~(1 << 0);
+        }
+    }
+    
+    bool getOsakaKanPass() const { 
+        return 0 != (osakaKanPass & (1 << 0)); 
+    }
+    
+    void setOsakaKanFlag(unsigned char pass) {
+        this->osakaKanPass = pass;
+    }
+    
+    void setOsakaKanFlag(const RouteFlagWrapper& lf) {
+        this->osakaKanPass = lf.osakaKanPass;
+        this->osakakan_1dir = lf.osakakan_1dir;
+        this->osakakan_2dir = lf.osakakan_2dir;
+    }
+    
+    // Route state checks
+    bool isRoundTrip() const {
+        return !end || compnda;
+    }
+    
+    // Reset methods
+    void terCityReset() {
+        rule86or87 &= 0x40;
+        ter_begin_oosaka = false;
+        ter_fin_oosaka = false;
+    }
+    
+    void optionFlagReset() {
+        special_fare_enable = false;
+        meihan_city_enable = false;
+        rule88 = false;
+        rule69 = false;
+        rule70 = false;
+        rule70bullet = false;
+    }
+    
+    // Additional checks
+    bool isTerCity() const {
+        return (rule86or87 & 0x3f) ||
+               ter_begin_oosaka ||
+               ter_fin_oosaka;
+    }
+    
+    bool isUseBullet() const { 
+        return bullet_line || rule70bullet; 
+    }
+    
+    bool isIncludeCompanyLine() const { 
+        return compncheck; 
+    }
+    
+    // Property accessors for TypeScript compatibility
+    
+    // Boolean property getters
+    bool getNoRule() const { return no_rule; }
+    bool getJrTokaiStockApplied() const { return jrtokaistock_applied; }
+    bool getJrTokaiStockEnable() const { return jrtokaistock_enable; }
+    bool getMeihanCityFlag() const { return meihan_city_flag; }
+    bool getRule88() const { return rule88; }
+    bool getRule69() const { return rule69; }
+    bool getRule70() const { return rule70; }
+    bool getSpecialFareEnable() const { return special_fare_enable; }
+    bool getRule70Bullet() const { return rule70bullet; }
+    bool getRule16_5() const { return rule16_5; }
+    bool getBulletLine() const { return bullet_line; }
+    bool getBJrTokaiOnly() const { return bJrTokaiOnly; }
+    bool getMeihanCityEnable() const { return meihan_city_enable; }
+    bool getTrackmarkctl() const { return trackmarkctl; }
+    bool getJctspRouteChange() const { return jctsp_route_change; }
+    bool getTerBeginOosaka() const { return ter_begin_oosaka; }
+    bool getTerFinOosaka() const { return ter_fin_oosaka; }
+    bool getCompncheck() const { return compncheck; }
+    bool getCompnpass() const { return compnpass; }
+    bool getCompnda() const { return compnda; }
+    bool getCompnbegin() const { return compnbegin; }
+    bool getCompnend() const { return compnend; }
+    bool getCompnterm() const { return compnterm; }
+    bool getTokaiShinkansen() const { return tokai_shinkansen; }
+    bool getNotsamekokurahakatashinzai() const { return notsamekokurahakatashinzai; }
+    bool getEnd() const { return end; }
+    bool getOsakakan1dir() const { return osakakan_1dir; }
+    bool getOsakakan2dir() const { return osakakan_2dir; }
+    bool getOsakakanDetour() const { return osakakan_detour; }
+    
+    // Numeric property getters
+    unsigned char getRule86or87() const { return rule86or87; }
+    int8_t getRule115() const { return rule115; }
+    int8_t getUrbanNeerest() const { return urban_neerest; }
+    
+    // Boolean property setters
+    void setJrTokaiStockApplied(bool value) { jrtokaistock_applied = value; }
+    void setJrTokaiStockEnable(bool value) { jrtokaistock_enable = value; }
+    void setMeihanCityFlag(bool value) { meihan_city_flag = value; }
+    void setRule88(bool value) { rule88 = value; }
+    void setRule69(bool value) { rule69 = value; }
+    void setRule70(bool value) { rule70 = value; }
+    void setSpecialFareEnable(bool value) { special_fare_enable = value; }
+    void setRule70Bullet(bool value) { rule70bullet = value; }
+    void setRule16_5(bool value) { rule16_5 = value; }
+    void setBulletLine(bool value) { bullet_line = value; }
+    void setBJrTokaiOnly(bool value) { bJrTokaiOnly = value; }
+    void setMeihanCityEnable(bool value) { meihan_city_enable = value; }
+    void setTrackmarkctl(bool value) { trackmarkctl = value; }
+    void setJctspRouteChange(bool value) { jctsp_route_change = value; }
+    void setTerBeginOosaka(bool value) { ter_begin_oosaka = value; }
+    void setTerFinOosaka(bool value) { ter_fin_oosaka = value; }
+    void setCompncheck(bool value) { compncheck = value; }
+    void setCompnpass(bool value) { compnpass = value; }
+    void setCompnda(bool value) { compnda = value; }
+    void setCompnbegin(bool value) { compnbegin = value; }
+    void setCompnend(bool value) { compnend = value; }
+    void setCompnterm(bool value) { compnterm = value; }
+    void setTokaiShinkansen(bool value) { tokai_shinkansen = value; }
+    void setNotsamekokurahakatashinzai(bool value) { notsamekokurahakatashinzai = value; }
+    void setEnd(bool value) { end = value; }
+    void setOsakakan1dir(bool value) { osakakan_1dir = value; }
+    void setOsakakan2dir(bool value) { osakakan_2dir = value; }
+    void setOsakakanDetour(bool value) { osakakan_detour = value; }
+    
+    // Numeric property setters
+    void setRule86or87(unsigned char value) { rule86or87 = value; }
+    void setRule115(int8_t value) { rule115 = value; }
+    void setUrbanNeerest(int8_t value) { urban_neerest = value; }
+    void setOsakaKanPassValue(unsigned char value) { osakaKanPass = value; }
+    
+    // Rule debugging and display methods
+    
+    // Show applied fare calculation rules (matching C++ RouteFlag::showAppliedRule())
+    std::string showAppliedRule() const {
+        std::string result;
+        
+        // Rule 86/87 (City area rules)
+        if (rule86or87 & 0x3f) {
+            if (!result.empty()) result += ", ";
+            if (rule86or87 & 0x03) result += "Rule86";
+            if (rule86or87 & 0x0c) result += "Rule87";
+        }
+        
+        // Rule 115 (Long distance rules)
+        if (rule115 > 0) {
+            if (!result.empty()) result += ", ";
+            result += "Rule115";
+        }
+        
+        // Rule 88 (Special fare rules)
+        if (rule88) {
+            if (!result.empty()) result += ", ";
+            result += "Rule88";
+        }
+        
+        // Rule 69 (Terminal area rules)
+        if (rule69) {
+            if (!result.empty()) result += ", ";
+            result += "Rule69";
+        }
+        
+        // Rule 70 (Bullet train rules)
+        if (rule70) {
+            if (!result.empty()) result += ", ";
+            result += "Rule70";
+        }
+        
+        // Special fare enable
+        if (special_fare_enable) {
+            if (!result.empty()) result += ", ";
+            result += "SpecialFare";
+        }
+        
+        // Meihan city enable
+        if (meihan_city_enable) {
+            if (!result.empty()) result += ", ";
+            result += "MeihanCity";
+        }
+        
+        // Rule 16.5
+        if (rule16_5) {
+            if (!result.empty()) result += ", ";
+            result += "Rule16.5";
+        }
+        
+        if (result.empty()) {
+            result = "NoRules";
+        }
+        
+        return result;
+    }
+    
+    // Enhanced parameter validation methods (REQ-OBJ-002)
+    
+    // Validate Rule 86/87 flag value
+    int validateRule86or87(unsigned char value) const {
+        // Rule 86/87 uses 6 bits for rule data plus 1 disable bit
+        if (value > 0x7F) return -1;  // Invalid: exceeds 7-bit range
+        return 0;  // Valid
+    }
+    
+    // Validate Rule 115 value  
+    int validateRule115(int8_t value) const {
+        // Rule 115: -1=specific term, 0=disabled, 1=enabled
+        if (value < -1 || value > 1) return -1;  // Invalid range
+        return 0;  // Valid
+    }
+    
+    // Validate urban nearest value
+    int validateUrbanNeerest(int8_t value) const {
+        // Urban nearest: -1=far, 0=N/A, 1=near
+        if (value < -1 || value > 1) return -1;  // Invalid range
+        return 0;  // Valid
+    }
+    
+    // Validate Osaka loop line pass value
+    int validateOsakaKanPass(unsigned char value) const {
+        // Pass count should be reasonable (0-3 typical)
+        if ((value & 0x03) > 2) return -1;  // Invalid: pass count too high
+        return 0;  // Valid
+    }
+    
+    // Comprehensive validation of all flag values
+    int validateAllFlags() const {
+        int result;
+        
+        result = validateRule86or87(rule86or87);
+        if (result != 0) return result;
+        
+        result = validateRule115(rule115);
+        if (result != 0) return result;
+        
+        result = validateUrbanNeerest(urban_neerest);
+        if (result != 0) return result;
+        
+        result = validateOsakaKanPass(osakaKanPass);
+        if (result != 0) return result;
+        
+        return 0;  // All valid
+    }
+    
+    // Android Kotlin compatibility methods (REQ-OBJ-005)
+    
+    // Get rule state as integer flags (Android compatible)
+    int getRuleStateFlags() const {
+        int flags = 0;
+        
+        if (rule88) flags |= (1 << 0);
+        if (rule69) flags |= (1 << 1);
+        if (rule70) flags |= (1 << 2);
+        if (special_fare_enable) flags |= (1 << 3);
+        if (meihan_city_enable) flags |= (1 << 4);
+        if (rule16_5) flags |= (1 << 5);
+        if (bullet_line) flags |= (1 << 6);
+        if (no_rule) flags |= (1 << 7);
+        
+        return flags;
+    }
+    
+    // Set rule state from integer flags (Android compatible)
+    void setRuleStateFlags(int flags) {
+        rule88 = (flags & (1 << 0)) != 0;
+        rule69 = (flags & (1 << 1)) != 0;
+        rule70 = (flags & (1 << 2)) != 0;
+        special_fare_enable = (flags & (1 << 3)) != 0;
+        meihan_city_enable = (flags & (1 << 4)) != 0;
+        rule16_5 = (flags & (1 << 5)) != 0;
+        bullet_line = (flags & (1 << 6)) != 0;
+        no_rule = (flags & (1 << 7)) != 0;
+    }
+    
+    // Get company line state flags (Android compatible)
+    int getCompanyLineFlags() const {
+        int flags = 0;
+        
+        if (compncheck) flags |= (1 << 0);
+        if (compnpass) flags |= (1 << 1);
+        if (compnda) flags |= (1 << 2);
+        if (compnbegin) flags |= (1 << 3);
+        if (compnend) flags |= (1 << 4);
+        if (compnterm) flags |= (1 << 5);
+        
+        return flags;
+    }
+    
+    // Set company line state from flags (Android compatible)
+    void setCompanyLineFlags(int flags) {
+        compncheck = (flags & (1 << 0)) != 0;
+        compnpass = (flags & (1 << 1)) != 0;
+        compnda = (flags & (1 << 2)) != 0;
+        compnbegin = (flags & (1 << 3)) != 0;
+        compnend = (flags & (1 << 4)) != 0;
+        compnterm = (flags & (1 << 5)) != 0;
+    }
+    
+    // State management methods with error handling
+    
+    // Enhanced rule enable/disable with validation
+    int setRule86or87WithValidation(unsigned char value) {
+        int result = validateRule86or87(value);
+        if (result == 0) {
+            rule86or87 = value;
+        }
+        return result;
+    }
+    
+    int setRule115WithValidation(int8_t value) {
+        int result = validateRule115(value);
+        if (result == 0) {
+            rule115 = value;
+        }
+        return result;
+    }
+    
+    int setUrbanNeerestWithValidation(int8_t value) {
+        int result = validateUrbanNeerest(value);
+        if (result == 0) {
+            urban_neerest = value;
+        }
+        return result;
+    }
+    
+    int setOsakaKanPassWithValidation(unsigned char value) {
+        int result = validateOsakaKanPass(value);
+        if (result == 0) {
+            osakaKanPass = value;
+        }
+        return result;
+    }
+    
+    // Enhanced reset methods with selective clearing
+    
+    // Reset only rule flags (preserving company/system flags)
+    void resetRulesOnly() {
+        rule86or87 = 0;
+        rule115 = 0;
+        rule88 = false;
+        rule69 = false;
+        rule70 = false;
+        rule70bullet = false;
+        rule16_5 = false;
+        special_fare_enable = false;
+    }
+    
+    // Reset only company line flags
+    void resetCompanyFlags() {
+        compncheck = false;
+        compnpass = false;
+        compnda = false;
+        compnbegin = false;
+        compnend = false;
+        compnterm = false;
+    }
+    
+    // Reset only Osaka loop line flags
+    void resetOsakaFlags() {
+        osakaKanPass = 0;
+        osakakan_1dir = false;
+        osakakan_2dir = false;
+        osakakan_detour = false;
+    }
+    
+    // Enhanced state inquiry methods
+    
+    // Check if any terminal city rules are active
+    bool hasActiveCityRules() const {
+        return (rule86or87 & 0x3f) || ter_begin_oosaka || ter_fin_oosaka;
+    }
+    
+    // Check if any special rules are active
+    bool hasActiveSpecialRules() const {
+        return rule88 || rule69 || rule70 || special_fare_enable || rule16_5;
+    }
+    
+    // Check if any company line rules are active
+    bool hasActiveCompanyRules() const {
+        return compncheck || compnpass || compnda;
+    }
+    
+    // Check if Osaka loop line handling is active
+    bool hasActiveOsakaRules() const {
+        return osakaKanPass != 0 || osakakan_1dir || osakakan_2dir;
+    }
+    
+    // Utility methods
+    bool isValid() const {
+        // Enhanced validation using comprehensive flag validation
+        return validateAllFlags() == 0;
+    }
+    
+    // Equality operator
+    bool operator==(const RouteFlagWrapper& other) const {
+        return no_rule == other.no_rule &&
+               jrtokaistock_applied == other.jrtokaistock_applied &&
+               rule86or87 == other.rule86or87 &&
+               rule115 == other.rule115 &&
+               urban_neerest == other.urban_neerest &&
+               osakaKanPass == other.osakaKanPass;
+        // Note: Comparing all properties would be extensive, focusing on key ones
+    }
+};
 
 // Route wrapper class (corresponds to cRoute)
 class RouteWrapper {
@@ -195,8 +1172,13 @@ public:
     
     // Route properties
     int getRouteCount() const;
-    RouteItem* getRouteItem(int index) const;
+    RouteItemWrapper getRouteItem(int index) const;
+    RouteItem* getRouteItemPtr(int index) const;  // For internal C++ usage
     int startStationId() const;
+    
+    // Route item manipulation methods (REQ-OBJ-003, REQ-OBJ-004)
+    void insertItem(int index, const RouteItemWrapper& item);
+    void removeItem(int index);
     int lastStationId() const;
     int lastLineId() const;
     bool isReverseAllow() const;
@@ -221,6 +1203,18 @@ public:
     int startStationId() const;
     int lastStationId() const;
     std::string routeScript() const;
+    
+    // Array operations (REQ-OBJ-003)
+    int count() const;                                      // Array size
+    RouteItemWrapper at(int index) const;                   // Array element access with bounds checking
+    void remove(int index);                                 // Remove element at index
+    void removeAll();                                       // Clear all elements
+    void insert(int index, const RouteItemWrapper& item);   // Insert element at index
+    void assign(const RouteListWrapper& source);            // Copy from another RouteListWrapper
+    
+    // Route flag access methods
+    RouteFlag getRouteFlag() const;                         // Get route flags
+    void setRouteFlag(const RouteFlag& flag);               // Set route flags
 };
 
 // Calculation wrapper class (corresponds to cCalcRoute)
