@@ -72,6 +72,7 @@ function printUsage(programName: string): void {
     console.error('      node main.js routes.txt');
     console.error('');
     console.error('For detailed help, use: -h or --help');
+    console.error('For complete documentation, see: README_CLI.md');
 }
 
 /**
@@ -260,12 +261,13 @@ function printHelp(): void {
     console.log('    • Check with: node --version');
     console.log('    • Update if needed: https://nodejs.org');
     console.log('');
-    console.log('📚 DOCUMENTATION REFERENCES:');
+    console.log('📚 DOCUMENTATION REFERENCES (REQ-CLI-006.5):');
     console.log('');
-    console.log('  📖 Main Documentation: CLAUDE.md (project root)');
-    console.log('  🏗️  Build Instructions: README.md');
-    console.log('  🧪 Testing Guide: .claude/specs/typescript-cli-interface/');
-    console.log('  🐛 Issues & Support: https://github.com/anthropics/claude-code/issues');
+    console.log('  📖 Complete CLI Guide: README_CLI.md (comprehensive usage and troubleshooting)');
+    console.log('  🏗️  Project Overview: CLAUDE.md (technical architecture and design)');
+    console.log('  🚀 Quick Start: README.md (basic setup and installation)');
+    console.log('  🧪 Testing Guide: .claude/specs/typescript-cli-interface/ (detailed specifications)');
+    console.log('  🛠️  Development: .claude/steering/ (architecture and development guidelines)');
     console.log('');
     console.log('🎯 ENVIRONMENT VARIABLES:');
     console.log('');
@@ -363,6 +365,8 @@ async function handle5ParameterRoute(args: string[], module: FarertModule): Prom
     if (hasValidationErrors) {
         console.error('Please check the parameter names and try again.');
         console.error('Use valid Japanese station and line names as shown in the examples.');
+        console.error('');
+        console.error('📚 For troubleshooting help, see: README_CLI.md section "一般的な問題と解決方法"');
         return -1;
     }
     
@@ -1100,6 +1104,8 @@ async function fromStream(filename: string, optionNum: number, module: FarertMod
         } else {
             console.error(`Can't open file: ${filename}`);
         }
+        console.error('');
+        console.error('📚 For file processing help, see: README_CLI.md section "高度なトラブルシューティング"');
     }
 }
 
@@ -1418,6 +1424,8 @@ async function main(): Promise<number> {
             console.error('Please correct the invalid parameters and try again.');
             console.error('Use valid Japanese station and line names.');
             console.error('Example: node main.js 東京 東海道線 品川');
+            console.error('');
+            console.error('📚 For complete troubleshooting guide, see: README_CLI.md');
             return -1;
         }
         

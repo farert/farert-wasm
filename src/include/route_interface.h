@@ -2,6 +2,13 @@
 #define ROUTE_INTERFACE_H
 
 #include "common.h"
+#include <map>
+#include <set>
+#include <sstream>
+#include <vector>
+#include <string>
+#include <algorithm>
+#include <climits>
 
 // Forward declarations from alpdb.h
 class Route;
@@ -9,6 +16,18 @@ class RouteList;
 class CalcRoute;
 class RouteItem;
 class RouteFlag;
+
+// Validation result structure for enhanced error reporting (Task 19)
+struct ValidationResult {
+    bool isValid;
+    std::string errorMessage;
+    std::string errorMessageJa;
+    std::vector<std::string> suggestions;
+    std::map<std::string, std::string> context;
+    
+    ValidationResult() : isValid(true) {}
+    ValidationResult(bool valid) : isValid(valid) {}
+};
 
 // FareInfo equivalent structure (matching original FareInfo.h/FareInfo.m)
 struct FareInfoData {
@@ -109,7 +128,19 @@ struct FareInfoData {
         isLongRoute = false;
         isRule115specificTerm = false;
         isEnableRule115 = false;
+        
+        // Initialize error handling properties (Task 20)
+        errorCode = 0;
+        errorMessage = "";
+        errorMessageJa = "";
+        suggestedStations.clear();
     }
+    
+    // Enhanced error handling properties (Task 20: REQ-OBJ-002, REQ-OBJ-006)
+    int errorCode;                          // Error code from fare calculation (0 = success, negative = error)
+    std::string errorMessage;               // English error message for developers
+    std::string errorMessageJa;             // Japanese error message for end users
+    std::vector<std::string> suggestedStations; // Alternative station suggestions for invalid routes
     
     // Methods matching original FareInfo.m
     void setFareForStockDiscounts(int discount1, const std::string& title1, int discount2, const std::string& title2) {
@@ -150,6 +181,362 @@ struct FareInfoData {
         if (index >= 2) return "";
         return fareForStockDiscountNames[index];
     }
+    
+    // Enhanced display methods (Task 20: REQ-OBJ-006)
+    
+    /**
+     * Get formatted fare display with currency symbol and discount information
+     * Provides user-friendly fare display for UI applications
+     * 
+     * @param includeCurrency Include yen symbol (¥) in output
+     * @param includeDiscounts Show available discount options
+     * @return Formatted fare string (e.g., "¥320 (IC: ¥315, 学割: ¥270)")
+     */
+    std::string getFormattedFare(bool includeCurrency = true, bool includeDiscounts = true) const {
+        std::ostringstream result;
+        
+        // Handle error cases first
+        if (errorCode != 0) {
+            return errorMessage.empty() ? "計算エラー" : errorMessage;
+        }
+        
+        if (fare <= 0) {
+            return "運賃計算不可";
+        }
+        
+        // Main fare display
+        if (includeCurrency) {
+            result << "¥" << fare;
+        } else {
+            result << fare;
+        }
+        
+        // Add discount information if available and requested
+        if (includeDiscounts) {
+            std::vector<std::string> discounts;
+            
+            // IC card fare
+            if (fareForIC > 0 && fareForIC != fare) {
+                discounts.push_back(std::string("IC: ") + (includeCurrency ? "¥" : "") + std::to_string(fareForIC));
+            }
+            
+            // Child fare
+            if (childFare > 0) {
+                discounts.push_back(std::string("小児: ") + (includeCurrency ? "¥" : "") + std::to_string(childFare));
+            }
+            
+            // Academic discount
+            if (academicFare > 0 && academicFare != fare) {
+                discounts.push_back(std::string("学割: ") + (includeCurrency ? "¥" : "") + std::to_string(academicFare));
+            }
+            
+            // Stock discounts
+            for (int i = 0; i < availCountForFareOfStockDiscount && i < 2; i++) {
+                if (fareForStockDiscounts[i] > 0 && fareForStockDiscounts[i] != fare) {
+                    std::string title = fareForStockDiscountNames[i];
+                    if (title.empty()) title = std::string("回数券") + std::to_string(i + 1);
+                    discounts.push_back(title + ": " + (includeCurrency ? std::string("¥") : std::string("")) + std::to_string(fareForStockDiscounts[i]));
+                }
+            }
+            
+            // Rule 114 stock discounts
+            if (isRule114Applied) {
+                for (int i = 2; i < 4; i++) {
+                    if (fareForStockDiscounts[i] > 0 && fareForStockDiscounts[i] != fare) {
+                        discounts.push_back(std::string("回数券R114-") + std::to_string(i-1) + ": " + 
+                                          (includeCurrency ? std::string("¥") : std::string("")) + std::to_string(fareForStockDiscounts[i]));
+                    }
+                }
+            }
+            
+            // Format discount information
+            if (!discounts.empty()) {
+                result << " (";
+                for (size_t i = 0; i < discounts.size(); i++) {
+                    if (i > 0) result << ", ";
+                    result << discounts[i];
+                }
+                result << ")";
+            }
+        }
+        
+        return result.str();
+    }
+    
+    /**
+     * Get detailed fare breakdown with distance and rule information
+     * Provides comprehensive fare calculation details for debugging and user information
+     * 
+     * @return Multi-line string with detailed fare breakdown
+     */
+    std::string getFareBreakdown() const {
+        std::ostringstream breakdown;
+        
+        // Handle error cases
+        if (errorCode != 0) {
+            breakdown << "エラー: " << errorMessage << "\n";
+            if (!errorMessageJa.empty()) {
+                breakdown << "詳細: " << errorMessageJa << "\n";
+            }
+            if (!suggestedStations.empty()) {
+                breakdown << "推奨駅: ";
+                for (size_t i = 0; i < suggestedStations.size(); i++) {
+                    if (i > 0) breakdown << ", ";
+                    breakdown << suggestedStations[i];
+                }
+                breakdown << "\n";
+            }
+            return breakdown.str();
+        }
+        
+        // Basic fare information
+        breakdown << "=== 運賃詳細 ===\n";
+        breakdown << "基本運賃: ¥" << fare << "\n";
+        
+        // Distance information
+        if (totalSalesKm > 0) {
+            breakdown << "営業キロ: " << totalSalesKm << "km\n";
+        }
+        if (jrCalcKm > 0) {
+            breakdown << "JR換算キロ: " << jrCalcKm << "km\n";
+        }
+        if (companySalesKm > 0) {
+            breakdown << "会社線営業キロ: " << companySalesKm << "km\n";
+        }
+        
+        // Rule applications
+        std::vector<std::string> appliedRules;
+        if (isRule114Applied) {
+            appliedRules.push_back("規則114 (特定市内・区間)");
+            breakdown << "規則114営業キロ: " << rule114_salesKm << "km\n";
+            breakdown << "規則114換算キロ: " << rule114_calcKm << "km\n";
+        }
+        if (isSpecificFare) appliedRules.push_back("特定運賃");
+        if (isRoundtrip) appliedRules.push_back("往復割引");
+        if (isEnableLongRoute && isLongRoute) appliedRules.push_back("遠距離逓減");
+        if (isEnableRule115 && isRule115specificTerm) appliedRules.push_back("規則115");
+        
+        if (!appliedRules.empty()) {
+            breakdown << "適用規則: ";
+            for (size_t i = 0; i < appliedRules.size(); i++) {
+                if (i > 0) breakdown << ", ";
+                breakdown << appliedRules[i];
+            }
+            breakdown << "\n";
+        }
+        
+        // Regional distance breakdown
+        if (salesKmForHokkaido > 0) {
+            breakdown << "北海道内営業キロ: " << salesKmForHokkaido << "km";
+            if (calcKmForHokkaido > 0) breakdown << " (換算: " << calcKmForHokkaido << "km)";
+            breakdown << "\n";
+        }
+        if (salesKmForShikoku > 0) {
+            breakdown << "四国内営業キロ: " << salesKmForShikoku << "km";
+            if (calcKmForShikoku > 0) breakdown << " (換算: " << calcKmForShikoku << "km)";
+            breakdown << "\n";
+        }
+        if (salesKmForKyusyu > 0) {
+            breakdown << "九州内営業キロ: " << salesKmForKyusyu << "km";
+            if (calcKmForKyusyu > 0) breakdown << " (換算: " << calcKmForKyusyu << "km)";
+            breakdown << "\n";
+        }
+        
+        // Special fares
+        if (fareForIC > 0 && fareForIC != fare) {
+            breakdown << "IC運賃: ¥" << fareForIC << "\n";
+        }
+        if (fareForBRT > 0) {
+            breakdown << "BRT運賃: ¥" << fareForBRT;
+            if (isBRTdiscount) breakdown << " (割引適用)";
+            breakdown << "\n";
+        }
+        if (fareForCompanyline > 0) {
+            breakdown << "会社線運賃: ¥" << fareForCompanyline << "\n";
+        }
+        
+        // Child and academic fares
+        if (childFare > 0) {
+            breakdown << "小児運賃: ¥" << childFare << "\n";
+        }
+        if (academicFare > 0) {
+            breakdown << "学割運賃: ¥" << academicFare << "\n";
+        }
+        
+        // Stock discounts
+        if (availCountForFareOfStockDiscount > 0) {
+            breakdown << "回数券割引:\n";
+            for (int i = 0; i < availCountForFareOfStockDiscount && i < 2; i++) {
+                if (fareForStockDiscounts[i] > 0) {
+                    breakdown << "  " << fareForStockDiscountNames[i] << ": ¥" << fareForStockDiscounts[i] << "\n";
+                }
+            }
+            
+            // Rule 114 stock discounts
+            if (isRule114Applied) {
+                for (int i = 2; i < 4; i++) {
+                    if (fareForStockDiscounts[i] > 0) {
+                        breakdown << "  規則114回数券" << (i-1) << ": ¥" << fareForStockDiscounts[i] << "\n";
+                    }
+                }
+            }
+        }
+        
+        // City area information
+        if (isMeihanCityStartTerminalEnable) {
+            breakdown << "都市圏特例: ";
+            if (isMeihanCityStart) breakdown << "出発側都市内";
+            if (isMeihanCityTerminal) breakdown << "到着側都市内";
+            breakdown << "\n";
+        }
+        
+        // Route information
+        if (!routeList.empty()) {
+            breakdown << "経由: " << routeList << "\n";
+        }
+        
+        // Ticket validity
+        if (ticketAvailDays > 0) {
+            breakdown << "有効期間: " << ticketAvailDays << "日間\n";
+        }
+        
+        return breakdown.str();
+    }
+    
+    /**
+     * Compare this fare calculation with another for route optimization
+     * Provides comprehensive comparison for finding the best route option
+     * 
+     * @param other Another FareInfoData to compare against
+     * @return Comparison result (-1: this is better, 0: equal, 1: other is better)
+     */
+    int compare(const FareInfoData& other) const {
+        // Error handling: valid calculations are always better than errors
+        if (errorCode != 0 && other.errorCode == 0) return 1;   // other is better
+        if (errorCode == 0 && other.errorCode != 0) return -1;  // this is better
+        if (errorCode != 0 && other.errorCode != 0) return 0;   // both have errors
+        
+        // Both calculations are valid, compare fares
+        int thisFare = fare > 0 ? fare : INT_MAX;   // Invalid fare treated as worst case
+        int otherFare = other.fare > 0 ? other.fare : INT_MAX;
+        
+        // Primary comparison: lower fare is better
+        if (thisFare < otherFare) return -1;  // this is better
+        if (thisFare > otherFare) return 1;   // other is better
+        
+        // Fares are equal, use secondary criteria
+        
+        // Prefer routes with fewer transfers (shorter route lists)
+        int thisTransfers = routeList.empty() ? 0 : std::count(routeList.begin(), routeList.end(), ' ');
+        int otherTransfers = other.routeList.empty() ? 0 : std::count(other.routeList.begin(), other.routeList.end(), ' ');
+        
+        if (thisTransfers < otherTransfers) return -1;  // this is better (fewer transfers)
+        if (thisTransfers > otherTransfers) return 1;   // other is better
+        
+        // Prefer shorter total distance
+        if (totalSalesKm > 0 && other.totalSalesKm > 0) {
+            if (totalSalesKm < other.totalSalesKm) return -1;  // this is better (shorter)
+            if (totalSalesKm > other.totalSalesKm) return 1;   // other is better
+        }
+        
+        // Prefer routes with discounts available
+        int thisDiscounts = availCountForFareOfStockDiscount;
+        int otherDiscounts = other.availCountForFareOfStockDiscount;
+        
+        if (thisDiscounts > otherDiscounts) return -1;  // this is better (more discounts)
+        if (thisDiscounts < otherDiscounts) return 1;   // other is better
+        
+        // Prefer IC card compatibility
+        bool thisHasIC = (fareForIC > 0);
+        bool otherHasIC = (other.fareForIC > 0);
+        
+        if (thisHasIC && !otherHasIC) return -1;  // this is better
+        if (!thisHasIC && otherHasIC) return 1;   // other is better
+        
+        // All criteria are equal
+        return 0;
+    }
+    
+    // Error handling methods (Task 20: REQ-OBJ-002)
+    
+    /**
+     * Set error information for failed fare calculations
+     * 
+     * @param code Error code (negative values indicate errors)
+     * @param message English error message for developers
+     * @param messageJa Japanese error message for end users
+     */
+    void setError(int code, const std::string& message, const std::string& messageJa = "") {
+        errorCode = code;
+        errorMessage = message;
+        errorMessageJa = messageJa.empty() ? message : messageJa;
+        
+        // Clear fare data for error cases
+        if (code != 0) {
+            fare = 0;
+            fareForIC = 0;
+            childFare = 0;
+            academicFare = 0;
+            fareForCompanyline = 0;
+            fareForBRT = 0;
+        }
+    }
+    
+    /**
+     * Add suggested stations for route correction
+     * 
+     * @param stations Vector of suggested station names
+     */
+    void setSuggestedStations(const std::vector<std::string>& stations) {
+        suggestedStations = stations;
+    }
+    
+    /**
+     * Add a single suggested station
+     * 
+     * @param station Station name to add as suggestion
+     */
+    void addSuggestedStation(const std::string& station) {
+        // Avoid duplicates
+        if (std::find(suggestedStations.begin(), suggestedStations.end(), station) == suggestedStations.end()) {
+            suggestedStations.push_back(station);
+        }
+    }
+    
+    /**
+     * Clear all error information and reset to valid state
+     */
+    void clearError() {
+        errorCode = 0;
+        errorMessage = "";
+        errorMessageJa = "";
+        suggestedStations.clear();
+    }
+    
+    /**
+     * Check if the fare calculation was successful
+     * 
+     * @return true if no errors occurred, false otherwise
+     */
+    bool isValid() const {
+        return errorCode == 0 && fare > 0;
+    }
+    
+    /**
+     * Get error summary for logging and debugging
+     * 
+     * @return String containing error code and message
+     */
+    std::string getErrorSummary() const {
+        if (errorCode == 0) return "No error";
+        
+        std::ostringstream summary;
+        summary << "Error " << errorCode << ": " << errorMessage;
+        if (!errorMessageJa.empty() && errorMessageJa != errorMessage) {
+            summary << " (" << errorMessageJa << ")";
+        }
+        return summary.str();
+    }
 };
 
 // Database management
@@ -158,6 +545,27 @@ public:
     static bool openDatabase(const std::string& dbPath);
     static void closeDatabase();
     static bool getDatabaseVersion(void* dbsys);
+};
+
+// Forward declarations for reference counting
+struct RefCounter {
+    int count;
+    RefCounter() : count(1) {}
+};
+
+// Memory safety validation helper
+class MemorySafetyValidator {
+public:
+    static const int MAGIC_VALUE_VALID = 0xDEADBEEF;
+    static const int MAGIC_VALUE_DESTROYED = 0xDEADDEAD;
+    
+    static bool isValid(int magicValue) {
+        return magicValue == MAGIC_VALUE_VALID;
+    }
+    
+    static bool isDestroyed(int magicValue) {
+        return magicValue == MAGIC_VALUE_DESTROYED;
+    }
 };
 
 // RouteItem wrapper structure (corresponds to cRouteItem)
@@ -172,6 +580,10 @@ struct RouteItemWrapper {
     int salesKm;        // Sales distance in kilometers
     int indexOfAggregate; // Index for aggregated calculations
     
+    // Object lifecycle management (Task 25: REQ-OBJ-007)
+    mutable int magicValue;             // Memory safety validation
+    mutable RefCounter* refCounter;     // Reference counting for shared data
+    
     // Constructor
     RouteItemWrapper() {
         stationId = 0;
@@ -180,6 +592,10 @@ struct RouteItemWrapper {
         fare = 0;
         salesKm = 0;
         indexOfAggregate = 0;
+        
+        // Initialize lifecycle management
+        magicValue = MemorySafetyValidator::MAGIC_VALUE_VALID;
+        refCounter = new RefCounter();
     }
     
     // Constructor from C++ RouteItem (implementation will be in .cpp file)
@@ -205,7 +621,14 @@ struct RouteItemWrapper {
         indexOfAggregate = 0;
     }
     
-    // Copy constructor
+    // Destructor with RAII cleanup (Task 25: REQ-OBJ-007)
+    ~RouteItemWrapper() {
+        if (isValid()) {
+            decrementRef();
+        }
+    }
+    
+    // Copy constructor with reference counting
     RouteItemWrapper(const RouteItemWrapper& other) {
         stationId = other.stationId;
         lineId = other.lineId;
@@ -213,17 +636,37 @@ struct RouteItemWrapper {
         fare = other.fare;
         salesKm = other.salesKm;
         indexOfAggregate = other.indexOfAggregate;
+        
+        // Share reference counter
+        magicValue = other.magicValue;
+        refCounter = other.refCounter;
+        if (other.isValid() && refCounter) {
+            refCounter->count++;
+        }
     }
     
-    // Assignment operator
+    // Assignment operator with reference counting
     RouteItemWrapper& operator=(const RouteItemWrapper& other) {
         if (this != &other) {
+            // Decrement current reference
+            if (isValid()) {
+                decrementRef();
+            }
+            
+            // Copy data
             stationId = other.stationId;
             lineId = other.lineId;
             flag = other.flag;
             fare = other.fare;
             salesKm = other.salesKm;
             indexOfAggregate = other.indexOfAggregate;
+            
+            // Share reference counter
+            magicValue = other.magicValue;
+            refCounter = other.refCounter;
+            if (other.isValid() && refCounter) {
+                refCounter->count++;
+            }
         }
         return *this;
     }
@@ -269,7 +712,7 @@ struct RouteItemWrapper {
     }
     
     // Enhanced validation for REQ-OBJ-002 (C++ Compatible Error Handling)
-    bool isValid() const {
+    bool isValidData() const {
         // Station ID validation: must be positive (C++ convention)
         if (stationId <= 0) return false;
         
@@ -422,6 +865,76 @@ struct RouteItemWrapper {
         return !(*this == other);
     }
     
+    // Memory safety validation methods (Task 25: REQ-OBJ-007)
+    
+    /**
+     * Check if this object is in a valid state (not destroyed)
+     * Should be called before accessing any member data
+     * 
+     * @return true if object is valid, false if destroyed or corrupted
+     */
+    bool isValid() const {
+        return MemorySafetyValidator::isValid(magicValue) && refCounter != nullptr;
+    }
+    
+    /**
+     * Check if this object has been destroyed
+     * Used for debugging use-after-destruction scenarios
+     * 
+     * @return true if object was destroyed, false otherwise
+     */
+    bool isDestroyed() const {
+        return MemorySafetyValidator::isDestroyed(magicValue);
+    }
+    
+    /**
+     * Get current reference count for this object's shared data
+     * Used for debugging memory management issues
+     * 
+     * @return reference count, -1 if object is invalid
+     */
+    int getReferenceCount() const {
+        if (!isValid()) return -1;
+        return refCounter->count;
+    }
+    
+    /**
+     * Force validation of object state with detailed error reporting
+     * Throws detailed error information for debugging
+     * 
+     * @return 0 if valid, negative error code otherwise
+     */
+    int validateObjectState() const {
+        if (magicValue == MemorySafetyValidator::MAGIC_VALUE_DESTROYED) {
+            return -100;  // Object was destroyed
+        }
+        if (!MemorySafetyValidator::isValid(magicValue)) {
+            return -101;  // Object corrupted
+        }
+        if (refCounter == nullptr) {
+            return -102;  // Reference counter is null
+        }
+        if (refCounter->count <= 0) {
+            return -103;  // Invalid reference count
+        }
+        return 0;  // Valid
+    }
+    
+private:
+    // Reference counting implementation
+    void decrementRef() {
+        if (refCounter && refCounter->count > 0) {
+            refCounter->count--;
+            if (refCounter->count == 0) {
+                delete refCounter;
+                refCounter = nullptr;
+            }
+        }
+        // Mark as destroyed
+        magicValue = MemorySafetyValidator::MAGIC_VALUE_DESTROYED;
+    }
+    
+public:
     // Additional validation methods (REQ-OBJ-002)
     int validateStationId(int stationId) const;
     int validateLineId(int lineId) const; 
@@ -454,6 +967,11 @@ struct RouteItemWrapper {
 
 // RouteFlag wrapper class (corresponds to cRouteFlag)
 class RouteFlagWrapper {
+private:
+    // Object lifecycle management (Task 25: REQ-OBJ-007)
+    mutable int magicValue;             // Memory safety validation
+    mutable RefCounter* refCounter;     // Reference counting for shared data
+    
 public:
     // Osaka loop line pass constants (matching C++ RouteFlag::OSAKAKAN_PASS enum)
     enum OsakaKanPass {
@@ -498,58 +1016,54 @@ public:
     int8_t urban_neerest;          // Urban area nearest calculation
     unsigned char osakaKanPass;     // Osaka loop line pass count
     
-    // Constructor
+    // Constructor with lifecycle management
     RouteFlagWrapper() {
         clear();
+        
+        // Initialize lifecycle management
+        magicValue = MemorySafetyValidator::MAGIC_VALUE_VALID;
+        refCounter = new RefCounter();
     }
     
     // Constructor from C++ RouteFlag (implementation will be in .cpp file)
     RouteFlagWrapper(const RouteFlag* flag);
     
-    // Copy constructor
-    RouteFlagWrapper(const RouteFlagWrapper& other) {
-        *this = other;
+    // Destructor with RAII cleanup (Task 25: REQ-OBJ-007)
+    ~RouteFlagWrapper() {
+        if (isValid()) {
+            decrementRef();
+        }
     }
     
-    // Assignment operator
+    // Copy constructor with reference counting
+    RouteFlagWrapper(const RouteFlagWrapper& other) {
+        copyDataFrom(other);
+        
+        // Share reference counter
+        magicValue = other.magicValue;
+        refCounter = other.refCounter;
+        if (other.isValid() && refCounter) {
+            refCounter->count++;
+        }
+    }
+    
+    // Assignment operator with reference counting
     RouteFlagWrapper& operator=(const RouteFlagWrapper& other) {
         if (this != &other) {
-            // Boolean properties
-            no_rule = other.no_rule;
-            jrtokaistock_applied = other.jrtokaistock_applied;
-            jrtokaistock_enable = other.jrtokaistock_enable;
-            meihan_city_flag = other.meihan_city_flag;
-            rule88 = other.rule88;
-            rule69 = other.rule69;
-            rule70 = other.rule70;
-            special_fare_enable = other.special_fare_enable;
-            rule70bullet = other.rule70bullet;
-            rule16_5 = other.rule16_5;
-            bullet_line = other.bullet_line;
-            bJrTokaiOnly = other.bJrTokaiOnly;
-            meihan_city_enable = other.meihan_city_enable;
-            trackmarkctl = other.trackmarkctl;
-            jctsp_route_change = other.jctsp_route_change;
-            ter_begin_oosaka = other.ter_begin_oosaka;
-            ter_fin_oosaka = other.ter_fin_oosaka;
-            compncheck = other.compncheck;
-            compnpass = other.compnpass;
-            compnda = other.compnda;
-            compnbegin = other.compnbegin;
-            compnend = other.compnend;
-            compnterm = other.compnterm;
-            tokai_shinkansen = other.tokai_shinkansen;
-            notsamekokurahakatashinzai = other.notsamekokurahakatashinzai;
-            end = other.end;
-            osakakan_1dir = other.osakakan_1dir;
-            osakakan_2dir = other.osakakan_2dir;
-            osakakan_detour = other.osakakan_detour;
+            // Decrement current reference
+            if (isValid()) {
+                decrementRef();
+            }
             
-            // Numeric properties
-            rule86or87 = other.rule86or87;
-            rule115 = other.rule115;
-            urban_neerest = other.urban_neerest;
-            osakaKanPass = other.osakaKanPass;
+            // Copy data
+            copyDataFrom(other);
+            
+            // Share reference counter
+            magicValue = other.magicValue;
+            refCounter = other.refCounter;
+            if (other.isValid() && refCounter) {
+                refCounter->count++;
+            }
         }
         return *this;
     }
@@ -1121,11 +1635,120 @@ public:
         return osakaKanPass != 0 || osakakan_1dir || osakakan_2dir;
     }
     
-    // Utility methods
+    // Memory safety validation methods (Task 25: REQ-OBJ-007)
+    
+    /**
+     * Check if this object is in a valid state (not destroyed)
+     * Should be called before accessing any member data
+     * 
+     * @return true if object is valid, false if destroyed or corrupted
+     */
     bool isValid() const {
-        // Enhanced validation using comprehensive flag validation
-        return validateAllFlags() == 0;
+        return MemorySafetyValidator::isValid(magicValue) && refCounter != nullptr;
     }
+    
+    /**
+     * Check if this object has been destroyed
+     * Used for debugging use-after-destruction scenarios
+     * 
+     * @return true if object was destroyed, false otherwise
+     */
+    bool isDestroyed() const {
+        return MemorySafetyValidator::isDestroyed(magicValue);
+    }
+    
+    /**
+     * Get current reference count for this object's shared data
+     * Used for debugging memory management issues
+     * 
+     * @return reference count, -1 if object is invalid
+     */
+    int getReferenceCount() const {
+        if (!isValid()) return -1;
+        return refCounter->count;
+    }
+    
+    /**
+     * Force validation of object state with detailed error reporting
+     * Throws detailed error information for debugging
+     * 
+     * @return 0 if valid, negative error code otherwise
+     */
+    int validateObjectState() const {
+        if (magicValue == MemorySafetyValidator::MAGIC_VALUE_DESTROYED) {
+            return -100;  // Object was destroyed
+        }
+        if (!MemorySafetyValidator::isValid(magicValue)) {
+            return -101;  // Object corrupted
+        }
+        if (refCounter == nullptr) {
+            return -102;  // Reference counter is null
+        }
+        if (refCounter->count <= 0) {
+            return -103;  // Invalid reference count
+        }
+        // Additional validation using comprehensive flag validation
+        if (validateAllFlags() != 0) {
+            return -104;  // Flag validation failed
+        }
+        return 0;  // Valid
+    }
+    
+private:
+    // Reference counting implementation
+    void decrementRef() {
+        if (refCounter && refCounter->count > 0) {
+            refCounter->count--;
+            if (refCounter->count == 0) {
+                delete refCounter;
+                refCounter = nullptr;
+            }
+        }
+        // Mark as destroyed
+        magicValue = MemorySafetyValidator::MAGIC_VALUE_DESTROYED;
+    }
+    
+    // Helper method to copy all data properties
+    void copyDataFrom(const RouteFlagWrapper& other) {
+        // Boolean properties
+        no_rule = other.no_rule;
+        jrtokaistock_applied = other.jrtokaistock_applied;
+        jrtokaistock_enable = other.jrtokaistock_enable;
+        meihan_city_flag = other.meihan_city_flag;
+        rule88 = other.rule88;
+        rule69 = other.rule69;
+        rule70 = other.rule70;
+        special_fare_enable = other.special_fare_enable;
+        rule70bullet = other.rule70bullet;
+        rule16_5 = other.rule16_5;
+        bullet_line = other.bullet_line;
+        bJrTokaiOnly = other.bJrTokaiOnly;
+        meihan_city_enable = other.meihan_city_enable;
+        trackmarkctl = other.trackmarkctl;
+        jctsp_route_change = other.jctsp_route_change;
+        ter_begin_oosaka = other.ter_begin_oosaka;
+        ter_fin_oosaka = other.ter_fin_oosaka;
+        compncheck = other.compncheck;
+        compnpass = other.compnpass;
+        compnda = other.compnda;
+        compnbegin = other.compnbegin;
+        compnend = other.compnend;
+        compnterm = other.compnterm;
+        tokai_shinkansen = other.tokai_shinkansen;
+        notsamekokurahakatashinzai = other.notsamekokurahakatashinzai;
+        end = other.end;
+        osakakan_1dir = other.osakakan_1dir;
+        osakakan_2dir = other.osakakan_2dir;
+        osakakan_detour = other.osakakan_detour;
+        
+        // Numeric properties
+        rule86or87 = other.rule86or87;
+        rule115 = other.rule115;
+        urban_neerest = other.urban_neerest;
+        osakaKanPass = other.osakaKanPass;
+    }
+    
+public:
     
     // Equality operator
     bool operator==(const RouteFlagWrapper& other) const {
@@ -1141,6 +1764,11 @@ public:
 
 // Route wrapper class (corresponds to cRoute)
 class RouteWrapper {
+private:
+    // Object lifecycle management (Task 25: REQ-OBJ-007)
+    mutable int magicValue;             // Memory safety validation
+    mutable RefCounter* refCounter;     // Reference counting for shared data
+    
 public:
     Route* route;  // Made public for friend classes access
     
@@ -1149,6 +1777,8 @@ public:
     RouteWrapper(const RouteWrapper& source);
     RouteWrapper(const class RouteListWrapper& source);
     RouteWrapper(const RouteWrapper& source, int count);
+    
+    // Enhanced destructor with RAII cleanup (Task 25: REQ-OBJ-007)
     ~RouteWrapper();
     
     void sync(const class CalcRouteWrapper& source);
@@ -1188,15 +1818,130 @@ public:
     
     // Get route as string
     std::string routeScript() const;
+    
+    // Validation methods (Task 19: REQ-OBJ-002, REQ-OBJ-004)
+    
+    /**
+     * Validate the current route for integrity and connectivity
+     * Returns comprehensive validation result with detailed error reporting
+     * and fuzzy matching suggestions for invalid components
+     * 
+     * @return ValidationResult containing validation status, error messages, and suggestions
+     */
+    ValidationResult validateRoute() const;
+    
+    /**
+     * Validate route string components before calling setupRoute()
+     * Provides detailed error reporting and fuzzy matching for invalid station/line names
+     * 
+     * @param routeString The route string to validate (format: "Station Line Station Line ...")
+     * @return ValidationResult containing validation status and improvement suggestions
+     */
+    ValidationResult validateRouteString(const std::string& routeString) const;
+    
+    // Memory safety validation methods (Task 25: REQ-OBJ-007)
+    
+    /**
+     * Check if this object is in a valid state (not destroyed)
+     * Should be called before accessing any member data
+     * 
+     * @return true if object is valid, false if destroyed or corrupted
+     */
+    bool isValid() const {
+        return MemorySafetyValidator::isValid(magicValue) && refCounter != nullptr && route != nullptr;
+    }
+    
+    /**
+     * Check if this object has been destroyed
+     * Used for debugging use-after-destruction scenarios
+     * 
+     * @return true if object was destroyed, false otherwise
+     */
+    bool isDestroyed() const {
+        return MemorySafetyValidator::isDestroyed(magicValue);
+    }
+    
+    /**
+     * Get current reference count for this object's shared data
+     * Used for debugging memory management issues
+     * 
+     * @return reference count, -1 if object is invalid
+     */
+    int getReferenceCount() const {
+        if (!isValid()) return -1;
+        return refCounter->count;
+    }
+    
+    /**
+     * Force validation of object state with detailed error reporting
+     * Throws detailed error information for debugging
+     * 
+     * @return 0 if valid, negative error code otherwise
+     */
+    int validateObjectState() const {
+        if (magicValue == MemorySafetyValidator::MAGIC_VALUE_DESTROYED) {
+            return -100;  // Object was destroyed
+        }
+        if (!MemorySafetyValidator::isValid(magicValue)) {
+            return -101;  // Object corrupted
+        }
+        if (refCounter == nullptr) {
+            return -102;  // Reference counter is null
+        }
+        if (refCounter->count <= 0) {
+            return -103;  // Invalid reference count
+        }
+        if (route == nullptr) {
+            return -105;  // Route pointer is null
+        }
+        return 0;  // Valid
+    }
+    
+private:
+    // Reference counting implementation
+    void incrementRef() const {
+        if (refCounter) {
+            refCounter->count++;
+        }
+    }
+    
+    void decrementRef() {
+        if (refCounter && refCounter->count > 0) {
+            refCounter->count--;
+            if (refCounter->count == 0) {
+                cleanupRoute();
+                delete refCounter;
+                refCounter = nullptr;
+            }
+        }
+        // Mark as destroyed
+        magicValue = MemorySafetyValidator::MAGIC_VALUE_DESTROYED;
+    }
+    
+    void cleanupRoute();
+    void initializeLifecycle();
+    
+    // Helper methods for validation
+    std::vector<std::string> parseRouteString(const std::string& routeString) const;
+    bool validateStationConnection(const RouteItem& from, const RouteItem& to) const;
+    std::vector<std::string> generateStationNameSuggestions(const std::string& invalidName) const;
+    std::vector<std::string> generateLineNameSuggestions(const std::string& invalidName) const;
 };
 
 // Route list wrapper class (corresponds to cRouteList)
 class RouteListWrapper {
+private:
+    // Object lifecycle management (Task 25: REQ-OBJ-007)
+    mutable int magicValue;             // Memory safety validation
+    mutable RefCounter* refCounter;     // Reference counting for shared data
+    
 public:
     RouteList* routeList;  // Made public for friend classes access
     
 public:
     RouteListWrapper(const RouteWrapper& source);
+    
+    // Enhanced destructor with RAII cleanup (Task 25: REQ-OBJ-007)
     ~RouteListWrapper();
     
     // Route list properties
@@ -1215,6 +1960,88 @@ public:
     // Route flag access methods
     RouteFlag getRouteFlag() const;                         // Get route flags
     void setRouteFlag(const RouteFlag& flag);               // Set route flags
+    
+    // Memory safety validation methods (Task 25: REQ-OBJ-007)
+    
+    /**
+     * Check if this object is in a valid state (not destroyed)
+     * Should be called before accessing any member data
+     * 
+     * @return true if object is valid, false if destroyed or corrupted
+     */
+    bool isValid() const {
+        return MemorySafetyValidator::isValid(magicValue) && refCounter != nullptr && routeList != nullptr;
+    }
+    
+    /**
+     * Check if this object has been destroyed
+     * Used for debugging use-after-destruction scenarios
+     * 
+     * @return true if object was destroyed, false otherwise
+     */
+    bool isDestroyed() const {
+        return MemorySafetyValidator::isDestroyed(magicValue);
+    }
+    
+    /**
+     * Get current reference count for this object's shared data
+     * Used for debugging memory management issues
+     * 
+     * @return reference count, -1 if object is invalid
+     */
+    int getReferenceCount() const {
+        if (!isValid()) return -1;
+        return refCounter->count;
+    }
+    
+    /**
+     * Force validation of object state with detailed error reporting
+     * Throws detailed error information for debugging
+     * 
+     * @return 0 if valid, negative error code otherwise
+     */
+    int validateObjectState() const {
+        if (magicValue == MemorySafetyValidator::MAGIC_VALUE_DESTROYED) {
+            return -100;  // Object was destroyed
+        }
+        if (!MemorySafetyValidator::isValid(magicValue)) {
+            return -101;  // Object corrupted
+        }
+        if (refCounter == nullptr) {
+            return -102;  // Reference counter is null
+        }
+        if (refCounter->count <= 0) {
+            return -103;  // Invalid reference count
+        }
+        if (routeList == nullptr) {
+            return -106;  // RouteList pointer is null
+        }
+        return 0;  // Valid
+    }
+    
+private:
+    // Reference counting implementation
+    void incrementRef() const {
+        if (refCounter) {
+            refCounter->count++;
+        }
+    }
+    
+    void decrementRef() {
+        if (refCounter && refCounter->count > 0) {
+            refCounter->count--;
+            if (refCounter->count == 0) {
+                cleanupRouteList();
+                delete refCounter;
+                refCounter = nullptr;
+            }
+        }
+        // Mark as destroyed
+        magicValue = MemorySafetyValidator::MAGIC_VALUE_DESTROYED;
+    }
+    
+    void cleanupRouteList();
+    void initializeLifecycle();
 };
 
 // Calculation wrapper class (corresponds to cCalcRoute)
@@ -1223,10 +2050,16 @@ private:
     CalcRoute* calcRoute;
     int lastFareResult;  // Store last fare calculation result code
     
+    // Object lifecycle management (Task 25: REQ-OBJ-007)
+    mutable int magicValue;             // Memory safety validation
+    mutable RefCounter* refCounter;     // Reference counting for shared data
+    
 public:
     CalcRouteWrapper(const RouteWrapper& route);
     CalcRouteWrapper(const RouteWrapper& route, int count);
     CalcRouteWrapper(const RouteListWrapper& routeList);
+    
+    // Enhanced destructor with RAII cleanup (Task 25: REQ-OBJ-007)
     ~CalcRouteWrapper();
     
     void sync(const RouteWrapper& route);
@@ -1252,6 +2085,88 @@ public:
     std::string routeScript() const;
     bool isOsakakanDetourEnable() const;
     bool isOsakakanDetour() const;
+    
+    // Memory safety validation methods (Task 25: REQ-OBJ-007)
+    
+    /**
+     * Check if this object is in a valid state (not destroyed)
+     * Should be called before accessing any member data
+     * 
+     * @return true if object is valid, false if destroyed or corrupted
+     */
+    bool isValid() const {
+        return MemorySafetyValidator::isValid(magicValue) && refCounter != nullptr && calcRoute != nullptr;
+    }
+    
+    /**
+     * Check if this object has been destroyed
+     * Used for debugging use-after-destruction scenarios
+     * 
+     * @return true if object was destroyed, false otherwise
+     */
+    bool isDestroyed() const {
+        return MemorySafetyValidator::isDestroyed(magicValue);
+    }
+    
+    /**
+     * Get current reference count for this object's shared data
+     * Used for debugging memory management issues
+     * 
+     * @return reference count, -1 if object is invalid
+     */
+    int getReferenceCount() const {
+        if (!isValid()) return -1;
+        return refCounter->count;
+    }
+    
+    /**
+     * Force validation of object state with detailed error reporting
+     * Throws detailed error information for debugging
+     * 
+     * @return 0 if valid, negative error code otherwise
+     */
+    int validateObjectState() const {
+        if (magicValue == MemorySafetyValidator::MAGIC_VALUE_DESTROYED) {
+            return -100;  // Object was destroyed
+        }
+        if (!MemorySafetyValidator::isValid(magicValue)) {
+            return -101;  // Object corrupted
+        }
+        if (refCounter == nullptr) {
+            return -102;  // Reference counter is null
+        }
+        if (refCounter->count <= 0) {
+            return -103;  // Invalid reference count
+        }
+        if (calcRoute == nullptr) {
+            return -107;  // CalcRoute pointer is null
+        }
+        return 0;  // Valid
+    }
+    
+private:
+    // Reference counting implementation
+    void incrementRef() const {
+        if (refCounter) {
+            refCounter->count++;
+        }
+    }
+    
+    void decrementRef() {
+        if (refCounter && refCounter->count > 0) {
+            refCounter->count--;
+            if (refCounter->count == 0) {
+                cleanupCalcRoute();
+                delete refCounter;
+                refCounter = nullptr;
+            }
+        }
+        // Mark as destroyed
+        magicValue = MemorySafetyValidator::MAGIC_VALUE_DESTROYED;
+    }
+    
+    void cleanupCalcRoute();
+    void initializeLifecycle();
 };
 
 // Utility functions for station/line lookup
@@ -1289,6 +2204,16 @@ public:
     static std::string kmNumStr(int num);
     static std::string getStationNameEx(int id);
     static std::string getCompanyOrPrefectName(int id);
+    
+    // Android-compatible utility methods (matching RouteHelper.kt)
+    // Based on RouteHelper.kt implementation patterns (REQ-OBJ-005)
+    static std::vector<int> getJRCompanys();                        // JR company IDs (id < 0x10000)
+    static std::vector<int> getPrefects();                          // Prefecture IDs (id >= 0x10000)
+    static std::string companyOrPrefectName(int ident);            // Company/prefecture name lookup
+    
+    // Note: Storage methods excluded per CLAUDE.md specification:
+    // - saveParam, readParam, readParams, saveHistory, appendHistory, isStrageInRoute
+    // Reason: These require platform-specific storage implementation
     
     // Route storage operations
     static int saveToRouteArray(const std::vector<int>& routeList);

@@ -157,11 +157,20 @@ async function executeEnhancedRouteTest(
 }
 
 /**
- * Show current time (equivalent to show_time() in original)
+ * Show current time in exact C++ show_time() format
+ * Format: "YYYY-M-D H:MM:SS" (matching original _ftprintf format)
  */
 function showTime(timestamp: number, output: TestOutputWriter): void {
     const date = new Date(timestamp * 1000);
-    output.write(date.toISOString());
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1; // No zero padding for month
+    const day = date.getDate();         // No zero padding for day
+    const hour = date.getHours();       // No zero padding for hour
+    const minute = date.getMinutes().toString().padStart(2, '0');
+    const second = date.getSeconds().toString().padStart(2, '0');
+    
+    // Exact C++ format: "%04u-%u-%u %u:%02u:%02u"
+    output.write(`${year}-${month}-${day} ${hour}:${minute}:${second}`);
 }
 
 /**
@@ -196,27 +205,22 @@ function generateFailureReport(stats: TestExecutionStats, output: TestOutputWrit
 }
 
 /**
- * Generate test execution summary report
+ * Generate test execution summary report using C++ compatible format (REQ-CLI-002.2)
  */
 function generateExecutionSummary(stats: TestExecutionStats, output: TestOutputWriter): void {
     const executionTime = stats.executionEndTime ? 
         (stats.executionEndTime - stats.executionStartTime) / 1000 : 0;
     
-    output.write('\\n=== TEST EXECUTION SUMMARY ===\\n');
-    output.write(`Total Tests: ${stats.totalTests}\\n`);
-    output.write(`Passed: ${stats.passedTests}\\n`);
-    output.write(`Failed: ${stats.failedTests}\\n`);
-    output.write(`Success Rate: ${stats.totalTests > 0 ? ((stats.passedTests / stats.totalTests) * 100).toFixed(2) : 0}%\\n`);
-    output.write(`Execution Time: ${executionTime.toFixed(2)} seconds\\n`);
+    // Use the new C++ compatible format from TestOutputWriter
+    output.writeCppTestSummary(stats.totalTests, stats.passedTests, executionTime);
     
+    // Add detailed failure information if needed
     if (stats.failedTests > 0) {
         output.write('\\nFAILED TESTS:\\n');
         stats.errors.forEach((error, index) => {
             output.write(`  ${index + 1}. ${error.testName}: ${error.errorMessage}\\n`);
         });
     }
-    
-    output.write('===========================\\n');
 }
 
 /**
@@ -548,15 +552,12 @@ export async function executeCompleteTestSuite(module: FarertModule): Promise<vo
         output.close();
     }
     
-    // Console summary for immediate feedback
+    // Console summary for immediate feedback using C++ compatible format
     const executionTime = stats.executionEndTime ? (stats.executionEndTime - stats.executionStartTime) / 1000 : 0;
-    const successRate = stats.totalTests > 0 ? ((stats.passedTests / stats.totalTests) * 100).toFixed(2) : '0';
+    const successRate = stats.totalTests > 0 ? ((stats.passedTests / stats.totalTests) * 100).toFixed(1) : '0.0';
     
     console.log('\\n=== COMPLETE TEST SUITE EXECUTION SUMMARY ===');
-    console.log(`Total Tests: ${stats.totalTests}`);
-    console.log(`Passed: ${stats.passedTests}`);
-    console.log(`Failed: ${stats.failedTests}`);
-    console.log(`Success Rate: ${successRate}%`);
+    console.log(`Test Results: ${stats.passedTests}/${stats.totalTests} passed (${successRate}%)`);
     console.log(`Execution Time: ${executionTime.toFixed(2)} seconds`);
     console.log(`Results written to: test_result.txt`);
     

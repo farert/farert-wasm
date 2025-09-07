@@ -79,6 +79,38 @@ export class TestOutputWriter {
     }
     
     /**
+     * Format timestamp in exact C++ show_time format
+     * Format: "YYYY-M-D H:MM:SS" (matching original _ftprintf format)
+     */
+    formatCppTimestamp(timestamp: number): string {
+        const date = new Date(timestamp * 1000);
+        const year = date.getFullYear();
+        const month = date.getMonth() + 1; // No zero padding for month
+        const day = date.getDate();         // No zero padding for day
+        const hour = date.getHours();       // No zero padding for hour
+        const minute = date.getMinutes().toString().padStart(2, '0');
+        const second = date.getSeconds().toString().padStart(2, '0');
+        
+        return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+    }
+    
+    /**
+     * Write C++ compatible test summary (REQ-CLI-002.2)
+     * Matches the exact format from original test_exec.cpp
+     */
+    writeCppTestSummary(
+        totalTests: number,
+        passedTests: number,
+        executionTimeSeconds: number
+    ): void {
+        const successRate = totalTests > 0 ? (passedTests / totalTests * 100).toFixed(1) : '0.0';
+        
+        // Exact C++ format: "Test Results: X/Y passed (Z.Z%)"
+        this.write(`Test Results: ${passedTests}/${totalTests} passed (${successRate}%)\\n`);
+        this.write(`Execution Time: ${executionTimeSeconds.toFixed(2)} seconds\\n`);
+    }
+    
+    /**
      * Write route test header (equivalent to test header output in original)
      */
     writeRouteTestHeader(routeName: string, routeDefinition: string): void {
@@ -168,7 +200,8 @@ export class TestOutputWriter {
     }
     
     /**
-     * Write test statistics summary
+     * Write test statistics summary in exact C++ format (REQ-CLI-002.2)
+     * Format: "Test Results: X/Y passed (Z.Z%)"
      */
     writeTestStatistics(
         totalTests: number,
@@ -176,19 +209,20 @@ export class TestOutputWriter {
         failedTests: number,
         executionTime: number
     ): void {
-        const successRate = totalTests > 0 ? (passedTests / totalTests * 100).toFixed(2) : '0.00';
+        const successRate = totalTests > 0 ? (passedTests / totalTests * 100).toFixed(1) : '0.0';
         
-        this.write('\\n=== TEST STATISTICS ===\\n');
-        this.write(`Total Tests: ${totalTests}\\n`);
-        this.write(`Passed: ${passedTests}\\n`);
-        this.write(`Failed: ${failedTests}\\n`);
-        this.write(`Success Rate: ${successRate}%\\n`);
-        this.write(`Execution Time: ${executionTime.toFixed(2)}s\\n`);
-        this.write('=======================\\n');
+        // Write in exact C++ format matching original test_exec.cpp
+        this.write(`\\nTest Results: ${passedTests}/${totalTests} passed (${successRate}%)\\n`);
+        this.write(`Execution Time: ${executionTime.toFixed(2)} seconds\\n`);
+        
+        if (failedTests > 0) {
+            this.write(`Failed Tests: ${failedTests}\\n`);
+        }
     }
     
     /**
-     * Write detailed failure information for debugging
+     * Write detailed failure information matching C++ format (REQ-CLI-002.5)
+     * Shows test name, expected value, actual value, and tolerance checks
      */
     writeFailureDetails(
         testName: string,
@@ -196,6 +230,7 @@ export class TestOutputWriter {
         errorMessage: string,
         expectedValue?: number,
         actualValue?: number,
+        tolerance: number = 0,
         timestamp?: number
     ): void {
         this.write(`\\n=== FAILURE DETAILS ===\\n`);
@@ -203,16 +238,54 @@ export class TestOutputWriter {
         this.write(`Route: ${routeDefinition}\\n`);
         this.write(`Error: ${errorMessage}\\n`);
         
+        // REQ-CLI-002.5: Show expected, actual, and tolerance information
         if (expectedValue !== undefined && actualValue !== undefined) {
-            this.write(`Expected: ${expectedValue}\\n`);
-            this.write(`Actual: ${actualValue}\\n`);
-            this.write(`Difference: ${Math.abs(expectedValue - actualValue)}\\n`);
+            const difference = Math.abs(expectedValue - actualValue);
+            const toleranceCheck = difference <= tolerance;
+            
+            this.write(`Expected Value: ${expectedValue} yen\\n`);
+            this.write(`Actual Value: ${actualValue} yen\\n`);
+            this.write(`Difference: ${difference} yen\\n`);
+            this.write(`Tolerance: ${tolerance} yen\\n`);
+            this.write(`Tolerance Check: ${toleranceCheck ? 'PASSED' : 'FAILED'}\\n`);
         }
         
         if (timestamp) {
-            this.write(`Timestamp: ${new Date(timestamp).toISOString()}\\n`);
+            this.write(`Timestamp: ${this.formatCppTimestamp(timestamp)}\\n`);
         }
         
         this.write('======================\\n');
+    }
+    
+    /**
+     * Write enhanced failure report matching C++ format (REQ-CLI-002.5)
+     * Includes test name, expected value, actual value, and tolerance information
+     */
+    writeEnhancedFailureReport(
+        testName: string,
+        routeDefinition: string,
+        errorMessage: string,
+        expectedValue?: number,
+        actualValue?: number,
+        tolerance: number = 0
+    ): void {
+        this.write(`\\n!!! TEST FAILURE !!!\\n`);
+        this.write(`Test Name: ${testName}\\n`);
+        this.write(`Route Definition: ${routeDefinition}\\n`);
+        this.write(`Error Message: ${errorMessage}\\n`);
+        
+        if (expectedValue !== undefined && actualValue !== undefined) {
+            const difference = Math.abs(expectedValue - actualValue);
+            const toleranceCheck = difference <= tolerance;
+            
+            this.write(`Expected Value: ${expectedValue} yen\\n`);
+            this.write(`Actual Value: ${actualValue} yen\\n`);
+            this.write(`Difference: ${difference} yen\\n`);
+            this.write(`Tolerance: ${tolerance} yen\\n`);
+            this.write(`Tolerance Check: ${toleranceCheck ? 'PASSED' : 'FAILED'}\\n`);
+        }
+        
+        this.write(`Timestamp: ${this.formatCppTimestamp(Date.now() / 1000)}\\n`);
+        this.write('!!!!!!!!!!!!!!!!!!!\\n');
     }
 }
