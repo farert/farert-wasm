@@ -1,27 +1,27 @@
-# frontend-api-layer - Task 7
+# frontend-api-layer - Task 40
 
-Execute task 7 for the frontend-api-layer specification.
+Execute task 40 for the frontend-api-layer specification.
 
 ## Task Description
-Create main SDK class in src/sdk/core/farert-sdk.ts
+Create final integration validation in tests/integration/full-stack.test.ts
 
 ## Code Reuse
-**Leverage existing code**: src/sdk/core/wasm-wrapper.ts, src/sdk/cache/cache-manager.ts, src/sdk/errors/error-manager.ts
+**Leverage existing code**: all implementation files
 
 ## Requirements Reference
-**Requirements**: REQ-API-001
+**Requirements**: All requirements
 
 ## Usage
 ```
-/Task:7-frontend-api-layer
+/Task:40-frontend-api-layer
 ```
 
 ## Instructions
 
-Execute with @spec-task-executor agent the following task: "Create main SDK class in src/sdk/core/farert-sdk.ts"
+Execute with @spec-task-executor agent the following task: "Create final integration validation in tests/integration/full-stack.test.ts"
 
 ```
-Use the @spec-task-executor agent to implement task 7: "Create main SDK class in src/sdk/core/farert-sdk.ts" for the frontend-api-layer specification and include all the below context.
+Use the @spec-task-executor agent to implement task 40: "Create final integration validation in tests/integration/full-stack.test.ts" for the frontend-api-layer specification and include all the below context.
 
 # Steering Context
 ## Steering Documents Context
@@ -824,22 +824,22 @@ This design provides a comprehensive foundation for creating a high-quality, Sve
 **Note**: Specification documents have been pre-loaded. Do not use get-content to fetch them again.
 
 ## Task Details
-- Task ID: 7
-- Description: Create main SDK class in src/sdk/core/farert-sdk.ts
-- Leverage: src/sdk/core/wasm-wrapper.ts, src/sdk/cache/cache-manager.ts, src/sdk/errors/error-manager.ts
-- Requirements: REQ-API-001
+- Task ID: 40
+- Description: Create final integration validation in tests/integration/full-stack.test.ts
+- Leverage: all implementation files
+- Requirements: All requirements
 
 ## Instructions
-- Implement ONLY task 7: "Create main SDK class in src/sdk/core/farert-sdk.ts"
+- Implement ONLY task 40: "Create final integration validation in tests/integration/full-stack.test.ts"
 - Follow all project conventions and leverage existing code
-- Mark the task as complete using: claude-code-spec-workflow get-tasks frontend-api-layer 7 --mode complete
+- Mark the task as complete using: claude-code-spec-workflow get-tasks frontend-api-layer 40 --mode complete
 - Provide a completion summary
 ```
 
 ## Task Completion
 When the task is complete, mark it as done:
 ```bash
-claude-code-spec-workflow get-tasks frontend-api-layer 7 --mode complete
+claude-code-spec-workflow get-tasks frontend-api-layer 40 --mode complete
 ```
 
 ## Next Steps

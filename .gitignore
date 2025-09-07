@@ -25,3 +25,16 @@ lerna-debug.log*
 
 # Development tools
 .serena/
+
+# Claude Code backups
+.claude.backup-*/
+
+# Build artifacts
+*.o
+*.wasm
+test_validation
+test_route_item_binding.*
+route_interface.o
+
+# Performance test outputs
+test_performance_optimization.js
