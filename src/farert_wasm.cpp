@@ -556,14 +556,29 @@ EMSCRIPTEN_BINDINGS(farert_module) {
         .function("lastLineId", &RouteWrapper::lastLineId)
         .function("isReverseAllow", &RouteWrapper::isReverseAllow)
         .function("isEnd", &RouteWrapper::isEnd)
-        .function("routeScript", &RouteWrapper::routeScript);
+        .function("routeScript", &RouteWrapper::routeScript)
+        // RouteItemWrapper access methods (REQ-OBJ-003, REQ-OBJ-004)
+        .function("getRouteItem", &RouteWrapper::getRouteItem)
+        // Route item manipulation methods for enhanced route building
+        .function("insertItem", &RouteWrapper::insertItem)
+        .function("removeItem", &RouteWrapper::removeItem);
     
     // 2. cRouteList (RouteListWrapper) クラス  
     emscripten::class_<RouteListWrapper>("cRouteList")
         .constructor<const RouteWrapper&>()
         .function("startStationId", &RouteListWrapper::startStationId)
         .function("lastStationId", &RouteListWrapper::lastStationId)
-        .function("routeScript", &RouteListWrapper::routeScript);
+        .function("routeScript", &RouteListWrapper::routeScript)
+        // Array operations (REQ-OBJ-003)
+        .function("count", &RouteListWrapper::count)
+        .function("at", &RouteListWrapper::at)
+        .function("remove", &RouteListWrapper::remove)
+        .function("removeAll", &RouteListWrapper::removeAll)
+        .function("insert", &RouteListWrapper::insert)
+        .function("assign", &RouteListWrapper::assign)
+        // Route flag access methods
+        .function("getRouteFlag", &RouteListWrapper::getRouteFlag)
+        .function("setRouteFlag", &RouteListWrapper::setRouteFlag);
     
     // 3. cCalcRoute (CalcRouteWrapper) クラス
     emscripten::class_<CalcRouteWrapper>("cCalcRoute")
@@ -610,6 +625,224 @@ EMSCRIPTEN_BINDINGS(farert_module) {
         .function("fareForStockDiscount", &FareInfoData::fareForStockDiscount)
         .function("fareForStockDiscountTitle", &FareInfoData::fareForStockDiscountTitle);
     
-    // 5. cRouteUtil (RouteUtility) は静的クラスなので、関数として既に公開済み
+    // 5. cRouteItem (RouteItemWrapper) クラス
+    emscripten::class_<RouteItemWrapper>("cRouteItem")
+        .constructor()
+        .constructor<int, int>()
+        .constructor<int, int, int>()
+        .constructor<int, int, int, int, int, int>()
+        .constructor<const RouteItemWrapper&>()
+        .property("stationId", &RouteItemWrapper::stationId)
+        .property("lineId", &RouteItemWrapper::lineId)
+        .property("flag", &RouteItemWrapper::flag)
+        .property("fare", &RouteItemWrapper::fare)
+        .property("salesKm", &RouteItemWrapper::salesKm)
+        .property("indexOfAggregate", &RouteItemWrapper::indexOfAggregate)
+        .function("getStationId", &RouteItemWrapper::getStationId)
+        .function("getLineId", &RouteItemWrapper::getLineId)
+        .function("getFlag", &RouteItemWrapper::getFlag)
+        .function("getFare", &RouteItemWrapper::getFare)
+        .function("getSalesKm", &RouteItemWrapper::getSalesKm)
+        .function("getIndexOfAggregate", &RouteItemWrapper::getIndexOfAggregate)
+        .function("setStationId", &RouteItemWrapper::setStationId)
+        .function("setLineId", &RouteItemWrapper::setLineId)
+        .function("setFlag", &RouteItemWrapper::setFlag)
+        .function("setFare", &RouteItemWrapper::setFare)
+        .function("setSalesKm", &RouteItemWrapper::setSalesKm)
+        .function("setIndexOfAggregate", &RouteItemWrapper::setIndexOfAggregate)
+        .function("refresh", &RouteItemWrapper::refresh)
+        .function("is_equal", &RouteItemWrapper::is_equal)
+        .function("isValid", &RouteItemWrapper::isValid)
+        .function("validateWithErrorCode", &RouteItemWrapper::validateWithErrorCode)
+        .function("clear", &RouteItemWrapper::clear)
+        .function("initialize", &RouteItemWrapper::initialize)
+        .function("copyFrom", &RouteItemWrapper::copyFrom)
+        .function("matchesRoute", &RouteItemWrapper::matchesRoute)
+        .function("matchesStation", &RouteItemWrapper::matchesStation)
+        .function("matchesLine", &RouteItemWrapper::matchesLine)
+        .function("toString", &RouteItemWrapper::toString)
+        .function("getRouteDescription", &RouteItemWrapper::getRouteDescription)
+        .function("isValidRouteSegment", &RouteItemWrapper::isValidRouteSegment)
+        .function("isStartingPoint", &RouteItemWrapper::isStartingPoint)
+        .function("hasCalculatedData", &RouteItemWrapper::hasCalculatedData)
+        .function("setFlagBit", &RouteItemWrapper::setFlagBit)
+        .function("clearFlagBit", &RouteItemWrapper::clearFlagBit)
+        .function("isFlagBitSet", &RouteItemWrapper::isFlagBitSet);
+    
+    // 6. cRouteFlag (RouteFlagWrapper) クラス
+    emscripten::class_<RouteFlagWrapper>("cRouteFlag")
+        .constructor()
+        .constructor<const RouteFlagWrapper&>()
+        
+        // Boolean Properties (30+ properties)
+        .property("no_rule", &RouteFlagWrapper::no_rule)
+        .property("jrtokaistock_applied", &RouteFlagWrapper::jrtokaistock_applied)
+        .property("jrtokaistock_enable", &RouteFlagWrapper::jrtokaistock_enable)
+        .property("meihan_city_flag", &RouteFlagWrapper::meihan_city_flag)
+        .property("rule88", &RouteFlagWrapper::rule88)
+        .property("rule69", &RouteFlagWrapper::rule69)
+        .property("rule70", &RouteFlagWrapper::rule70)
+        .property("special_fare_enable", &RouteFlagWrapper::special_fare_enable)
+        .property("rule70bullet", &RouteFlagWrapper::rule70bullet)
+        .property("rule16_5", &RouteFlagWrapper::rule16_5)
+        .property("bullet_line", &RouteFlagWrapper::bullet_line)
+        .property("bJrTokaiOnly", &RouteFlagWrapper::bJrTokaiOnly)
+        .property("meihan_city_enable", &RouteFlagWrapper::meihan_city_enable)
+        .property("trackmarkctl", &RouteFlagWrapper::trackmarkctl)
+        .property("jctsp_route_change", &RouteFlagWrapper::jctsp_route_change)
+        .property("ter_begin_oosaka", &RouteFlagWrapper::ter_begin_oosaka)
+        .property("ter_fin_oosaka", &RouteFlagWrapper::ter_fin_oosaka)
+        .property("compncheck", &RouteFlagWrapper::compncheck)
+        .property("compnpass", &RouteFlagWrapper::compnpass)
+        .property("compnda", &RouteFlagWrapper::compnda)
+        .property("compnbegin", &RouteFlagWrapper::compnbegin)
+        .property("compnend", &RouteFlagWrapper::compnend)
+        .property("compnterm", &RouteFlagWrapper::compnterm)
+        .property("tokai_shinkansen", &RouteFlagWrapper::tokai_shinkansen)
+        .property("notsamekokurahakatashinzai", &RouteFlagWrapper::notsamekokurahakatashinzai)
+        .property("end", &RouteFlagWrapper::end)
+        .property("osakakan_1dir", &RouteFlagWrapper::osakakan_1dir)
+        .property("osakakan_2dir", &RouteFlagWrapper::osakakan_2dir)
+        .property("osakakan_detour", &RouteFlagWrapper::osakakan_detour)
+        
+        // Numeric Properties (4 properties)
+        .property("rule86or87", &RouteFlagWrapper::rule86or87)
+        .property("rule115", &RouteFlagWrapper::rule115)
+        .property("urban_neerest", &RouteFlagWrapper::urban_neerest)
+        .property("osakaKanPass", &RouteFlagWrapper::osakaKanPass)
+        
+        // Management Methods
+        .function("clear", &RouteFlagWrapper::clear)
+        .function("setAnotherRouteFlag", &RouteFlagWrapper::setAnotherRouteFlag)
+        .function("rule_en", &RouteFlagWrapper::rule_en)
+        .function("setNoRule", &RouteFlagWrapper::setNoRule)
+        
+        // Long Route Management
+        .function("isEnableLongRoute", &RouteFlagWrapper::isEnableLongRoute)
+        .function("isLongRoute", &RouteFlagWrapper::isLongRoute)
+        .function("setLongRoute", &RouteFlagWrapper::setLongRoute)
+        
+        // Rule 115 Management
+        .function("isEnableRule115", &RouteFlagWrapper::isEnableRule115)
+        .function("isRule115specificTerm", &RouteFlagWrapper::isRule115specificTerm)
+        .function("setSpecificTermRule115", &RouteFlagWrapper::setSpecificTermRule115)
+        
+        // City Area Management
+        .function("setStartAsCity", &RouteFlagWrapper::setStartAsCity)
+        .function("setArriveAsCity", &RouteFlagWrapper::setArriveAsCity)
+        
+        // Rule 86/87 Management
+        .function("setDisableRule86or87", &RouteFlagWrapper::setDisableRule86or87)
+        .function("setEnableRule86or87", &RouteFlagWrapper::setEnableRule86or87)
+        .function("isEnableRule86or87", &RouteFlagWrapper::isEnableRule86or87)
+        
+        // Rule Availability Checks (15+ methods)
+        .function("isAvailableRule86or87", &RouteFlagWrapper::isAvailableRule86or87)
+        .function("isAvailableRule86", &RouteFlagWrapper::isAvailableRule86)
+        .function("isAvailableRule87", &RouteFlagWrapper::isAvailableRule87)
+        .function("isAvailableRule88", &RouteFlagWrapper::isAvailableRule88)
+        .function("isAvailableRule70", &RouteFlagWrapper::isAvailableRule70)
+        .function("isAvailableRule69", &RouteFlagWrapper::isAvailableRule69)
+        .function("isAvailableRule115", &RouteFlagWrapper::isAvailableRule115)
+        .function("isAvailableRule16_5", &RouteFlagWrapper::isAvailableRule16_5)
+        
+        // City Area Checks
+        .function("isMeihanCityEnable", &RouteFlagWrapper::isMeihanCityEnable)
+        .function("isArriveAsCity", &RouteFlagWrapper::isArriveAsCity)
+        .function("isStartAsCity", &RouteFlagWrapper::isStartAsCity)
+        
+        // Osaka Loop Line Management
+        .function("getOsakaKanPassValue", &RouteFlagWrapper::getOsakaKanPassValue)
+        .function("is_osakakan_1pass", &RouteFlagWrapper::is_osakakan_1pass)
+        .function("is_osakakan_2pass", &RouteFlagWrapper::is_osakakan_2pass)
+        .function("is_osakakan_nopass", &RouteFlagWrapper::is_osakakan_nopass)
+        .function("setOsakaKanPass", &RouteFlagWrapper::setOsakaKanPass)
+        .function("getOsakaKanPass", &RouteFlagWrapper::getOsakaKanPass)
+        .function("setOsakaKanFlag", emscripten::select_overload<void(unsigned char)>(&RouteFlagWrapper::setOsakaKanFlag))
+        .function("setOsakaKanFlagFromWrapper", emscripten::select_overload<void(const RouteFlagWrapper&)>(&RouteFlagWrapper::setOsakaKanFlag))
+        
+        // Route State Checks
+        .function("isRoundTrip", &RouteFlagWrapper::isRoundTrip)
+        .function("isTerCity", &RouteFlagWrapper::isTerCity)
+        .function("isUseBullet", &RouteFlagWrapper::isUseBullet)
+        .function("isIncludeCompanyLine", &RouteFlagWrapper::isIncludeCompanyLine)
+        
+        // Reset Methods
+        .function("terCityReset", &RouteFlagWrapper::terCityReset)
+        .function("optionFlagReset", &RouteFlagWrapper::optionFlagReset)
+        
+        // Boolean Property Getters
+        .function("getNoRule", &RouteFlagWrapper::getNoRule)
+        .function("getJrTokaiStockApplied", &RouteFlagWrapper::getJrTokaiStockApplied)
+        .function("getJrTokaiStockEnable", &RouteFlagWrapper::getJrTokaiStockEnable)
+        .function("getMeihanCityFlag", &RouteFlagWrapper::getMeihanCityFlag)
+        .function("getRule88", &RouteFlagWrapper::getRule88)
+        .function("getRule69", &RouteFlagWrapper::getRule69)
+        .function("getRule70", &RouteFlagWrapper::getRule70)
+        .function("getSpecialFareEnable", &RouteFlagWrapper::getSpecialFareEnable)
+        .function("getRule70Bullet", &RouteFlagWrapper::getRule70Bullet)
+        .function("getRule16_5", &RouteFlagWrapper::getRule16_5)
+        .function("getBulletLine", &RouteFlagWrapper::getBulletLine)
+        .function("getBJrTokaiOnly", &RouteFlagWrapper::getBJrTokaiOnly)
+        .function("getMeihanCityEnable", &RouteFlagWrapper::getMeihanCityEnable)
+        .function("getTrackmarkctl", &RouteFlagWrapper::getTrackmarkctl)
+        .function("getJctspRouteChange", &RouteFlagWrapper::getJctspRouteChange)
+        .function("getTerBeginOosaka", &RouteFlagWrapper::getTerBeginOosaka)
+        .function("getTerFinOosaka", &RouteFlagWrapper::getTerFinOosaka)
+        .function("getCompncheck", &RouteFlagWrapper::getCompncheck)
+        .function("getCompnpass", &RouteFlagWrapper::getCompnpass)
+        .function("getCompnda", &RouteFlagWrapper::getCompnda)
+        .function("getCompnbegin", &RouteFlagWrapper::getCompnbegin)
+        .function("getCompnend", &RouteFlagWrapper::getCompnend)
+        .function("getCompnterm", &RouteFlagWrapper::getCompnterm)
+        .function("getTokaiShinkansen", &RouteFlagWrapper::getTokaiShinkansen)
+        .function("getNotsamekokurahakatashinzai", &RouteFlagWrapper::getNotsamekokurahakatashinzai)
+        .function("getEnd", &RouteFlagWrapper::getEnd)
+        .function("getOsakakan1dir", &RouteFlagWrapper::getOsakakan1dir)
+        .function("getOsakakan2dir", &RouteFlagWrapper::getOsakakan2dir)
+        .function("getOsakakanDetour", &RouteFlagWrapper::getOsakakanDetour)
+        
+        // Numeric Property Getters
+        .function("getRule86or87", &RouteFlagWrapper::getRule86or87)
+        .function("getRule115", &RouteFlagWrapper::getRule115)
+        .function("getUrbanNeerest", &RouteFlagWrapper::getUrbanNeerest)
+        
+        // Boolean Property Setters
+        .function("setJrTokaiStockApplied", &RouteFlagWrapper::setJrTokaiStockApplied)
+        .function("setJrTokaiStockEnable", &RouteFlagWrapper::setJrTokaiStockEnable)
+        .function("setMeihanCityFlag", &RouteFlagWrapper::setMeihanCityFlag)
+        .function("setRule88", &RouteFlagWrapper::setRule88)
+        .function("setRule69", &RouteFlagWrapper::setRule69)
+        .function("setRule70", &RouteFlagWrapper::setRule70)
+        .function("setSpecialFareEnable", &RouteFlagWrapper::setSpecialFareEnable)
+        .function("setRule70Bullet", &RouteFlagWrapper::setRule70Bullet)
+        .function("setRule16_5", &RouteFlagWrapper::setRule16_5)
+        .function("setBulletLine", &RouteFlagWrapper::setBulletLine)
+        .function("setBJrTokaiOnly", &RouteFlagWrapper::setBJrTokaiOnly)
+        .function("setMeihanCityEnable", &RouteFlagWrapper::setMeihanCityEnable)
+        .function("setTrackmarkctl", &RouteFlagWrapper::setTrackmarkctl)
+        .function("setJctspRouteChange", &RouteFlagWrapper::setJctspRouteChange)
+        .function("setTerBeginOosaka", &RouteFlagWrapper::setTerBeginOosaka)
+        .function("setTerFinOosaka", &RouteFlagWrapper::setTerFinOosaka)
+        .function("setCompncheck", &RouteFlagWrapper::setCompncheck)
+        .function("setCompnpass", &RouteFlagWrapper::setCompnpass)
+        .function("setCompnda", &RouteFlagWrapper::setCompnda)
+        .function("setCompnbegin", &RouteFlagWrapper::setCompnbegin)
+        .function("setCompnend", &RouteFlagWrapper::setCompnend)
+        .function("setCompnterm", &RouteFlagWrapper::setCompnterm)
+        .function("setTokaiShinkansen", &RouteFlagWrapper::setTokaiShinkansen)
+        .function("setNotsamekokurahakatashinzai", &RouteFlagWrapper::setNotsamekokurahakatashinzai)
+        .function("setEnd", &RouteFlagWrapper::setEnd)
+        .function("setOsakakan1dir", &RouteFlagWrapper::setOsakakan1dir)
+        .function("setOsakakan2dir", &RouteFlagWrapper::setOsakakan2dir)
+        .function("setOsakakanDetour", &RouteFlagWrapper::setOsakakanDetour)
+        
+        // Numeric Property Setters
+        .function("setRule86or87", &RouteFlagWrapper::setRule86or87)
+        .function("setRule115", &RouteFlagWrapper::setRule115)
+        .function("setUrbanNeerest", &RouteFlagWrapper::setUrbanNeerest)
+        .function("setOsakaKanPassValue", &RouteFlagWrapper::setOsakaKanPassValue);
+    
+    // 7. cRouteUtil (RouteUtility) は静的クラスなので、関数として既に公開済み
     // RouteUtility の静的メソッドは既に function で公開されている
 }

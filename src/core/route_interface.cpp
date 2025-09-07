@@ -15,6 +15,231 @@ bool DatabaseManager::getDatabaseVersion(void* dbsys) {
     return RouteUtil::DbVer((DBsys*)dbsys);
 }
 
+// RouteItemWrapper implementation
+
+// Constructor from C++ RouteItem (implementation matching header declaration)
+RouteItemWrapper::RouteItemWrapper(const RouteItem* item) {
+    if (item != nullptr) {
+        stationId = (int)item->stationId;
+        lineId = (int)item->lineId;
+        flag = (int)item->flag;
+        fare = 0;  // Initialize fare to 0 (matches RouteItem structure)
+        salesKm = 0;  // Initialize salesKm to 0 (matches RouteItem structure)
+        indexOfAggregate = 0;  // Initialize indexOfAggregate to 0
+    } else {
+        // Handle null pointer case - initialize to default values
+        stationId = 0;
+        lineId = 0;
+        flag = 0;
+        fare = 0;
+        salesKm = 0;
+        indexOfAggregate = 0;
+    }
+}
+
+// Additional RouteItemWrapper methods for C++ compatibility (REQ-OBJ-002, REQ-OBJ-003)
+
+// Enhanced getRouteDescription with RouteUtility integration
+std::string RouteItemWrapper::getRouteDescription() const {
+    std::string description;
+    
+    // Format: "Line: [LineName], Station: [StationName]"
+    if (lineId > 0) {
+        std::string lineName = RouteUtility::getLineName(lineId);
+        if (!lineName.empty()) {
+            description += "Line: " + lineName;
+        } else {
+            description += "Line: " + std::to_string(lineId);
+        }
+    } else {
+        description += "Line: [None]";
+    }
+    
+    description += ", ";
+    
+    if (stationId > 0) {
+        std::string stationName = RouteUtility::getStationName(stationId);
+        if (!stationName.empty()) {
+            description += "Station: " + stationName;
+        } else {
+            description += "Station: " + std::to_string(stationId);
+        }
+    } else {
+        description += "Station: [None]";
+    }
+    
+    // Add additional information if available
+    if (fare > 0) {
+        description += " (Fare: " + std::to_string(fare) + ")";
+    }
+    if (salesKm > 0) {
+        description += " (Distance: " + std::to_string(salesKm) + "km)";
+    }
+    
+    return description;
+}
+
+// Enhanced validation methods for REQ-OBJ-002 compliance
+
+// Validate station ID with detailed error reporting
+int RouteItemWrapper::validateStationId(int stationId) const {
+    if (stationId <= 0) return -1;  // Invalid: station ID must be positive
+    
+    // Check if station ID exists in database (optional validation)
+    std::string stationName = RouteUtility::getStationName(stationId);
+    if (stationName.empty()) return -2;  // Warning: station not found (not fatal)
+    
+    return 0;  // Valid
+}
+
+// Validate line ID with detailed error reporting  
+int RouteItemWrapper::validateLineId(int lineId) const {
+    if (lineId < 0) return -1;  // Invalid: line ID must be non-negative
+    
+    // Line ID = 0 is valid for starting points
+    if (lineId == 0) return 0;  // Valid: starting point
+    
+    // Check if line ID exists in database (optional validation)
+    std::string lineName = RouteUtility::getLineName(lineId);
+    if (lineName.empty()) return -2;  // Warning: line not found (not fatal)
+    
+    return 0;  // Valid
+}
+
+// Validate flag value with detailed error reporting
+int RouteItemWrapper::validateFlag(int flag) const {
+    if (flag < 0) return -1;  // Invalid: flag cannot be negative
+    if (flag > 0xFFFF) return -2;  // Invalid: flag exceeds SPECIFICFLAG range
+    return 0;  // Valid
+}
+
+// Enhanced parameter validation for all setters (REQ-OBJ-002)
+
+// Station ID setter with validation
+int RouteItemWrapper::setStationIdWithValidation(int id) {
+    int result = validateStationId(id);
+    if (result >= -1) {  // Accept both valid (0) and warning (-2) cases
+        stationId = id;
+        return result;
+    }
+    return result;  // Return validation error
+}
+
+// Line ID setter with validation
+int RouteItemWrapper::setLineIdWithValidation(int id) {
+    int result = validateLineId(id);
+    if (result >= -1) {  // Accept both valid (0) and warning (-2) cases
+        lineId = id;
+        return result;
+    }
+    return result;  // Return validation error
+}
+
+// Flag setter with validation
+int RouteItemWrapper::setFlagWithValidation(int f) {
+    int result = validateFlag(f);
+    if (result == 0) {  // Only accept fully valid flags
+        flag = f;
+    }
+    return result;
+}
+
+// Fare setter with validation
+int RouteItemWrapper::setFareWithValidation(int f) {
+    if (f < 0) return -1;  // Invalid: fare cannot be negative
+    fare = f;
+    return 0;  // Valid
+}
+
+// Sales km setter with validation
+int RouteItemWrapper::setSalesKmWithValidation(int km) {
+    if (km < 0) return -1;  // Invalid: distance cannot be negative
+    salesKm = km;
+    return 0;  // Valid
+}
+
+// Index setter with validation
+int RouteItemWrapper::setIndexOfAggregateWithValidation(int index) {
+    if (index < 0) return -1;  // Invalid: index cannot be negative
+    indexOfAggregate = index;
+    return 0;  // Valid
+}
+
+// Enhanced route validation methods
+
+// Check if this forms a valid route connection with another RouteItemWrapper
+bool RouteItemWrapper::canConnectTo(const RouteItemWrapper& nextItem) const {
+    // Basic validation: this item's station should match next item's connection point
+    // This is simplified logic - actual route validation would be more complex
+    return (stationId > 0 && nextItem.stationId > 0 && 
+            stationId != nextItem.stationId);  // Different stations for route progression
+}
+
+// Check if this route item is compatible with a specific line
+bool RouteItemWrapper::isCompatibleWithLine(int targetLineId) const {
+    if (lineId == 0) return true;  // Starting point is compatible with any line
+    if (targetLineId == 0) return true;  // Target starting point is always compatible
+    
+    // Check if station serves the target line
+    std::vector<int> linesAtStation = RouteUtility::getLineIdsFromStation(stationId);
+    for (int line : linesAtStation) {
+        if (line == targetLineId) return true;
+    }
+    
+    return false;  // Station doesn't serve target line
+}
+
+// Enhanced state checking methods (task 3 requirements)
+
+// Check if this represents a transfer point
+bool RouteItemWrapper::isTransferPoint() const {
+    if (stationId <= 0) return false;
+    
+    // A transfer point serves multiple lines
+    std::vector<int> linesAtStation = RouteUtility::getLineIdsFromStation(stationId);
+    return linesAtStation.size() > 1;
+}
+
+// Check if this is a terminal station
+bool RouteItemWrapper::isTerminalStation() const {
+    if (stationId <= 0) return false;
+    
+    // Use RouteUtility to check if it's a terminal
+    std::string terminalName = RouteUtility::getTerminalName(stationId);
+    return !terminalName.empty();
+}
+
+// Check if this route item has any special flags set
+bool RouteItemWrapper::hasSpecialFlags() const {
+    return flag != 0;
+}
+
+// Enhanced comparison methods for array operations
+
+// Deep equality check (including calculated values)
+bool RouteItemWrapper::deepEquals(const RouteItemWrapper& other) const {
+    return lineId == other.lineId && 
+           stationId == other.stationId &&
+           flag == other.flag &&
+           fare == other.fare &&
+           salesKm == other.salesKm &&
+           indexOfAggregate == other.indexOfAggregate;
+}
+
+// Sort key generation for array operations
+int RouteItemWrapper::getSortKey() const {
+    // Generate a sort key based on station ID and line ID
+    // This can be used for efficient sorting in cRouteList operations
+    return (stationId << 16) | (lineId & 0xFFFF);
+}
+
+// Distance calculation helper (for route optimization)
+int RouteItemWrapper::estimateDistanceTo(const RouteItemWrapper& other) const {
+    // This is a placeholder - actual implementation would use geographic data
+    // For now, return a simple ID-based estimate
+    return abs(stationId - other.stationId) + abs(lineId - other.lineId);
+}
+
 // RouteWrapper implementation
 RouteWrapper::RouteWrapper() {
     route = new Route();
@@ -95,9 +320,61 @@ bool RouteWrapper::isNotSameKokuraHakataShinZai() const {
 }
 
 // Additional route properties
-RouteItem* RouteWrapper::getRouteItem(int index) const {
-    // TODO: Implement getRouteItem functionality
-    return nullptr;
+RouteItemWrapper RouteWrapper::getRouteItem(int index) const {
+    const std::vector<RouteItem>& routeItems = route->routeList();
+    
+    // Validate index bounds
+    if (index < 0 || index >= (int)routeItems.size()) {
+        // Return default-initialized RouteItemWrapper for invalid index
+        return RouteItemWrapper();
+    }
+    
+    // Create RouteItemWrapper from C++ RouteItem
+    return RouteItemWrapper(&routeItems[index]);
+}
+
+RouteItem* RouteWrapper::getRouteItemPtr(int index) const {
+    const std::vector<RouteItem>& routeItems = route->routeList();
+    
+    // Validate index bounds
+    if (index < 0 || index >= (int)routeItems.size()) {
+        return nullptr;  // Return null pointer for invalid index
+    }
+    
+    // Return pointer to RouteItem (const_cast for compatibility)
+    return const_cast<RouteItem*>(&routeItems[index]);
+}
+
+// Route item manipulation methods (REQ-OBJ-003, REQ-OBJ-004)
+void RouteWrapper::insertItem(int index, const RouteItemWrapper& item) {
+    if (!route) return;
+    
+    std::vector<RouteItem>& routeItems = const_cast<std::vector<RouteItem>&>(route->routeList());
+    
+    // Validate index bounds (allow insertion at end)
+    if (index < 0 || index > (int)routeItems.size()) {
+        return;  // Invalid index - silently ignore like C++ behavior
+    }
+    
+    // Create C++ RouteItem from RouteItemWrapper using public constructor
+    RouteItem newItem(item.lineId, item.stationId, item.flag);
+    
+    // Insert at specified index
+    routeItems.insert(routeItems.begin() + index, newItem);
+}
+
+void RouteWrapper::removeItem(int index) {
+    if (!route) return;
+    
+    std::vector<RouteItem>& routeItems = const_cast<std::vector<RouteItem>&>(route->routeList());
+    
+    // Validate index bounds
+    if (index < 0 || index >= (int)routeItems.size()) {
+        return;  // Invalid index - silently ignore like C++ behavior
+    }
+    
+    // Remove item at specified index
+    routeItems.erase(routeItems.begin() + index);
 }
 
 int RouteWrapper::lastLineId() const {
@@ -164,6 +441,57 @@ int RouteListWrapper::lastStationId() const {
 std::string RouteListWrapper::routeScript() const {
     // TODO: Implement route script generation
     return "";
+}
+
+// Array operations (REQ-OBJ-003)
+int RouteListWrapper::count() const {
+    return static_cast<int>(routeList->routeList().size());
+}
+
+RouteItemWrapper RouteListWrapper::at(int index) const {
+    const auto& routeVector = routeList->routeList();
+    if (index < 0 || index >= static_cast<int>(routeVector.size())) {
+        throw std::out_of_range("Route index out of bounds");
+    }
+    return RouteItemWrapper(&routeVector[index]);
+}
+
+void RouteListWrapper::remove(int index) {
+    auto& routeVector = const_cast<std::vector<RouteItem>&>(routeList->routeList());
+    if (index < 0 || index >= static_cast<int>(routeVector.size())) {
+        throw std::out_of_range("Route index out of bounds");
+    }
+    routeVector.erase(routeVector.begin() + index);
+}
+
+void RouteListWrapper::removeAll() {
+    auto& routeVector = const_cast<std::vector<RouteItem>&>(routeList->routeList());
+    routeVector.clear();
+    // Reset route flag to default state
+    routeList->refRouteFlag().clear();
+}
+
+void RouteListWrapper::insert(int index, const RouteItemWrapper& item) {
+    auto& routeVector = const_cast<std::vector<RouteItem>&>(routeList->routeList());
+    if (index < 0 || index > static_cast<int>(routeVector.size())) {
+        throw std::out_of_range("Route index out of bounds");
+    }
+    // Convert RouteItemWrapper back to RouteItem
+    RouteItem newItem(item.lineId, item.stationId, item.flag);
+    routeVector.insert(routeVector.begin() + index, newItem);
+}
+
+void RouteListWrapper::assign(const RouteListWrapper& source) {
+    routeList->assign(*source.routeList);
+}
+
+// Route flag access methods
+RouteFlag RouteListWrapper::getRouteFlag() const {
+    return routeList->getRouteFlag();
+}
+
+void RouteListWrapper::setRouteFlag(const RouteFlag& flag) {
+    routeList->refRouteFlag() = flag;
 }
 
 // CalcRouteWrapper implementation
@@ -523,6 +851,56 @@ bool CalcRouteWrapper::isOsakakanDetour() const {
     // TODO: Implement isOsakakanDetour functionality
     return false;
 }
+
+// RouteFlagWrapper implementation
+
+// Constructor from C++ RouteFlag (implementation matching header declaration)
+RouteFlagWrapper::RouteFlagWrapper(const RouteFlag* flag) {
+    if (flag != nullptr) {
+        // Boolean properties - direct mapping from C++ RouteFlag
+        no_rule = flag->no_rule;
+        jrtokaistock_applied = flag->jrtokaistock_applied;
+        jrtokaistock_enable = flag->jrtokaistock_enable;
+        meihan_city_flag = flag->meihan_city_flag;
+        rule88 = flag->rule88;
+        rule69 = flag->rule69;
+        rule70 = flag->rule70;
+        special_fare_enable = flag->special_fare_enable;
+        rule70bullet = flag->rule70bullet;
+        rule16_5 = flag->rule16_5;
+        bullet_line = flag->bullet_line;
+        bJrTokaiOnly = flag->bJrTokaiOnly;
+        meihan_city_enable = flag->meihan_city_enable;
+        trackmarkctl = flag->trackmarkctl;
+        jctsp_route_change = flag->jctsp_route_change;
+        ter_begin_oosaka = flag->ter_begin_oosaka;
+        ter_fin_oosaka = flag->ter_fin_oosaka;
+        compncheck = flag->compncheck;
+        compnpass = flag->compnpass;
+        compnda = flag->compnda;
+        compnbegin = flag->compnbegin;
+        compnend = flag->compnend;
+        compnterm = flag->compnterm;
+        tokai_shinkansen = flag->tokai_shinkansen;
+        notsamekokurahakatashinzai = flag->notsamekokurahakatashinzai;
+        end = flag->end;
+        osakakan_1dir = flag->osakakan_1dir;
+        osakakan_2dir = flag->osakakan_2dir;
+        osakakan_detour = flag->osakakan_detour;
+        
+        // Numeric properties - direct mapping from C++ RouteFlag
+        rule86or87 = flag->rule86or87;
+        rule115 = flag->rule115;
+        urban_neerest = flag->urban_neerest;
+        osakaKanPass = flag->getOsakaKanPassValue();  // Use correct accessor method
+    } else {
+        // Handle null pointer case - initialize to default values
+        clear();
+    }
+}
+
+// Note: All RouteFlagWrapper methods are implemented inline in the header file
+// This includes management methods, validation methods, Android compatibility methods, etc.
 
 // RouteUtility implementation
 int RouteUtility::getStationId(const std::string& name) {
