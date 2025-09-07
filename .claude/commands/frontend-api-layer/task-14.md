@@ -3,10 +3,10 @@
 Execute task 14 for the frontend-api-layer specification.
 
 ## Task Description
-Create fare calculation hook in src/sdk/react/use-fare-calculation.ts
+Create station search store in src/sdk/svelte/station-search-store.ts
 
 ## Code Reuse
-**Leverage existing code**: src/sdk/utils/route-utils.ts, src/sdk/utils/fare-utils.ts
+**Leverage existing code**: src/sdk/utils/station-utils.ts, src/sdk/svelte/context.ts
 
 ## Requirements Reference
 **Requirements**: REQ-API-003
@@ -18,10 +18,10 @@ Create fare calculation hook in src/sdk/react/use-fare-calculation.ts
 
 ## Instructions
 
-Execute with @spec-task-executor agent the following task: "Create fare calculation hook in src/sdk/react/use-fare-calculation.ts"
+Execute with @spec-task-executor agent the following task: "Create station search store in src/sdk/svelte/station-search-store.ts"
 
 ```
-Use the @spec-task-executor agent to implement task 14: "Create fare calculation hook in src/sdk/react/use-fare-calculation.ts" for the frontend-api-layer specification and include all the below context.
+Use the @spec-task-executor agent to implement task 14: "Create station search store in src/sdk/svelte/station-search-store.ts" for the frontend-api-layer specification and include all the below context.
 
 # Steering Context
 ## Steering Documents Context
@@ -32,30 +32,31 @@ No steering documents found or all are empty.
 ## Specification Context (Pre-loaded): frontend-api-layer
 
 ### Requirements
-# Requirements Document - Frontend API Layer
+# Requirements Document - Frontend API Layer (Svelte Focus)
 
 ## Introduction
 
-The Frontend API Layer project creates a comprehensive, framework-agnostic JavaScript/TypeScript SDK that wraps the existing WebAssembly APIs to provide an optimized developer experience for React, Vue, and other frontend frameworks. **This layer builds upon the completed C++ migration and object class implementation** while adding caching, type safety, reactive patterns, and framework-specific integration helpers.
+The Frontend API Layer project creates a comprehensive, Svelte-first JavaScript/TypeScript SDK that wraps the existing WebAssembly APIs to provide an optimized developer experience for Svelte/SvelteKit applications with secondary support for other frontend frameworks. **This layer builds upon the completed C++ migration and object class implementation** while adding caching, type safety, reactive patterns, and Svelte-specific integration helpers.
 
-The project focuses on creating modern frontend development patterns around the existing 45+ WebAssembly APIs, object classes, and JSON endpoints to enable rapid development of railway fare calculation applications **while maintaining complete compatibility with the original C++ implementation results**.
+The project focuses on creating modern Svelte development patterns around the existing 45+ WebAssembly APIs, object classes, and JSON endpoints to enable rapid development of railway fare calculation applications **while maintaining complete compatibility with the original C++ implementation results**.
 
 ## Alignment with Product Vision
 
 This frontend API layer directly enables the project's goal of supporting modern JavaScript/TypeScript applications by:
 
-- Providing framework-agnostic SDK that works with React, Vue, Angular, and vanilla TypeScript
-- Enabling rapid development of railway fare calculation UIs and mobile applications
+- Providing Svelte-first SDK with reactive stores and components
+- Enabling rapid development of railway fare calculation UIs and SvelteKit applications  
 - Supporting the transition from C++ desktop applications to modern web-based solutions
-- Creating reusable components and patterns for railway-related UI development
+- Creating reusable Svelte components and patterns for railway-related UI development
+- Offering framework-agnostic utilities for React, Vue, Angular as secondary targets
 
 ## Implementation Context
 
 ### Existing API Foundation
 
-- **39 WebAssembly APIs** already implemented in `src/farert_wasm.cpp` covering all core functionality
+- **39+ WebAssembly APIs** already implemented in `src/farert_wasm.cpp` covering all core functionality
 - **JSON APIs** for frontend consumption: `getFareInfoJson()`, `getCompanyAndPrefectsAsJson()`, `getCurrentRouteAsJson()`
-- **5 Object Classes** (cRouteItem, cRoute, cRouteList, cCalcRoute, FareInfo) fully functional with WebAssembly bindings
+- **6 Object Classes** (cRouteItem, cRoute, cRouteList, cCalcRoute, FareInfo, cRouteFlag) fully functional with WebAssembly bindings
 - **UI Display APIs** implemented: `getStationKana()`, `getStationPrefecture()`, `getStationNameExtended()`
 - **Search and utility APIs**: Station search, company/prefecture data, route building helpers
 
@@ -92,10 +93,10 @@ This frontend API layer directly enables the project's goal of supporting modern
 
 #### Core SDK Acceptance Criteria
 
-1. WHEN developer imports the SDK THEN all 39 WebAssembly APIs SHALL be available through a single, well-organized TypeScript interface
+1. WHEN developer imports the SDK THEN all 39+ WebAssembly APIs SHALL be available through a single, well-organized TypeScript interface
 2. WHEN calling any API method THEN SDK SHALL provide complete TypeScript types for parameters and return values with JSDoc documentation
 3. IF WebAssembly module loading fails THEN SDK SHALL provide clear error messages and retry mechanisms with exponential backoff
-4. WHEN working with object classes (cRoute, cCalcRoute, etc.) THEN SDK SHALL provide typed wrapper classes with lifecycle management
+4. WHEN working with object classes (cRoute, cCalcRoute, cRouteFlag, etc.) THEN SDK SHALL provide typed wrapper classes with lifecycle management
 5. IF database connection issues occur THEN SDK SHALL detect problems and provide specific guidance for resolution
 
 ### REQ-API-002: Intelligent Caching and Performance Layer
@@ -110,29 +111,29 @@ This frontend API layer directly enables the project's goal of supporting modern
 4. WHEN database reference data is accessed (companies, prefectures) THEN SDK SHALL cache for entire session duration
 5. IF cache memory usage exceeds 50MB THEN SDK SHALL automatically purge oldest entries using LRU algorithm
 
-### REQ-API-003: React Integration Hooks and Components
+### REQ-API-003: Svelte Reactive Stores and Components
 
-**User Story:** As a React developer, I want custom hooks and components for railway fare calculations, so that I can quickly build responsive UIs with proper state management.
+**User Story:** As a Svelte developer, I want reactive stores and components for railway fare calculations, so that I can quickly build responsive UIs with Svelte's reactivity system.
 
-#### React Integration Acceptance Criteria
+#### Svelte Integration Acceptance Criteria
 
-1. WHEN using `useStationSearch(query)` hook THEN it SHALL provide debounced search results with loading states and error handling
-2. WHEN using `useFareCalculation(route)` hook THEN it SHALL automatically calculate fares when route changes with proper dependency tracking
-3. IF using `<StationSelector>` component THEN it SHALL provide autocomplete functionality with Japanese text support and accessibility features
+1. WHEN using `stationSearchStore(query)` THEN it SHALL provide debounced search results with reactive loading states and error handling
+2. WHEN using `fareCalculationStore` THEN it SHALL automatically calculate fares when route changes with proper Svelte reactivity
+3. IF using `<StationSelector>` component THEN it SHALL provide autocomplete functionality with Japanese text support and accessibility features  
 4. WHEN using `<RouteBuilder>` component THEN it SHALL provide drag-and-drop interface for building multi-segment routes with validation
-5. IF errors occur in any hook THEN React error boundaries SHALL catch and display user-friendly error messages
+5. IF errors occur in any store THEN Svelte error boundaries SHALL catch and display user-friendly error messages
 
-### REQ-API-004: Vue Composition API Integration
+### REQ-API-004: SvelteKit SSR and Hydration Support
 
-**User Story:** As a Vue developer, I want composables that integrate with Vue's reactivity system, so that I can build reactive railway applications with minimal boilerplate.
+**User Story:** As a SvelteKit developer, I want server-side rendering support for railway data, so that I can build SEO-friendly applications with fast initial loading.
 
-#### Vue Integration Acceptance Criteria
+#### SvelteKit Integration Acceptance Criteria
 
-1. WHEN using `useStationData(stationId)` composable THEN it SHALL provide reactive refs that update when stationId changes
-2. WHEN using `useRouteCalculator()` composable THEN it SHALL integrate with Vue's reactivity system for automatic recalculation
-3. IF using `useFareHistory()` composable THEN it SHALL maintain reactive history of fare calculations with undo/redo functionality
-4. WHEN building forms with `useStationValidator()` THEN it SHALL provide reactive validation with Japanese text support
-5. IF WebAssembly loading state changes THEN all composables SHALL update their loading states reactively
+1. WHEN using `load` functions THEN SDK SHALL provide server-side station data loading with proper hydration
+2. WHEN building SvelteKit pages THEN stores SHALL properly serialize/deserialize state during SSR
+3. IF using SvelteKit routing THEN route calculations SHALL work in both server and client environments
+4. WHEN deploying to static adapters THEN SDK SHALL support static site generation for reference data
+5. IF WebAssembly loading occurs during SSR THEN proper fallbacks SHALL be provided for Node.js environments
 
 ### REQ-API-005: Framework-Agnostic Utilities and Helpers
 
@@ -144,7 +145,7 @@ This frontend API layer directly enables the project's goal of supporting modern
 2. WHEN validating route connections THEN helper functions SHALL provide detailed validation results with suggestions for fixes
 3. IF building route strings programmatically THEN utilities SHALL support fluent API patterns for complex route construction
 4. WHEN handling fare calculation results THEN formatters SHALL provide localized currency display and breakdown information
-5. IF integrating with non-React/Vue frameworks THEN utilities SHALL work in Angular, Svelte, or vanilla JavaScript environments
+5. IF integrating with non-Svelte frameworks THEN utilities SHALL work in React, Vue, Angular, or vanilla JavaScript environments
 
 ### REQ-API-006: Development Experience and Documentation
 
@@ -152,7 +153,7 @@ This frontend API layer directly enables the project's goal of supporting modern
 
 #### Documentation Acceptance Criteria
 
-1. WHEN developer accesses SDK documentation THEN it SHALL include complete API reference with examples for React, Vue, and vanilla JS
+1. WHEN developer accesses SDK documentation THEN it SHALL include complete API reference with examples for Svelte, SvelteKit, and vanilla JS
 2. WHEN learning framework integration THEN guides SHALL provide step-by-step tutorials for common use cases with realistic Japanese station data
 3. IF developer encounters integration issues THEN troubleshooting guides SHALL cover common problems with specific solutions
 4. WHEN exploring advanced features THEN documentation SHALL include examples for multi-company routes, special fare rules, and complex scenarios
@@ -193,24 +194,25 @@ This frontend API layer directly enables the project's goal of supporting modern
 ---
 
 ### Design
-# Design Document - Frontend API Layer
+# Design Document - Frontend API Layer (Svelte Focus)
 
 ## Overview
 
-The Frontend API Layer provides a comprehensive, framework-agnostic TypeScript SDK that wraps the existing 39 WebAssembly APIs and 5 Object Classes to enable rapid development of railway fare calculation applications in React, Vue, Angular, and vanilla JavaScript environments.
+The Frontend API Layer provides a comprehensive, Svelte-first TypeScript SDK that wraps the existing 39 WebAssembly APIs and 5 Object Classes to enable rapid development of railway fare calculation applications in Svelte/SvelteKit environments with secondary support for other frameworks.
 
 ### Project Goals
 - Create a unified TypeScript SDK wrapping all WebAssembly functionality
 - Implement intelligent caching for optimal performance
-- Provide React hooks and Vue composables for framework integration
+- Provide Svelte stores and components for reactive framework integration
+- Implement SvelteKit SSR and static generation support
 - Ensure framework-agnostic utilities for broad compatibility
 - Maintain type safety and excellent developer experience
 
 ## Steering Document Alignment
 
 This design aligns with CLAUDE.md requirements by:
-- Building upon the existing 39 WebAssembly APIs in `src/farert_wasm.cpp`
-- Leveraging 5 Object Classes (cRouteItem, cRoute, cRouteList, cCalcRoute, FareInfo)
+- Building upon the existing 39+ WebAssembly APIs in `src/farert_wasm.cpp`
+- Leveraging 6 Object Classes (cRouteItem, cRoute, cRouteList, cCalcRoute, FareInfo, cRouteFlag)
 - Hiding database operations from TypeScript interface layer
 - Supporting modern JavaScript/TypeScript application development
 - Enabling transition from C++ desktop to web-based solutions
@@ -218,10 +220,10 @@ This design aligns with CLAUDE.md requirements by:
 ## Code Reuse Analysis
 
 ### Existing Foundation
-- **WebAssembly APIs**: 39 functions already implemented in `src/farert_wasm.cpp`
+- **WebAssembly APIs**: 39+ functions already implemented in `src/farert_wasm.cpp`
 - **TypeScript Interfaces**: Basic definitions in `src/cli/types.ts`
 - **WASM Loader**: Module loading infrastructure in `src/cli/wasm_loader.ts`
-- **Object Classes**: 5 classes with WebAssembly bindings already functional
+- **Object Classes**: 6 classes with WebAssembly bindings already functional
 - **JSON APIs**: Frontend-ready APIs like `getFareInfoJson()`, `getCompanyAndPrefectsAsJson()`
 
 ### Reusable Components
@@ -237,91 +239,86 @@ This design aligns with CLAUDE.md requirements by:
 ```mermaid
 graph TB
     subgraph "Frontend Applications"
-        A[React App] --> B[React Hooks Layer]
-        C[Vue App] --> D[Vue Composables Layer]
-        E[Angular App] --> F[Framework-Agnostic Layer]
-        G[Vanilla JS] --> F
+        A[Svelte App] --> B[Svelte Stores Layer]
+        C[SvelteKit App] --> D[SvelteKit SSR Layer]
+        E[React App] --> F[Framework-Agnostic Layer]
+        G[Vue App] --> F
+        H[Vanilla JS] --> F
     end
     
     subgraph "SDK Core Layer"
-        B --> H[TypeScript SDK Core]
-        D --> H
-        F --> H
-        H --> I[Caching Layer]
-        H --> J[Error Management]
-        H --> K[Type Safety Layer]
+        B --> I[TypeScript SDK Core]
+        D --> I
+        F --> I
+        I --> J[Caching Layer]
+        I --> K[Error Management]
+        I --> L[Type Safety Layer]
     end
     
     subgraph "WebAssembly Integration"
-        I --> L[WASM API Wrapper]
-        J --> L
-        K --> L
-        L --> M[Object Classes Wrapper]
-        L --> N[Procedural APIs Wrapper]
-        M --> O[WebAssembly Module]
-        N --> O
+        J --> M[WASM API Wrapper]
+        K --> M
+        L --> M
+        M --> N[Object Classes Wrapper]
+        M --> O[Procedural APIs Wrapper]
+        N --> P[WebAssembly Module]
+        O --> P
     end
     
     subgraph "Existing Implementation"
-        O --> P[src/farert_wasm.cpp - 39 APIs]
-        O --> Q[5 Object Classes]
-        O --> R[SQLite Database]
+        P --> Q[src/farert_wasm.cpp - 39 APIs]
+        P --> R[5 Object Classes]
+        P --> S[SQLite Database]
     end
 ```
 
-### SDK Core Architecture
+### Svelte-First Architecture
 
 ```mermaid
 classDiagram
     class FarertSDK {
         +initialize() Promise~void~
-        +getStations() StationCache
-        +getRoutes() RouteCache
-        +getFares() FareCache
-        +createRoute() RouteBuilder
+        +stores SvelteStores
+        +utils FareUtils
         +version string
+    }
+    
+    class SvelteStores {
+        +stationSearch writable~Station[]~
+        +routeBuilder writable~RouteSegment[]~
+        +fareCalculation readable~FareInfo~
+        +loadingState readable~boolean~
+        +errorState readable~Error~
+    }
+    
+    class SvelteKitAdapter {
+        +load() PageLoad
+        +preload() Promise~void~
+        +serialize() string
+        +hydrate(data) void
+    }
+    
+    class SvelteComponents {
+        +StationSelector Component
+        +RouteBuilder Component
+        +FareDisplay Component
+        +LoadingSpinner Component
     }
     
     class CacheManager {
         +stationCache LRUCache
         +searchCache LRUCache
         +fareCache LRUCache
+        +ssrCache Map
         +get(key) any
         +set(key, value, ttl) void
         +clear() void
     }
     
-    class ErrorManager {
-        +handleWASMError(error) ProcessedError
-        +retry(operation, options) Promise
-        +formatUserMessage(error) string
-    }
-    
-    class ObjectClassWrapper {
-        +cRoute RouteWrapper
-        +cRouteList RouteListWrapper
-        +cCalcRoute CalcRouteWrapper
-        +FareInfo FareInfoWrapper
-        +cRouteItem RouteItemWrapper
-    }
-    
-    class ReactHooks {
-        +useStationSearch(query) SearchResult
-        +useFareCalculation(route) FareResult
-        +useRouteBuilder() RouteBuilder
-    }
-    
-    class VueComposables {
-        +useStationData(stationId) Ref~StationData~
-        +useRouteCalculator() RouteCalculator
-        +useFareHistory() FareHistory
-    }
-    
+    FarertSDK --> SvelteStores
+    FarertSDK --> SvelteKitAdapter
+    FarertSDK --> SvelteComponents
     FarertSDK --> CacheManager
-    FarertSDK --> ErrorManager
-    FarertSDK --> ObjectClassWrapper
-    ReactHooks --> FarertSDK
-    VueComposables --> FarertSDK
 ```
 
 ## Components and Interfaces
@@ -329,19 +326,27 @@ classDiagram
 ### Core SDK Interface
 
 ```typescript
-// Core SDK Interface
+// Core SDK Interface for Svelte
 export interface FarertSDK {
   // Initialization
   initialize(): Promise<void>;
   isReady(): boolean;
   version: string;
   
+  // Svelte Stores
+  stores: {
+    stationSearch: Writable<StationSearchState>;
+    routeBuilder: Writable<RouteBuilderState>;
+    fareCalculation: Readable<FareCalculationState>;
+    referenceData: Readable<ReferenceDataState>;
+    loading: Readable<boolean>;
+    error: Readable<Error | null>;
+  };
+  
   // Station Operations with Caching
   getStationById(id: number): Promise<Station>;
   getStationByName(name: string): Promise<Station>;
   searchStations(query: string, limit?: number): Promise<Station[]>;
-  getStationKana(id: number): Promise<string>;
-  getStationPrefecture(id: number): Promise<string>;
   
   // Route Operations
   createRoute(): RouteBuilder;
@@ -353,6 +358,9 @@ export interface FarertSDK {
   getPrefectures(): Promise<Prefecture[]>;
   getLines(): Promise<Line[]>;
   
+  // SvelteKit Integration
+  sveltekit: SvelteKitAdapter;
+  
   // Object Classes
   objectClasses: {
     RouteList: typeof cRouteList;
@@ -360,185 +368,115 @@ export interface FarertSDK {
     CalcRoute: typeof cCalcRoute;
     FareInfo: typeof FareInfo;
     RouteItem: typeof cRouteItem;
+    RouteFlag: typeof cRouteFlag;
   };
 }
 ```
 
-### Enhanced Object Class Interfaces
+### Svelte Store Definitions
 
 ```typescript
-// Enhanced cRoute with Fluent API
-export interface cRoute extends cRouteList {
-  setupRoute(route: string): cRoute;
-  addStation(stationId: number): cRoute;
-  addLine(lineId: number): cRoute;
-  validateRoute(): ValidationResult;
-  optimizeRoute(criteria: 'shortest' | 'cheapest'): cRoute;
-  getAlternatives(): cRoute[];
-  clone(): cRoute;
+// Svelte Store State Interfaces
+export interface StationSearchState {
+  query: string;
+  results: Station[];
+  loading: boolean;
+  error: Error | null;
+  hasMore: boolean;
 }
 
-// Enhanced cRouteItem with Full Properties
-export interface cRouteItem {
-  fare: number;
-  salesKm: number;
-  indexOfAggregate: number;
-  stationId: number;
-  lineId: number;
-  companyId: number;
-  toJSON(): RouteItemJSON;
+export interface RouteBuilderState {
+  segments: RouteSegment[];
+  isValid: boolean;
+  validationErrors: ValidationError[];
+  dragState: DragState;
+  history: RouteCommand[];
+  historyIndex: number;
 }
 
-// Enhanced cRouteList with Array Operations
-export interface cRouteList {
-  at(index: number): cRouteItem;
-  count(): number;
-  remove(index: number): cRouteItem;
-  removeAll(): void;
-  insert(obj: cRouteList, at: number): void;
-  assign(obj: cRouteList): void;
-  forEach(callback: (item: cRouteItem, index: number) => void): void;
-  map<T>(callback: (item: cRouteItem, index: number) => T): T[];
-  toArray(): cRouteItem[];
+export interface FareCalculationState {
+  route: RouteInput | null;
+  result: FareInfo | null;
+  loading: boolean;
+  error: Error | null;
+  calculationHistory: FareCalculationHistory[];
 }
 
-// Enhanced FareInfo with Comprehensive Data
-export interface FareInfo {
-  fare: number;
-  result: number;
-  isRule114Applied: boolean;
-  availCountForFareOfStockDiscount: number;
-  
-  // Enhanced capabilities
-  getBreakdown(): FareBreakdown;
-  getRouteString(): string;
-  getDiscounts(): Discount[];
-  compareWith(other: FareInfo): FareComparison;
-  exportHistory(): CalculationHistory;
-  toJSON(): FareInfoJSON;
+export interface ReferenceDataState {
+  companies: Company[];
+  prefectures: Prefecture[];
+  lines: Line[];
+  lastUpdated: Date;
+  loading: boolean;
 }
 ```
 
-### Caching Layer Design
+### SvelteKit Adapter Interface
 
 ```typescript
-// Intelligent Caching System
-export interface CacheManager {
-  // Station data - 1 hour TTL
-  stationCache: LRUCache<number, Station>;
+// SvelteKit SSR and Static Generation Support
+export interface SvelteKitAdapter {
+  // Page Load Functions
+  loadStations(): PageLoad;
+  loadStation(params: { id: string }): PageLoad;
+  loadRoute(params: { from: string; to: string }): PageLoad;
   
-  // Search results - 15 minutes TTL  
-  searchCache: LRUCache<string, Station[]>;
+  // Static Generation
+  preloadAllStations(): Promise<void>;
+  preloadPopularRoutes(): Promise<void>;
   
-  // Fare calculations - 5 minutes TTL
-  fareCache: LRUCache<string, FareInfo>;
+  // State Serialization
+  serializeState(): string;
+  hydrateState(serialized: string): void;
   
-  // Reference data - Session duration
-  referenceCache: Map<string, Company[] | Prefecture[] | Line[]>;
-  
-  // Configuration
-  maxMemoryUsage: number; // 50MB limit
-  
-  // Methods
-  get<T>(key: string, category: CacheCategory): T | undefined;
-  set<T>(key: string, value: T, category: CacheCategory): void;
-  invalidate(pattern?: string): void;
-  getStats(): CacheStats;
+  // Server-Side Utilities
+  isServer(): boolean;
+  getBrowserSupport(): BrowserSupport;
 }
 
-// LRU Cache with TTL
-export interface LRUCache<K, V> {
-  get(key: K): V | undefined;
-  set(key: K, value: V, ttlMs?: number): void;
-  delete(key: K): boolean;
-  clear(): void;
-  size: number;
-  maxSize: number;
-}
+// SvelteKit Page Load Function Types
+export type PageLoad = () => Promise<{
+  stations?: Station[];
+  routes?: RouteInfo[];
+  fare?: FareInfo;
+  error?: string;
+}>;
 ```
 
-### React Integration Layer
+### Svelte Component Interfaces
 
 ```typescript
-// React Hooks
-export function useStationSearch(query: string, options?: SearchOptions) {
-  return {
-    stations: Station[],
-    loading: boolean,
-    error: Error | null,
-    hasMore: boolean,
-    loadMore: () => void
-  };
+// Svelte Component Props
+export interface StationSelectorProps {
+  placeholder?: string;
+  maxResults?: number;
+  showPrefecture?: boolean;
+  showKana?: boolean;
+  onSelect?: (station: Station) => void;
+  class?: string;
 }
 
-export function useFareCalculation(route: RouteInput, options?: CalcOptions) {
-  return {
-    fareInfo: FareInfo | null,
-    loading: boolean,
-    error: Error | null,
-    recalculate: () => void,
-    history: FareInfo[]
-  };
+export interface RouteBuilderProps {
+  initialRoute?: RouteSegment[];
+  maxStations?: number;
+  enableDragDrop?: boolean;
+  enableUndo?: boolean;
+  onRouteChange?: (route: RouteSegment[]) => void;
+  class?: string;
 }
 
-export function useRouteBuilder(initialRoute?: RouteInput) {
-  return {
-    route: cRoute,
-    isValid: boolean,
-    validationErrors: ValidationError[],
-    addStation: (stationId: number) => void,
-    removeStation: (index: number) => void,
-    clear: () => void,
-    undo: () => void,
-    redo: () => void
-  };
-}
-
-// React Components
-export const StationSelector: React.FC<StationSelectorProps>;
-export const RouteBuilder: React.FC<RouteBuilderProps>;
-export const FareDisplay: React.FC<FareDisplayProps>;
-```
-
-### Vue Composition API Layer
-
-```typescript
-// Vue Composables
-export function useStationData(stationId: Ref<number>) {
-  return {
-    station: Ref<Station | null>,
-    loading: Ref<boolean>,
-    error: Ref<Error | null>,
-    refresh: () => Promise<void>
-  };
-}
-
-export function useRouteCalculator() {
-  return {
-    route: Ref<cRoute>,
-    fareInfo: Ref<FareInfo | null>,
-    loading: Ref<boolean>,
-    calculate: () => Promise<void>,
-    isValid: ComputedRef<boolean>
-  };
-}
-
-export function useFareHistory() {
-  return {
-    history: Ref<FareInfo[]>,
-    current: Ref<number>,
-    canUndo: ComputedRef<boolean>,
-    canRedo: ComputedRef<boolean>,
-    undo: () => void,
-    redo: () => void,
-    clear: () => void
-  };
+export interface FareDisplayProps {
+  fareInfo: FareInfo;
+  showBreakdown?: boolean;
+  showHistory?: boolean;
+  currency?: 'JPY' | 'USD';
+  class?: string;
 }
 ```
 
 ## Data Models
 
-### Station Data Model
+### Station and Route Models
 
 ```typescript
 export interface Station {
@@ -552,20 +490,17 @@ export interface Station {
   attributes: StationAttributes;
 }
 
-export interface StationAttributes {
-  isTerminal: boolean;
-  isSpecificJunction: boolean;
-  companyBoundaries: number[];
-  fareZones: FareZone[];
+export interface RouteSegment {
+  stationId: number;
+  stationName: string;
+  lineId?: number;
+  lineName?: string;
+  order: number;
+  isValid: boolean;
 }
-```
 
-### Route Data Models
-
-```typescript
 export interface RouteInput {
-  stations: number[];
-  lines: number[];
+  segments: RouteSegment[];
   options?: RouteOptions;
 }
 
@@ -575,203 +510,327 @@ export interface RouteOptions {
   avoidLines?: number[];
   maxTransfers?: number;
 }
+```
 
-export interface ValidationResult {
-  isValid: boolean;
-  errors: ValidationError[];
-  warnings: ValidationWarning[];
-  suggestions: RouteSuggestion[];
+### Svelte-Specific State Models
+
+```typescript
+export interface DragState {
+  isDragging: boolean;
+  draggedIndex: number | null;
+  dropTargetIndex: number | null;
+  draggedItem: RouteSegment | null;
+}
+
+export interface RouteCommand {
+  id: string;
+  type: 'add' | 'remove' | 'move' | 'clear';
+  timestamp: number;
+  description: string;
+  execute: () => void;
+  undo: () => void;
+}
+
+export interface FareCalculationHistory {
+  id: string;
+  timestamp: Date;
+  route: RouteInput;
+  result: FareInfo;
+  executionTime: number;
 }
 ```
 
-### Fare Data Models
+## Svelte Store Implementation
+
+### Core Store Factory
 
 ```typescript
-export interface FareBreakdown {
-  basicFare: number;
-  expressCharges: number[];
-  taxes: number;
-  discounts: Discount[];
-  total: number;
-  breakdown: FareSegment[];
-}
+// Core Svelte Store Factory
+export function createFarertStores(sdk: FarertSDK) {
+  // Station Search Store with Debouncing
+  const stationSearchStore = (() => {
+    const { subscribe, set, update } = writable<StationSearchState>({
+      query: '',
+      results: [],
+      loading: false,
+      error: null,
+      hasMore: false
+    });
 
-export interface FareSegment {
-  fromStation: number;
-  toStation: number;
-  company: number;
-  distance: number;
-  fare: number;
-  rules: FareRule[];
+    let searchTimeout: NodeJS.Timeout;
+    
+    return {
+      subscribe,
+      search: (query: string) => {
+        clearTimeout(searchTimeout);
+        update(state => ({ ...state, query, loading: true }));
+        
+        searchTimeout = setTimeout(async () => {
+          try {
+            const results = await sdk.searchStations(query, 20);
+            update(state => ({
+              ...state,
+              results,
+              loading: false,
+              error: null,
+              hasMore: results.length === 20
+            }));
+          } catch (error) {
+            update(state => ({
+              ...state,
+              loading: false,
+              error: error as Error
+            }));
+          }
+        }, 300);
+      },
+      clear: () => set({
+        query: '',
+        results: [],
+        loading: false,
+        error: null,
+        hasMore: false
+      })
+    };
+  })();
+
+  // Route Builder Store with Undo/Redo
+  const routeBuilderStore = (() => {
+    const { subscribe, set, update } = writable<RouteBuilderState>({
+      segments: [],
+      isValid: false,
+      validationErrors: [],
+      dragState: {
+        isDragging: false,
+        draggedIndex: null,
+        dropTargetIndex: null,
+        draggedItem: null
+      },
+      history: [],
+      historyIndex: -1
+    });
+
+    const executeCommand = (command: RouteCommand) => {
+      update(state => {
+        const newHistory = state.history.slice(0, state.historyIndex + 1);
+        newHistory.push(command);
+        
+        command.execute();
+        
+        return {
+          ...state,
+          history: newHistory,
+          historyIndex: newHistory.length - 1
+        };
+      });
+    };
+
+    return {
+      subscribe,
+      addStation: (station: Station, lineId?: number) => {
+        const command: RouteCommand = {
+          id: generateId(),
+          type: 'add',
+          timestamp: Date.now(),
+          description: `Add ${station.name}`,
+          execute: () => {
+            update(state => ({
+              ...state,
+              segments: [...state.segments, {
+                stationId: station.id,
+                stationName: station.name,
+                lineId,
+                lineName: lineId ? getLineName(lineId) : undefined,
+                order: state.segments.length,
+                isValid: true
+              }]
+            }));
+          },
+          undo: () => {
+            update(state => ({
+              ...state,
+              segments: state.segments.slice(0, -1)
+            }));
+          }
+        };
+        executeCommand(command);
+      },
+      removeStation: (index: number) => {
+        // Implementation similar to addStation
+      },
+      moveStation: (fromIndex: number, toIndex: number) => {
+        // Implementation for drag and drop
+      },
+      undo: () => {
+        update(state => {
+          if (state.historyIndex >= 0) {
+            state.history[state.historyIndex].undo();
+            return {
+              ...state,
+              historyIndex: state.historyIndex - 1
+            };
+          }
+          return state;
+        });
+      },
+      redo: () => {
+        update(state => {
+          if (state.historyIndex < state.history.length - 1) {
+            const nextIndex = state.historyIndex + 1;
+            state.history[nextIndex].execute();
+            return {
+              ...state,
+              historyIndex: nextIndex
+            };
+          }
+          return state;
+        });
+      }
+    };
+  })();
+
+  return {
+    stationSearch: stationSearchStore,
+    routeBuilder: routeBuilderStore,
+    // ... other stores
+  };
 }
 ```
 
-## Error Handling
+## SvelteKit Integration
 
-### Error Classification System
-
-```typescript
-// Error Types with Specific Codes
-export enum ErrorCode {
-  // WebAssembly Errors (WASM_001-099)
-  WASM_MODULE_LOAD_FAILED = 'WASM_001',
-  WASM_MEMORY_ALLOCATION = 'WASM_002',
-  WASM_FUNCTION_NOT_FOUND = 'WASM_003',
-  
-  // Database Errors (DB_001-099)
-  DATABASE_CONNECTION_FAILED = 'DB_001',
-  DATABASE_QUERY_FAILED = 'DB_002',
-  DATABASE_CORRUPTION = 'DB_003',
-  
-  // Route Errors (ROUTE_001-099)
-  INVALID_STATION_NAME = 'ROUTE_001',
-  INVALID_LINE_CONNECTION = 'ROUTE_002',
-  ROUTE_CALCULATION_FAILED = 'ROUTE_003',
-  
-  // Cache Errors (CACHE_001-099)
-  CACHE_MEMORY_EXCEEDED = 'CACHE_001',
-  CACHE_CORRUPTION = 'CACHE_002'
-}
-
-export interface ProcessedError {
-  code: ErrorCode;
-  message: string;
-  userMessage: string;
-  suggestions: string[];
-  retryable: boolean;
-  context: ErrorContext;
-}
-```
-
-### Retry Mechanism Design
+### SSR and Static Generation
 
 ```typescript
-export interface RetryOptions {
-  maxAttempts: number;
-  backoffMultiplier: number;
-  initialDelayMs: number;
-  maxDelayMs: number;
-  retryableErrors: ErrorCode[];
-}
-
-export class ErrorManager {
-  async retry<T>(
-    operation: () => Promise<T>,
-    options: RetryOptions
-  ): Promise<T> {
-    // Exponential backoff retry logic
-    // Error classification and user message generation
-    // Context preservation for debugging
+// SvelteKit Load Functions
+export const load: PageLoad = async ({ params, url, fetch }) => {
+  const sdk = await initializeFarertSDK();
+  
+  // Server-side data loading
+  if (params.stationId) {
+    try {
+      const station = await sdk.getStationById(parseInt(params.stationId));
+      return {
+        station,
+        seo: {
+          title: `${station.name}駅 - 運賃計算`,
+          description: `${station.name}駅（${station.prefecture}）の運賃情報`
+        }
+      };
+    } catch (error) {
+      throw error(404, 'Station not found');
+    }
   }
+  
+  // Popular stations for homepage
+  const popularStations = await sdk.getPopularStations();
+  return {
+    popularStations,
+    seo: {
+      title: '鉄道運賃計算システム',
+      description: '日本全国の鉄道運賃を正確に計算'
+    }
+  };
+};
+
+// Static Generation Support
+export const prerender = true;
+
+export async function entries() {
+  const sdk = await initializeFarertSDK();
+  const stations = await sdk.getAllStations();
+  
+  return stations.map(station => ({
+    stationId: station.id.toString()
+  }));
 }
 ```
 
 ## Testing Strategy
 
-### Unit Testing Approach
+### Svelte Component Testing
 
 ```typescript
-// Core SDK Unit Tests
-describe('FarertSDK', () => {
-  test('initializes WebAssembly module successfully');
-  test('handles WebAssembly loading failures gracefully');
-  test('provides correct TypeScript types for all APIs');
+// Svelte Component Tests with @testing-library/svelte
+import { render, fireEvent, waitFor } from '@testing-library/svelte';
+import StationSelector from '../StationSelector.svelte';
+import { createMockSDK } from './mocks';
+
+describe('StationSelector', () => {
+  test('searches stations on input', async () => {
+    const mockSDK = createMockSDK();
+    const { getByPlaceholderText, getByText } = render(StationSelector, {
+      props: { placeholder: 'Search stations...' },
+      context: new Map([['sdk', mockSDK]])
+    });
+
+    const input = getByPlaceholderText('Search stations...');
+    await fireEvent.input(input, { target: { value: '東京' } });
+    
+    await waitFor(() => {
+      expect(getByText('東京駅')).toBeInTheDocument();
+    });
+  });
 });
 
-// Caching Layer Tests
-describe('CacheManager', () => {
-  test('LRU eviction works correctly under memory pressure');
-  test('TTL expiration removes stale data');
-  test('cache statistics are accurate');
-});
+// Store Testing
+import { get } from 'svelte/store';
+import { createFarertStores } from '../stores';
 
-// Object Classes Tests
-describe('Object Classes', () => {
-  test('cRoute fluent API chains correctly');
-  test('cRouteList array operations match expected behavior');
-  test('FareInfo provides accurate fare breakdowns');
-});
-```
-
-### Integration Testing Strategy
-
-```typescript
-// Framework Integration Tests
-describe('React Integration', () => {
-  test('useStationSearch debounces correctly');
-  test('useFareCalculation updates on route changes');
-  test('error boundaries catch WebAssembly failures');
-});
-
-describe('Vue Integration', () => {
-  test('composables integrate with Vue reactivity system');
-  test('reactive refs update automatically');
-  test('cleanup prevents memory leaks');
-});
-```
-
-### Performance Testing
-
-```typescript
-// Performance Benchmarks
-describe('Performance Requirements', () => {
-  test('SDK initialization completes within 2 seconds');
-  test('cached API calls respond within 10ms');
-  test('route calculations complete within 500ms');
-  test('bundle size does not exceed 150KB gzipped');
-});
-```
-
-### Cross-Platform Testing
-
-```typescript
-// Browser Compatibility Tests
-describe('Cross-Platform', () => {
-  test('works in Chrome 90+');
-  test('works in Firefox 88+');
-  test('works in Safari 14+');
-  test('Node.js 14+ compatibility');
+describe('Svelte Stores', () => {
+  test('station search store updates correctly', async () => {
+    const mockSDK = createMockSDK();
+    const stores = createFarertStores(mockSDK);
+    
+    stores.stationSearch.search('東京');
+    
+    await waitFor(() => {
+      const state = get(stores.stationSearch);
+      expect(state.results).toHaveLength(10);
+      expect(state.loading).toBe(false);
+    });
+  });
 });
 ```
 
 ## Implementation Plan
 
-### Phase 1: Core SDK Foundation (Week 1-2)
+### Phase 1: Core Svelte SDK (Week 1-2)
 1. Create TypeScript SDK wrapper around existing 39 WebAssembly APIs
-2. Implement basic caching layer with LRU and TTL
-3. Enhanced Object Classes with array operations and fluent API
-4. Comprehensive error handling with retry mechanisms
+2. Implement Svelte stores with reactive caching
+3. Create core Svelte components (StationSelector, RouteBuilder, FareDisplay)
+4. Basic error handling and loading states
 
-### Phase 2: Framework Integration (Week 3-4)
-5. React hooks implementation with proper state management
-6. Vue composables with reactivity integration
-7. Framework-agnostic utilities for Angular/Svelte
-8. Bundle optimization and lazy loading
+### Phase 2: SvelteKit Integration (Week 3)
+5. SvelteKit adapter with SSR support
+6. Static site generation for reference data
+7. Page load functions for common routes
+8. SEO optimization and metadata
 
-### Phase 3: Developer Experience (Week 5-6)
-9. Complete TypeScript types and JSDoc documentation
-10. Performance monitoring and optimization
-11. Comprehensive testing suite
-12. Documentation and examples
+### Phase 3: Advanced Features (Week 4)
+9. Drag-and-drop route building with undo/redo
+10. Performance optimization with intelligent caching
+11. Accessibility features and keyboard navigation
+12. Mobile-responsive components
 
-### Phase 4: Production Readiness (Week 7)
-13. Security audit and input validation
-14. Memory leak testing and prevention
+### Phase 4: Framework Compatibility (Week 5)
+13. Framework-agnostic utility layer for React/Vue
+14. Bundle optimization and tree-shaking
 15. Cross-browser compatibility testing
-16. Performance benchmarking and optimization
+16. Documentation and examples
 
-This design provides a comprehensive foundation for creating a high-quality Frontend API Layer that enables rapid development of railway fare calculation applications across all major JavaScript frameworks while maintaining excellent performance and developer experience.
+This design provides a comprehensive foundation for creating a high-quality, Svelte-first Frontend API Layer that enables rapid development of railway fare calculation applications while maintaining excellent performance and developer experience in SvelteKit environments.
 
 **Note**: Specification documents have been pre-loaded. Do not use get-content to fetch them again.
 
 ## Task Details
 - Task ID: 14
-- Description: Create fare calculation hook in src/sdk/react/use-fare-calculation.ts
-- Leverage: src/sdk/utils/route-utils.ts, src/sdk/utils/fare-utils.ts
+- Description: Create station search store in src/sdk/svelte/station-search-store.ts
+- Leverage: src/sdk/utils/station-utils.ts, src/sdk/svelte/context.ts
 - Requirements: REQ-API-003
 
 ## Instructions
-- Implement ONLY task 14: "Create fare calculation hook in src/sdk/react/use-fare-calculation.ts"
+- Implement ONLY task 14: "Create station search store in src/sdk/svelte/station-search-store.ts"
 - Follow all project conventions and leverage existing code
 - Mark the task as complete using: claude-code-spec-workflow get-tasks frontend-api-layer 14 --mode complete
 - Provide a completion summary

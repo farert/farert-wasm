@@ -1,0 +1,440 @@
+name: Farert WASM CI/CD Testing Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      test_suite:
+        description: 'Test suite to run'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - cli-only
+          - unit-only
+          - integration-only
+
+env:
+  NODE_VERSION: '18'
+  EMSCRIPTEN_VERSION: 'latest'
+
+jobs:
+  # Environment validation and setup
+  setup:
+    name: Environment Setup & Validation
+    runs-on: ubuntu-latest
+    outputs:
+      cache-key: ${{ steps.cache-key.outputs.key }}
+      should-run-tests: ${{ steps.changes.outputs.should-run-tests }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Generate cache key
+        id: cache-key
+        run: |
+          echo "key=farert-deps-${{ runner.os }}-${{ hashFiles('**/package-lock.json', 'setup_env.sh', 'Makefile') }}" >> $GITHUB_OUTPUT
+
+      - name: Check for relevant changes
+        id: changes
+        run: |
+          if git diff --name-only HEAD~1 HEAD | grep -E '\.(cpp|h|ts|js|json|yml|yaml)$|^(src/|scripts/|\.github/)'; then
+            echo "should-run-tests=true" >> $GITHUB_OUTPUT
+          else
+            echo "should-run-tests=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate environment
+        run: |
+          echo "🔍 Validating CI environment..."
+          node -e "
+            const checks = [
+              { name: 'Node.js', version: process.version, required: '>=14.0.0' },
+              { name: 'NPM', version: require('child_process').execSync('npm -v', {encoding: 'utf8'}).trim(), required: '>=6.0.0' }
+            ];
+            let allPassed = true;
+            checks.forEach(check => {
+              const major = parseInt(check.version.replace(/^v/, '').split('.')[0]);
+              const requiredMajor = parseInt(check.required.replace('>=', '').split('.')[0]);
+              const passed = major >= requiredMajor;
+              console.log(\`  \${passed ? '✅' : '❌'} \${check.name}: \${check.version} \${passed ? '(Compatible)' : '(Incompatible)'}\`);
+              if (!passed) allPassed = false;
+            });
+            if (!allPassed) process.exit(1);
+            console.log('✅ Environment validation passed');
+          "
+
+  # Build WebAssembly and TypeScript components
+  build:
+    name: Build WebAssembly & TypeScript
+    runs-on: ubuntu-latest
+    needs: setup
+    if: needs.setup.outputs.should-run-tests == 'true'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Cache Emscripten SDK
+        uses: actions/cache@v3
+        with:
+          path: ~/emsdk
+          key: emsdk-${{ env.EMSCRIPTEN_VERSION }}-${{ runner.os }}
+          restore-keys: |
+            emsdk-${{ env.EMSCRIPTEN_VERSION }}-
+
+      - name: Setup Emscripten
+        run: |
+          if [ ! -d "$HOME/emsdk" ]; then
+            git clone https://github.com/emscripten-core/emsdk.git $HOME/emsdk
+            cd $HOME/emsdk
+            ./emsdk install ${{ env.EMSCRIPTEN_VERSION }}
+            ./emsdk activate ${{ env.EMSCRIPTEN_VERSION }}
+          fi
+          cd $HOME/emsdk
+          ./emsdk activate ${{ env.EMSCRIPTEN_VERSION }}
+
+      - name: Create Emscripten symlink
+        run: |
+          mkdir -p ~/priv/farert.repos
+          ln -sf $HOME/emsdk ~/priv/farert.repos/emsdk
+
+      - name: Build WebAssembly modules
+        run: |
+          source ~/priv/farert.repos/emsdk/emsdk_env.sh
+          make clean
+          make
+
+      - name: Build TypeScript CLI
+        run: |
+          npm run build:cli
+
+      - name: Verify build artifacts
+        run: |
+          echo "🔍 Verifying build artifacts..."
+          artifacts=(
+            "dist/farert.js"
+            "dist/farert.wasm"
+            "dist/cli/cli/main.js"
+          )
+          missing_artifacts=()
+          for artifact in "${artifacts[@]}"; do
+            if [[ -f "$artifact" ]]; then
+              size=$(stat -f%z "$artifact" 2>/dev/null || stat -c%s "$artifact" 2>/dev/null)
+              echo "  ✅ $artifact ($size bytes)"
+            else
+              echo "  ❌ $artifact (missing)"
+              missing_artifacts+=("$artifact")
+            fi
+          done
+          
+          if [[ ${#missing_artifacts[@]} -gt 0 ]]; then
+            echo "❌ Missing artifacts: ${missing_artifacts[*]}"
+            exit 1
+          fi
+          echo "✅ All build artifacts present"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts
+          path: |
+            dist/
+            !dist/**/*.map
+          retention-days: 7
+
+  # Execute comprehensive test suite
+  test:
+    name: Test Suite Execution
+    runs-on: ubuntu-latest
+    needs: [setup, build]
+    if: needs.setup.outputs.should-run-tests == 'true'
+    strategy:
+      matrix:
+        test-type: 
+          - cli-tests
+          - unit-tests
+          - integration-tests
+      fail-fast: false
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: .
+
+      - name: Execute test suite - CLI Tests
+        if: matrix.test-type == 'cli-tests' && (github.event.inputs.test_suite == 'all' || github.event.inputs.test_suite == 'cli-only')
+        run: |
+          echo "🧪 Running CLI test suite..."
+          timeout 300 npm run cli:exec || {
+            echo "❌ CLI tests failed or timed out"
+            exit 1
+          }
+
+      - name: Execute test suite - Unit Tests
+        if: matrix.test-type == 'unit-tests' && (github.event.inputs.test_suite == 'all' || github.event.inputs.test_suite == 'unit-only')
+        run: |
+          echo "🧪 Running unit test suite..."
+          timeout 300 npm run test:unit || {
+            echo "❌ Unit tests failed or timed out"
+            exit 1
+          }
+
+      - name: Execute test suite - Integration Tests
+        if: matrix.test-type == 'integration-tests' && (github.event.inputs.test_suite == 'all' || github.event.inputs.test_suite == 'integration-only')
+        run: |
+          echo "🧪 Running integration test suite..."
+          timeout 300 npm run test:integration || {
+            echo "❌ Integration tests failed or timed out"
+            exit 1
+          }
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results-${{ matrix.test-type }}
+          path: |
+            test_result.txt
+            ci-test-*.json
+            ci-test-*.xml
+          retention-days: 30
+
+  # Comprehensive pipeline execution with reporting
+  pipeline:
+    name: Full CI/CD Pipeline
+    runs-on: ubuntu-latest
+    needs: [setup, build]
+    if: needs.setup.outputs.should-run-tests == 'true'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: .
+
+      - name: Execute comprehensive CI/CD pipeline
+        run: |
+          echo "🚀 Starting comprehensive CI/CD pipeline..."
+          node scripts/ci-test-pipeline.js
+
+      - name: Generate pipeline status badge
+        if: always()
+        run: |
+          if [[ -f "ci-test-results.json" ]]; then
+            success=$(jq -r '.success' ci-test-results.json)
+            passed=$(jq -r '.passedTests' ci-test-results.json)
+            total=$(jq -r '.totalTests' ci-test-results.json)
+            
+            if [[ "$success" == "true" ]]; then
+              echo "PIPELINE_STATUS=passing" >> $GITHUB_ENV
+              echo "PIPELINE_BADGE_COLOR=brightgreen" >> $GITHUB_ENV
+            else
+              echo "PIPELINE_STATUS=failing" >> $GITHUB_ENV
+              echo "PIPELINE_BADGE_COLOR=red" >> $GITHUB_ENV
+            fi
+            
+            echo "TEST_SUMMARY=${passed}/${total} tests passed" >> $GITHUB_ENV
+          else
+            echo "PIPELINE_STATUS=error" >> $GITHUB_ENV
+            echo "PIPELINE_BADGE_COLOR=red" >> $GITHUB_ENV
+            echo "TEST_SUMMARY=No results" >> $GITHUB_ENV
+          fi
+
+      - name: Upload comprehensive test reports
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: pipeline-reports
+          path: |
+            ci-test-*.json
+            ci-test-*.xml
+            ci-test-*.txt
+            test_result.txt
+          retention-days: 30
+
+      - name: Comment on PR with results
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            let summary = '## 🚀 Farert WASM CI/CD Pipeline Results\n\n';
+            summary += `**Status:** ${process.env.PIPELINE_STATUS === 'passing' ? '✅ PASSED' : '❌ FAILED'}\n`;
+            summary += `**Tests:** ${process.env.TEST_SUMMARY}\n\n`;
+            
+            if (fs.existsSync('ci-test-results.json')) {
+              const results = JSON.parse(fs.readFileSync('ci-test-results.json', 'utf8'));
+              summary += `### 📊 Detailed Results\n`;
+              summary += `- **Total Tests:** ${results.totalTests}\n`;
+              summary += `- **Passed:** ${results.passedTests}\n`;
+              summary += `- **Failed:** ${results.failedTests}\n`;
+              summary += `- **Execution Time:** ${results.executionTime.toFixed(2)}s\n`;
+              summary += `- **Build Time:** ${results.performance.buildTime.toFixed(2)}s\n`;
+              summary += `- **Test Time:** ${results.performance.testTime.toFixed(2)}s\n\n`;
+              
+              if (results.errors.length > 0) {
+                summary += `### ❌ Errors (${results.errors.length})\n`;
+                results.errors.slice(0, 5).forEach((error, i) => {
+                  summary += `${i + 1}. ${error.message}\n`;
+                });
+                if (results.errors.length > 5) {
+                  summary += `... and ${results.errors.length - 5} more errors\n`;
+                }
+                summary += '\n';
+              }
+              
+              if (results.warnings.length > 0) {
+                summary += `### ⚠️ Warnings (${results.warnings.length})\n`;
+                results.warnings.slice(0, 3).forEach((warning, i) => {
+                  summary += `${i + 1}. ${warning.message}\n`;
+                });
+                if (results.warnings.length > 3) {
+                  summary += `... and ${results.warnings.length - 3} more warnings\n`;
+                }
+              }
+            }
+            
+            summary += `\n---\n*Generated by Farert WASM CI/CD Pipeline at ${new Date().toISOString()}*`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary
+            });
+
+      - name: Publish test results
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: Farert WASM Tests
+          path: 'ci-test-results.xml'
+          reporter: java-junit
+          fail-on-error: false
+
+  # Deployment readiness check
+  deployment-check:
+    name: Deployment Readiness
+    runs-on: ubuntu-latest
+    needs: [test, pipeline]
+    if: needs.setup.outputs.should-run-tests == 'true'
+    
+    steps:
+      - name: Download pipeline reports
+        uses: actions/download-artifact@v3
+        with:
+          name: pipeline-reports
+
+      - name: Validate deployment readiness
+        run: |
+          echo "🔍 Validating deployment readiness..."
+          
+          if [[ -f "ci-test-results.json" ]]; then
+            success=$(jq -r '.success' ci-test-results.json)
+            failed_tests=$(jq -r '.failedTests' ci-test-results.json)
+            
+            if [[ "$success" == "true" && "$failed_tests" == "0" ]]; then
+              echo "✅ Deployment ready: All tests passed"
+              echo "DEPLOYMENT_READY=true" >> $GITHUB_ENV
+            else
+              echo "❌ Deployment not ready: Tests failed"
+              echo "DEPLOYMENT_READY=false" >> $GITHUB_ENV
+            fi
+          else
+            echo "❌ Deployment not ready: No test results found"
+            echo "DEPLOYMENT_READY=false" >> $GITHUB_ENV
+          fi
+
+      - name: Create deployment status
+        if: always()
+        run: |
+          echo "DEPLOYMENT_STATUS=${{ env.DEPLOYMENT_READY == 'true' && '✅ READY' || '❌ NOT READY' }}" >> $GITHUB_ENV
+          echo "🚀 Deployment Status: ${{ env.DEPLOYMENT_STATUS }}"
+
+  # Cleanup and summary
+  summary:
+    name: Pipeline Summary
+    runs-on: ubuntu-latest
+    needs: [setup, build, test, pipeline, deployment-check]
+    if: always() && needs.setup.outputs.should-run-tests == 'true'
+    
+    steps:
+      - name: Generate pipeline summary
+        run: |
+          echo "📊 FARERT WASM CI/CD PIPELINE SUMMARY"
+          echo "===================================="
+          echo "Setup: ${{ needs.setup.result }}"
+          echo "Build: ${{ needs.build.result }}"
+          echo "Tests: ${{ needs.test.result }}"
+          echo "Pipeline: ${{ needs.pipeline.result }}"
+          echo "Deployment Check: ${{ needs.deployment-check.result }}"
+          echo "===================================="
+          
+          overall_success="true"
+          for result in "${{ needs.setup.result }}" "${{ needs.build.result }}" "${{ needs.test.result }}" "${{ needs.pipeline.result }}"; do
+            if [[ "$result" != "success" ]]; then
+              overall_success="false"
+              break
+            fi
+          done
+          
+          if [[ "$overall_success" == "true" ]]; then
+            echo "🎉 Overall Status: ✅ SUCCESS"
+          else
+            echo "💥 Overall Status: ❌ FAILURE"
+            exit 1
+          fi
