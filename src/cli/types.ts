@@ -205,6 +205,12 @@ export interface RouteListWrapper {
   // Essential RouteList operations (from CLAUDE.md specifications)
   removeAll(): void;
   assign(obj: RouteListWrapper): void;
+  
+  // Enhanced array operations (Task 30 requirements)
+  count(): number;                                        // Array size
+  at(index: number): RouteItemWrapper;                    // Array element access with bounds checking
+  remove(index: number): void;                            // Remove element at index
+  insert(index: number, item: RouteItemWrapper): void;    // Insert element at index
 }
 
 export interface RouteWrapper extends RouteListWrapper {
