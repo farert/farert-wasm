@@ -164,7 +164,7 @@ Tasks follow CLAUDE.md architecture patterns with inheritance hierarchy `cCalcRo
   - _Requirements: REQ-OBJ-001, REQ-OBJ-003_
   - _Leverage: existing RouteListWrapper interface_
 
-- [ ] 17. Add enhanced error handling interfaces in src/cli/types.ts
+- [x] 17. Add enhanced error handling interfaces in src/cli/types.ts
   - File: src/cli/types.ts (add new interfaces after line 187)
   - Add ValidationResult interface with error codes and suggestions
   - Add RouteErrorCode enum with ROUTE_ERR_001-099 codes
@@ -268,7 +268,7 @@ Tasks follow CLAUDE.md architecture patterns with inheritance hierarchy `cCalcRo
   - _Requirements: REQ-OBJ-003, REQ-OBJ-007_
   - _Leverage: existing test patterns in test_wasm_extended.ts_
 
-- [ ] 29. Create cRouteFlag unit tests in src/cli/test_route_flag.ts  
+- [x] 29. Create cRouteFlag unit tests in src/cli/test_route_flag.ts  
   - File: src/cli/test_route_flag.ts (create new)
   - Write tests for all flag properties and management methods
   - Test availability and enable check methods functionality
