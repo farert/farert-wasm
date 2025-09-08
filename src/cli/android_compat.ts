@@ -192,7 +192,7 @@ export interface AndroidFareInfo {
 export interface AndroidRouteHelper {
   // === Core Station Operations ===
   /** Get station ID from Japanese station name */
-  getStationId(stationName: string): number;
+  getStationId(_stationName: string): number;
   
   /** Get station name from station ID */
   stationName(stationId: number): string;
@@ -336,7 +336,7 @@ export class AndroidSerializationCompat {
     // Handle stock discount data with proper array initialization
     if (typeof fareInfo === 'object' && fareInfo !== null) {
       // Extract stock discount data using property access or method calls
-      const availCount = androidFareInfo.availCountForFareOfStockDiscount;
+      const _availCount = androidFareInfo.availCountForFareOfStockDiscount;
       
       // Copy stock discount fares (support both array and method access)
       for (let i = 0; i < 4; i++) {
