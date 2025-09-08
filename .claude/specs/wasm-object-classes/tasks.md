@@ -292,7 +292,7 @@ Tasks follow CLAUDE.md architecture patterns with inheritance hierarchy `cCalcRo
   - _Requirements: REQ-OBJ-002_
   - _Leverage: existing error testing patterns in test_wasm_extended.ts_
 
-- [ ] 32. Create Android compatibility tests in src/cli/test_android_compat.ts
+- [x] 32. Create Android compatibility tests in src/cli/test_android_compat.ts
   - File: src/cli/test_android_compat.ts (create new)
   - Write tests for TypeScript-Kotlin data structure compatibility
   - Test method name consistency and parameter types
@@ -300,7 +300,7 @@ Tasks follow CLAUDE.md architecture patterns with inheritance hierarchy `cCalcRo
   - _Requirements: REQ-OBJ-005_
   - _Leverage: android_compat.ts compatibility layer_
 
-- [ ] 33. Add object lifecycle tests in src/cli/test_lifecycle.ts
+- [x] 33. Add object lifecycle tests in src/cli/test_lifecycle.ts
   - File: src/cli/test_lifecycle.ts (create new)
   - Write tests for memory management and object cleanup
   - Test repeated object creation without memory leaks
