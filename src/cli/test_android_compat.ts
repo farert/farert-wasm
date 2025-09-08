@@ -852,12 +852,9 @@ async function main(): Promise<void> {
 // Exports
 // ===============================
 
-export {
-  AndroidCompatibilityTests,
-  AndroidCompatibilityTestResult
-};
+// Export statements removed - using class export instead
 
-export default AndroidCompatibilityTests;
+// Default export removed to avoid duplicate export with class declaration
 
 // Run main if executed directly
 main().catch(console.error);
