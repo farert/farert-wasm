@@ -276,7 +276,7 @@ Tasks follow CLAUDE.md architecture patterns with inheritance hierarchy `cCalcRo
   - _Requirements: REQ-OBJ-003_
   - _Leverage: existing test patterns in test_wasm_extended.ts_
 
-- [ ] 30. Create enhanced array operations tests in src/cli/test_array_ops.ts
+- [x] 30. Create enhanced array operations tests in src/cli/test_array_ops.ts
   - File: src/cli/test_array_ops.ts (create new)
   - Write tests for at(), count(), remove(), insert(), assign() methods
   - Test bounds checking and error handling for array operations
@@ -284,7 +284,7 @@ Tasks follow CLAUDE.md architecture patterns with inheritance hierarchy `cCalcRo
   - _Requirements: REQ-OBJ-003, REQ-OBJ-002_
   - _Leverage: existing array operation patterns in test_wasm_extended.ts_
 
-- [ ] 31. Create error handling system tests in src/cli/test_error_handling.ts
+- [x] 31. Create error handling system tests in src/cli/test_error_handling.ts
   - File: src/cli/test_error_handling.ts (create new)
   - Write tests for all error codes ROUTE_ERR_001-099  
   - Test fuzzy matching suggestions for invalid station names
