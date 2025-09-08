@@ -8,6 +8,7 @@
 
 import { FarertModule } from './types';
 import { wasmLoader } from './wasm_loader';
+import { ArrayOperationsTests } from './test_array_ops';
 
 export class WebAssemblyExtendedTests {
     private module: FarertModule | null = null;
@@ -36,7 +37,8 @@ export class WebAssemblyExtendedTests {
                 await this.testFrontendAPIs(),
                 await this.testObjectClasses(),
                 await this.testJSONAPIs(),
-                await this.testCLAUDEmdPublicAPIs()
+                await this.testCLAUDEmdPublicAPIs(),
+                await this.testEnhancedArrayOperations()
             ];
             
             const allPassed = results.every(r => r);
@@ -245,6 +247,25 @@ export class WebAssemblyExtendedTests {
             
         } catch (error) {
             console.log(`CLAUDE.md Public API: FAIL (${error})`);
+            return false;
+        }
+    }
+    
+    /**
+     * Enhanced Array Operations Tests (Task 30)
+     */
+    private async testEnhancedArrayOperations(): Promise<boolean> {
+        console.log('\n--- Enhanced Array Operations Tests ---');
+        
+        try {
+            const arrayTests = new ArrayOperationsTests(this.verbose);
+            const result = await arrayTests.executeAll();
+            
+            console.log(`Enhanced Array Operations: ${result ? 'PASS' : 'FAIL'}`);
+            return result;
+            
+        } catch (error) {
+            console.log(`Enhanced Array Operations: FAIL (${error})`);
             return false;
         }
     }
