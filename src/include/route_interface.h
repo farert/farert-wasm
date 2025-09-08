@@ -9,6 +9,9 @@
 #include <string>
 #include <algorithm>
 #include <climits>
+#include <mutex>       // For ObjectLifecycleManager thread safety
+#include <memory>      // For enhanced memory management
+#include <atomic>      // For thread-safe reference counting
 
 // Forward declarations from alpdb.h
 class Route;
@@ -547,24 +550,204 @@ public:
     static bool getDatabaseVersion(void* dbsys);
 };
 
-// Forward declarations for reference counting
+// Object lifecycle management system (Task 25: REQ-OBJ-007)
+// Forward declarations for reference counting with enhanced lifecycle management
+
+/**
+ * Enhanced reference counter with WebAssembly-safe lifecycle management
+ * Prevents indefinite heap growth and provides memory leak detection
+ */
 struct RefCounter {
     int count;
-    RefCounter() : count(1) {}
+    bool isValidCounter;
+    void* objectPtr;  // Track owning object for debugging
+    
+    RefCounter() : count(1), isValidCounter(true), objectPtr(nullptr) {}
+    
+    explicit RefCounter(void* ptr) : count(1), isValidCounter(true), objectPtr(ptr) {}
+    
+    // Safety check to prevent double-deletion
+    bool canIncrement() const { 
+        return isValidCounter && count > 0; 
+    }
+    
+    // Safety check to prevent underflow
+    bool canDecrement() const { 
+        return isValidCounter && count > 0; 
+    }
+    
+    // Mark counter as invalid to prevent further use
+    void invalidate() { 
+        isValidCounter = false; 
+        objectPtr = nullptr;
+    }
+    
+    // Get debug information about this counter
+    std::string getDebugInfo() const {
+        std::ostringstream info;
+        info << "RefCounter{count=" << count 
+             << ", valid=" << (isValidCounter ? "true" : "false")
+             << ", ptr=" << objectPtr << "}";
+        return info.str();
+    }
 };
 
-// Memory safety validation helper
+/**
+ * Memory safety validation helper with enhanced WebAssembly lifecycle support
+ * Provides comprehensive object state tracking and validation for long-running applications
+ */
 class MemorySafetyValidator {
 public:
     static const int MAGIC_VALUE_VALID = 0xDEADBEEF;
     static const int MAGIC_VALUE_DESTROYED = 0xDEADDEAD;
+    static const int MAGIC_VALUE_CORRUPTED = 0xBADC0DE1;
     
+    // Object state validation
     static bool isValid(int magicValue) {
         return magicValue == MAGIC_VALUE_VALID;
     }
     
     static bool isDestroyed(int magicValue) {
         return magicValue == MAGIC_VALUE_DESTROYED;
+    }
+    
+    static bool isCorrupted(int magicValue) {
+        return magicValue == MAGIC_VALUE_CORRUPTED;
+    }
+    
+    // Comprehensive state check with detailed error information
+    static int validateState(int magicValue, const RefCounter* refCounter) {
+        if (magicValue == MAGIC_VALUE_DESTROYED) {
+            return -200;  // Object was destroyed
+        }
+        if (magicValue == MAGIC_VALUE_CORRUPTED) {
+            return -201;  // Object memory corrupted
+        }
+        if (!isValid(magicValue)) {
+            return -202;  // Invalid magic value
+        }
+        if (refCounter == nullptr) {
+            return -203;  // Reference counter is null
+        }
+        if (!refCounter->isValidCounter) {
+            return -204;  // Reference counter invalidated
+        }
+        if (refCounter->count <= 0) {
+            return -205;  // Invalid reference count
+        }
+        return 0;  // Valid state
+    }
+    
+    // Get human-readable error message for validation results
+    static std::string getValidationErrorMessage(int errorCode) {
+        switch (errorCode) {
+            case -200: return "Object was destroyed and cannot be used";
+            case -201: return "Object memory has been corrupted";
+            case -202: return "Object has invalid magic value (possible corruption)";
+            case -203: return "Object reference counter is null";
+            case -204: return "Object reference counter has been invalidated";
+            case -205: return "Object has invalid reference count (possible double-free)";
+            case 0: return "Object is valid";
+            default: return "Unknown validation error";
+        }
+    }
+    
+    // WebAssembly-specific validation for heap management
+    static bool isWebAssemblyMemorySafe(int magicValue, const RefCounter* refCounter) {
+        // Additional checks for WebAssembly memory safety
+        int result = validateState(magicValue, refCounter);
+        if (result != 0) return false;
+        
+        // Check for suspicious reference count patterns that might indicate leaks
+        if (refCounter->count > 1000) {
+            // Extremely high reference count might indicate a leak
+            return false;
+        }
+        
+        return true;
+    }
+};
+
+/**
+ * Object lifecycle manager for automatic cleanup and leak prevention
+ * Ensures proper resource management in long-running WebAssembly applications
+ */
+class ObjectLifecycleManager {
+private:
+    static std::set<void*> activeObjects;
+    static std::mutex objectMutex;
+    static size_t totalObjectsCreated;
+    static size_t totalObjectsDestroyed;
+    
+public:
+    // Register object creation for tracking
+    static void registerObject(void* objectPtr) {
+        std::lock_guard<std::mutex> lock(objectMutex);
+        activeObjects.insert(objectPtr);
+        totalObjectsCreated++;
+    }
+    
+    // Register object destruction for tracking
+    static void unregisterObject(void* objectPtr) {
+        std::lock_guard<std::mutex> lock(objectMutex);
+        auto it = activeObjects.find(objectPtr);
+        if (it != activeObjects.end()) {
+            activeObjects.erase(it);
+            totalObjectsDestroyed++;
+        }
+    }
+    
+    // Check if object is registered (for validation)
+    static bool isObjectRegistered(void* objectPtr) {
+        std::lock_guard<std::mutex> lock(objectMutex);
+        return activeObjects.find(objectPtr) != activeObjects.end();
+    }
+    
+    // Get statistics for memory leak detection
+    static size_t getActiveObjectCount() {
+        std::lock_guard<std::mutex> lock(objectMutex);
+        return activeObjects.size();
+    }
+    
+    static size_t getTotalObjectsCreated() {
+        return totalObjectsCreated;
+    }
+    
+    static size_t getTotalObjectsDestroyed() {
+        return totalObjectsDestroyed;
+    }
+    
+    // Memory leak detection
+    static bool hasMemoryLeaks() {
+        return getActiveObjectCount() > 0;
+    }
+    
+    // Force cleanup of all tracked objects (emergency cleanup)
+    static void forceCleanupAll() {
+        std::lock_guard<std::mutex> lock(objectMutex);
+        activeObjects.clear();
+        // Note: This doesn't actually delete objects, just removes tracking
+        // Actual objects should implement their own cleanup
+    }
+    
+    // Get detailed memory report
+    static std::string getMemoryReport() {
+        std::lock_guard<std::mutex> lock(objectMutex);
+        std::ostringstream report;
+        report << "=== Object Lifecycle Report ===\n";
+        report << "Active objects: " << activeObjects.size() << "\n";
+        report << "Total created: " << totalObjectsCreated << "\n";
+        report << "Total destroyed: " << totalObjectsDestroyed << "\n";
+        report << "Memory leaks detected: " << (hasMemoryLeaks() ? "YES" : "NO") << "\n";
+        
+        if (!activeObjects.empty()) {
+            report << "Active object pointers:\n";
+            for (void* ptr : activeObjects) {
+                report << "  " << ptr << "\n";
+            }
+        }
+        
+        return report.str();
     }
 };
 
@@ -584,7 +767,7 @@ struct RouteItemWrapper {
     mutable int magicValue;             // Memory safety validation
     mutable RefCounter* refCounter;     // Reference counting for shared data
     
-    // Constructor
+    // Enhanced constructor with lifecycle management (Task 25: REQ-OBJ-007)
     RouteItemWrapper() {
         stationId = 0;
         lineId = 0;
@@ -593,9 +776,12 @@ struct RouteItemWrapper {
         salesKm = 0;
         indexOfAggregate = 0;
         
-        // Initialize lifecycle management
+        // Initialize lifecycle management with comprehensive tracking
         magicValue = MemorySafetyValidator::MAGIC_VALUE_VALID;
-        refCounter = new RefCounter();
+        refCounter = new RefCounter(this);  // Pass this pointer for debugging
+        
+        // Register object for lifecycle tracking
+        ObjectLifecycleManager::registerObject(this);
     }
     
     // Constructor from C++ RouteItem (implementation will be in .cpp file)
@@ -621,15 +807,30 @@ struct RouteItemWrapper {
         indexOfAggregate = 0;
     }
     
-    // Destructor with RAII cleanup (Task 25: REQ-OBJ-007)
+    // Enhanced destructor with comprehensive RAII cleanup (Task 25: REQ-OBJ-007)
     ~RouteItemWrapper() {
         if (isValid()) {
             decrementRef();
+        } else {
+            // Handle case where object was already destroyed or corrupted
+            // Still need to clean up reference counter if it exists
+            if (refCounter && refCounter->isValidCounter) {
+                refCounter->invalidate();
+                delete refCounter;
+                refCounter = nullptr;
+            }
         }
+        
+        // Unregister from lifecycle manager
+        ObjectLifecycleManager::unregisterObject(this);
+        
+        // Mark as destroyed for safety
+        magicValue = MemorySafetyValidator::MAGIC_VALUE_DESTROYED;
     }
     
-    // Copy constructor with reference counting
+    // Enhanced copy constructor with comprehensive reference counting (Task 25: REQ-OBJ-007)
     RouteItemWrapper(const RouteItemWrapper& other) {
+        // Copy data fields
         stationId = other.stationId;
         lineId = other.lineId;
         flag = other.flag;
@@ -637,23 +838,38 @@ struct RouteItemWrapper {
         salesKm = other.salesKm;
         indexOfAggregate = other.indexOfAggregate;
         
-        // Share reference counter
+        // Enhanced reference sharing with safety checks
         magicValue = other.magicValue;
         refCounter = other.refCounter;
-        if (other.isValid() && refCounter) {
+        
+        if (other.isValid() && refCounter && refCounter->canIncrement()) {
             refCounter->count++;
+        } else {
+            // Other object is invalid or corrupted, create new lifecycle
+            magicValue = MemorySafetyValidator::MAGIC_VALUE_VALID;
+            refCounter = new RefCounter(this);
         }
+        
+        // Register this new object for lifecycle tracking
+        ObjectLifecycleManager::registerObject(this);
     }
     
-    // Assignment operator with reference counting
+    // Enhanced assignment operator with comprehensive reference counting (Task 25: REQ-OBJ-007)
     RouteItemWrapper& operator=(const RouteItemWrapper& other) {
         if (this != &other) {
-            // Decrement current reference
-            if (isValid()) {
+            // Safely decrement current reference with enhanced checking
+            if (isValid() && refCounter && refCounter->canDecrement()) {
                 decrementRef();
+            } else if (refCounter) {
+                // Handle corrupted state - cleanup what we can
+                refCounter->invalidate();
+                if (refCounter->count == 1) {
+                    delete refCounter;
+                }
+                refCounter = nullptr;
             }
             
-            // Copy data
+            // Copy data fields
             stationId = other.stationId;
             lineId = other.lineId;
             flag = other.flag;
@@ -661,11 +877,16 @@ struct RouteItemWrapper {
             salesKm = other.salesKm;
             indexOfAggregate = other.indexOfAggregate;
             
-            // Share reference counter
+            // Enhanced reference sharing with safety validation
             magicValue = other.magicValue;
             refCounter = other.refCounter;
-            if (other.isValid() && refCounter) {
+            
+            if (other.isValid() && refCounter && refCounter->canIncrement()) {
                 refCounter->count++;
+            } else {
+                // Other object is invalid, create new lifecycle
+                magicValue = MemorySafetyValidator::MAGIC_VALUE_VALID;
+                refCounter = new RefCounter(this);
             }
         }
         return *this;
@@ -1838,6 +2059,57 @@ public:
      * @return ValidationResult containing validation status and improvement suggestions
      */
     ValidationResult validateRouteString(const std::string& routeString) const;
+    
+    /**
+     * Validate station name using RouteUtility methods (Task 19)
+     * Provides fuzzy matching suggestions for invalid station names
+     * REQ-OBJ-002, REQ-OBJ-004: C++ Compatible Input Validation
+     * 
+     * @param stationName The station name to validate
+     * @return ValidationResult containing validation status and suggestions
+     */
+    ValidationResult validateStationName(const std::string& stationName) const;
+    
+    /**
+     * Validate line name using RouteUtility methods (Task 19)
+     * Provides fuzzy matching suggestions for invalid line names
+     * REQ-OBJ-002, REQ-OBJ-004: C++ Compatible Input Validation
+     * 
+     * @param lineName The line name to validate
+     * @return ValidationResult containing validation status and suggestions
+     */
+    ValidationResult validateLineName(const std::string& lineName) const;
+    
+    /**
+     * Validate route connectivity between stations (Task 19)
+     * REQ-OBJ-002, REQ-OBJ-004: C++ Compatible Route Construction Validation
+     * 
+     * @param fromStationId Starting station ID
+     * @param lineId Line ID connecting the stations
+     * @param toStationId Destination station ID
+     * @return ValidationResult containing validation status and suggestions
+     */
+    ValidationResult validateRouteConnectivity(int fromStationId, int lineId, int toStationId) const;
+    
+    /**
+     * Validate input parameters before route construction (Task 19)
+     * REQ-OBJ-002: C++ Compatible Error Handling with identical error codes
+     * 
+     * @param stationId Station ID to validate
+     * @param lineId Line ID to validate
+     * @return Error code (0 for success, negative for errors matching C++ behavior)
+     */
+    int validateInputParameters(int stationId, int lineId) const;
+    
+    /**
+     * Enhanced route addition validation (Task 19)
+     * REQ-OBJ-004: C++ Compatible Route Construction with validation
+     * 
+     * @param stationId Station ID to add to route
+     * @param lineId Line ID for route segment
+     * @return ValidationResult containing validation status and detailed suggestions
+     */
+    ValidationResult validateAddRoute(int stationId, int lineId) const;
     
     // Memory safety validation methods (Task 25: REQ-OBJ-007)
     

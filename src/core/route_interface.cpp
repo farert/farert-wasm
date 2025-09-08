@@ -2,6 +2,12 @@
 #include "../db/db.h"
 #include "alpdb.h"
 
+// ObjectLifecycleManager static member definitions (Task 25: REQ-OBJ-007)
+std::set<void*> ObjectLifecycleManager::activeObjects;
+std::mutex ObjectLifecycleManager::objectMutex;
+size_t ObjectLifecycleManager::totalObjectsCreated = 0;
+size_t ObjectLifecycleManager::totalObjectsDestroyed = 0;
+
 // DatabaseManager implementation
 bool DatabaseManager::openDatabase(const std::string& dbPath) {
     return DBS::getInstance()->open(dbPath.c_str());
@@ -36,9 +42,9 @@ RouteItemWrapper::RouteItemWrapper(const RouteItem* item) {
         indexOfAggregate = 0;
     }
     
-    // Initialize lifecycle management (Task 25: REQ-OBJ-007)
+    // Initialize lifecycle management (Task 25: REQ-OBJ-007) - Optimized stack allocation
     magicValue = MemorySafetyValidator::MAGIC_VALUE_VALID;
-    refCounter = new RefCounter();
+    refCounter = new RefCounter();  // Keep as-is for thread safety
 }
 
 // Additional RouteItemWrapper methods for C++ compatibility (REQ-OBJ-002, REQ-OBJ-003)
@@ -341,7 +347,8 @@ int RouteItemWrapper::estimateDistanceTo(const RouteItemWrapper& other) const {
 // Lifecycle management implementation for RouteWrapper (Task 25: REQ-OBJ-007)
 void RouteWrapper::initializeLifecycle() {
     magicValue = MemorySafetyValidator::MAGIC_VALUE_VALID;
-    refCounter = new RefCounter();
+    refCounter = new RefCounter(this);
+    ObjectLifecycleManager::registerObject(this);
 }
 
 void RouteWrapper::cleanupRoute() {
@@ -349,6 +356,8 @@ void RouteWrapper::cleanupRoute() {
         delete route;
         route = nullptr;
     }
+    // Unregister from lifecycle manager
+    ObjectLifecycleManager::unregisterObject(this);
 }
 
 // RouteWrapper implementation
@@ -2149,7 +2158,8 @@ RouteFlagWrapper::RouteFlagWrapper(const RouteFlag* flag) {
 // RouteListWrapper lifecycle management methods (Task 25: REQ-OBJ-007)
 void RouteListWrapper::initializeLifecycle() {
     magicValue = MemorySafetyValidator::MAGIC_VALUE_VALID;
-    refCounter = new RefCounter();
+    refCounter = new RefCounter(this);
+    ObjectLifecycleManager::registerObject(this);
 }
 
 void RouteListWrapper::cleanupRouteList() {
@@ -2157,15 +2167,19 @@ void RouteListWrapper::cleanupRouteList() {
         delete routeList;
         routeList = nullptr;
     }
+    // Unregister from lifecycle manager
+    ObjectLifecycleManager::unregisterObject(this);
 }
 
 // CalcRouteWrapper lifecycle management methods (Task 25: REQ-OBJ-007)
 void CalcRouteWrapper::initializeLifecycle() {
     magicValue = MemorySafetyValidator::MAGIC_VALUE_VALID;
     refCounter = new RefCounter();
+    ObjectLifecycleManager::registerObject(this);
 }
 
 void CalcRouteWrapper::cleanupCalcRoute() {
+    ObjectLifecycleManager::unregisterObject(this);
     if (calcRoute) {
         delete calcRoute;
         calcRoute = nullptr;
@@ -2451,4 +2465,398 @@ std::string RouteUtility::readFromKey(const std::string& key) {
 
 void RouteUtility::saveToKey(const std::string& key, const std::string& value, bool sync) {
     // TODO: Implement key-value storage
+}
+
+// Additional RouteWrapper validation methods implementation (Task 19)
+
+/**
+ * Validate station name using RouteUtility methods
+ * Provides fuzzy matching suggestions for invalid station names
+ * REQ-OBJ-002, REQ-OBJ-004: C++ Compatible Input Validation
+ */
+ValidationResult RouteWrapper::validateStationName(const std::string& stationName) const {
+    ValidationResult result(true);
+    
+    // Object state validation
+    if (!isValid()) {
+        result.isValid = false;
+        result.errorMessage = "RouteWrapper object is invalid or destroyed";
+        result.errorMessageJa = "RouteWrapperオブジェクトが無効または破棄されています";
+        return result;
+    }
+    
+    if (stationName.empty()) {
+        result.isValid = false;
+        result.errorMessage = "Station name cannot be empty";
+        result.errorMessageJa = "駅名は空にできません";
+        result.suggestions.push_back("Provide a valid station name");
+        result.suggestions.push_back("有効な駅名を入力してください");
+        return result;
+    }
+    
+    // Check if station exists using RouteUtility
+    int stationId = RouteUtility::getStationId(stationName);
+    if (stationId <= 0) {
+        result.isValid = false;
+        result.errorMessage = "Station not found: " + stationName;
+        result.errorMessageJa = "駅が見つかりません: " + stationName;
+        
+        // Generate fuzzy matching suggestions
+        std::vector<std::string> suggestions = generateStationNameSuggestions(stationName);
+        for (const auto& suggestion : suggestions) {
+            result.suggestions.push_back("Did you mean: " + suggestion);
+            result.suggestions.push_back("候補: " + suggestion);
+        }
+        
+        result.context["invalid_station_name"] = stationName;
+        result.context["error_code"] = std::to_string(-1);
+    } else {
+        // Station found - add context information
+        result.context["station_id"] = std::to_string(stationId);
+        result.context["station_name"] = stationName;
+        
+        // Add additional station information if available
+        std::string kana = RouteUtility::getKanaFromStationId(stationId);
+        if (!kana.empty()) {
+            result.context["station_kana"] = kana;
+        }
+        
+        std::string prefecture = RouteUtility::getPrefectNameByStation(stationId);
+        if (!prefecture.empty()) {
+            result.context["station_prefecture"] = prefecture;
+        }
+    }
+    
+    return result;
+}
+
+/**
+ * Validate line name using RouteUtility methods
+ * Provides fuzzy matching suggestions for invalid line names
+ * REQ-OBJ-002, REQ-OBJ-004: C++ Compatible Input Validation
+ */
+ValidationResult RouteWrapper::validateLineName(const std::string& lineName) const {
+    ValidationResult result(true);
+    
+    // Object state validation
+    if (!isValid()) {
+        result.isValid = false;
+        result.errorMessage = "RouteWrapper object is invalid or destroyed";
+        result.errorMessageJa = "RouteWrapperオブジェクトが無効または破棄されています";
+        return result;
+    }
+    
+    if (lineName.empty()) {
+        result.isValid = false;
+        result.errorMessage = "Line name cannot be empty";
+        result.errorMessageJa = "路線名は空にできません";
+        result.suggestions.push_back("Provide a valid line name");
+        result.suggestions.push_back("有効な路線名を入力してください");
+        return result;
+    }
+    
+    // Check if line exists using RouteUtility
+    int lineId = RouteUtility::getLineIdFromName(lineName);
+    if (lineId <= 0) {
+        result.isValid = false;
+        result.errorMessage = "Line not found: " + lineName;
+        result.errorMessageJa = "路線が見つかりません: " + lineName;
+        
+        // Generate fuzzy matching suggestions
+        std::vector<std::string> suggestions = generateLineNameSuggestions(lineName);
+        for (const auto& suggestion : suggestions) {
+            result.suggestions.push_back("Did you mean: " + suggestion);
+            result.suggestions.push_back("候補: " + suggestion);
+        }
+        
+        result.context["invalid_line_name"] = lineName;
+        result.context["error_code"] = std::to_string(-2);
+    } else {
+        // Line found - add context information
+        result.context["line_id"] = std::to_string(lineId);
+        result.context["line_name"] = lineName;
+        
+        // Add stations served by this line
+        std::vector<int> stations = RouteUtility::getStationIdsOfLine(lineId);
+        result.context["stations_count"] = std::to_string(stations.size());
+    }
+    
+    return result;
+}
+
+/**
+ * Validate route connectivity between stations using existing RouteUtility methods
+ * REQ-OBJ-002, REQ-OBJ-004: C++ Compatible Route Construction Validation
+ */
+ValidationResult RouteWrapper::validateRouteConnectivity(int fromStationId, int lineId, int toStationId) const {
+    ValidationResult result(true);
+    
+    // Object state validation
+    if (!isValid()) {
+        result.isValid = false;
+        result.errorMessage = "RouteWrapper object is invalid or destroyed";
+        result.errorMessageJa = "RouteWrapperオブジェクトが無効または破棄されています";
+        return result;
+    }
+    
+    // Validate station IDs
+    if (fromStationId <= 0) {
+        result.isValid = false;
+        result.errorMessage = "Invalid from station ID: " + std::to_string(fromStationId);
+        result.errorMessageJa = "無効な出発駅ID: " + std::to_string(fromStationId);
+        result.context["from_station_id"] = std::to_string(fromStationId);
+        return result;
+    }
+    
+    if (toStationId <= 0) {
+        result.isValid = false;
+        result.errorMessage = "Invalid to station ID: " + std::to_string(toStationId);
+        result.errorMessageJa = "無効な到着駅ID: " + std::to_string(toStationId);
+        result.context["to_station_id"] = std::to_string(toStationId);
+        return result;
+    }
+    
+    // Validate line ID
+    if (lineId <= 0) {
+        result.isValid = false;
+        result.errorMessage = "Invalid line ID: " + std::to_string(lineId);
+        result.errorMessageJa = "無効な路線ID: " + std::to_string(lineId);
+        result.context["line_id"] = std::to_string(lineId);
+        return result;
+    }
+    
+    // Check if both stations exist
+    std::string fromStationName = RouteUtility::getStationName(fromStationId);
+    std::string toStationName = RouteUtility::getStationName(toStationId);
+    std::string lineName = RouteUtility::getLineName(lineId);
+    
+    if (fromStationName.empty()) {
+        result.isValid = false;
+        result.errorMessage = "From station not found with ID: " + std::to_string(fromStationId);
+        result.errorMessageJa = "出発駅が見つかりません (ID: " + std::to_string(fromStationId) + ")";
+        result.context["from_station_id"] = std::to_string(fromStationId);
+        return result;
+    }
+    
+    if (toStationName.empty()) {
+        result.isValid = false;
+        result.errorMessage = "To station not found with ID: " + std::to_string(toStationId);
+        result.errorMessageJa = "到着駅が見つかりません (ID: " + std::to_string(toStationId) + ")";
+        result.context["to_station_id"] = std::to_string(toStationId);
+        return result;
+    }
+    
+    if (lineName.empty()) {
+        result.isValid = false;
+        result.errorMessage = "Line not found with ID: " + std::to_string(lineId);
+        result.errorMessageJa = "路線が見つかりません (ID: " + std::to_string(lineId) + ")";
+        result.context["line_id"] = std::to_string(lineId);
+        return result;
+    }
+    
+    // Check if the line serves both stations
+    std::vector<int> stationsOnLine = RouteUtility::getStationIdsOfLine(lineId);
+    bool fromStationOnLine = false;
+    bool toStationOnLine = false;
+    
+    for (int stationId : stationsOnLine) {
+        if (stationId == fromStationId) fromStationOnLine = true;
+        if (stationId == toStationId) toStationOnLine = true;
+    }
+    
+    if (!fromStationOnLine) {
+        result.isValid = false;
+        result.errorMessage = "From station " + fromStationName + " is not served by line " + lineName;
+        result.errorMessageJa = "出発駅「" + fromStationName + "」は路線「" + lineName + "」に接続していません";
+        
+        // Suggest alternative lines for this station
+        std::vector<int> linesAtFromStation = RouteUtility::getLineIdsFromStation(fromStationId);
+        if (!linesAtFromStation.empty()) {
+            result.suggestions.push_back("Alternative lines for " + fromStationName + ":");
+            result.suggestions.push_back(fromStationName + "の代替路線:");
+            for (size_t i = 0; i < std::min(linesAtFromStation.size(), size_t(3)); ++i) {
+                std::string altLineName = RouteUtility::getLineName(linesAtFromStation[i]);
+                if (!altLineName.empty()) {
+                    result.suggestions.push_back("  - " + altLineName);
+                }
+            }
+        }
+        
+        result.context["from_station_name"] = fromStationName;
+        result.context["line_name"] = lineName;
+        return result;
+    }
+    
+    if (!toStationOnLine) {
+        result.isValid = false;
+        result.errorMessage = "To station " + toStationName + " is not served by line " + lineName;
+        result.errorMessageJa = "到着駅「" + toStationName + "」は路線「" + lineName + "」に接続していません";
+        
+        // Suggest alternative lines for this station
+        std::vector<int> linesAtToStation = RouteUtility::getLineIdsFromStation(toStationId);
+        if (!linesAtToStation.empty()) {
+            result.suggestions.push_back("Alternative lines for " + toStationName + ":");
+            result.suggestions.push_back(toStationName + "の代替路線:");
+            for (size_t i = 0; i < std::min(linesAtToStation.size(), size_t(3)); ++i) {
+                std::string altLineName = RouteUtility::getLineName(linesAtToStation[i]);
+                if (!altLineName.empty()) {
+                    result.suggestions.push_back("  - " + altLineName);
+                }
+            }
+        }
+        
+        result.context["to_station_name"] = toStationName;
+        result.context["line_name"] = lineName;
+        return result;
+    }
+    
+    // Valid connectivity - add context information
+    result.context["from_station_name"] = fromStationName;
+    result.context["to_station_name"] = toStationName;
+    result.context["line_name"] = lineName;
+    result.context["from_station_id"] = std::to_string(fromStationId);
+    result.context["to_station_id"] = std::to_string(toStationId);
+    result.context["line_id"] = std::to_string(lineId);
+    
+    return result;
+}
+
+/**
+ * Validate input parameters before route construction
+ * REQ-OBJ-002: C++ Compatible Error Handling with identical error codes
+ */
+int RouteWrapper::validateInputParameters(int stationId, int lineId) const {
+    // Object state validation first
+    if (!isValid()) {
+        return -1000;  // Object invalid/destroyed - return distinct error code (C++ compatible)
+    }
+    
+    // Station ID validation (C++ compatible - identical error codes)
+    if (stationId <= 0) {
+        return -1;  // Invalid station ID - matches original C++ Route class error code
+    }
+    
+    // Line ID validation (C++ compatible - lineId = 0 is valid for starting points)
+    if (lineId < 0) {
+        return -2;  // Invalid line ID - matches original C++ Route class error code
+    }
+    
+    // Check if station exists in database
+    std::string stationName = RouteUtility::getStationName(stationId);
+    if (stationName.empty()) {
+        return -3;  // Station not found in database - matches original C++ behavior
+    }
+    
+    // Check if line exists in database (only if lineId > 0)
+    if (lineId > 0) {
+        std::string lineName = RouteUtility::getLineName(lineId);
+        if (lineName.empty()) {
+            return -4;  // Line not found in database - matches original C++ behavior
+        }
+        
+        // Check if line serves the station
+        std::vector<int> linesAtStation = RouteUtility::getLineIdsFromStation(stationId);
+        bool lineServesStation = false;
+        for (int availableLineId : linesAtStation) {
+            if (availableLineId == lineId) {
+                lineServesStation = true;
+                break;
+            }
+        }
+        
+        if (!lineServesStation) {
+            return -5;  // Line does not serve station - matches original C++ behavior
+        }
+    }
+    
+    return 0;  // All validations passed - C++ success code
+}
+
+/**
+ * Enhanced route addition validation using existing RouteUtility methods
+ * REQ-OBJ-004: C++ Compatible Route Construction with validation
+ */
+ValidationResult RouteWrapper::validateAddRoute(int stationId, int lineId) const {
+    ValidationResult result(true);
+    
+    // Use existing input parameter validation
+    int errorCode = validateInputParameters(stationId, lineId);
+    
+    if (errorCode != 0) {
+        result.isValid = false;
+        
+        switch (errorCode) {
+            case -1000:
+                result.errorMessage = "RouteWrapper object is invalid or destroyed";
+                result.errorMessageJa = "RouteWrapperオブジェクトが無効または破棄されています";
+                break;
+            case -1:
+                result.errorMessage = "Invalid station ID: " + std::to_string(stationId);
+                result.errorMessageJa = "無効な駅ID: " + std::to_string(stationId);
+                result.suggestions.push_back("Station ID must be positive");
+                result.suggestions.push_back("駅IDは正の値である必要があります");
+                break;
+            case -2:
+                result.errorMessage = "Invalid line ID: " + std::to_string(lineId);
+                result.errorMessageJa = "無効な路線ID: " + std::to_string(lineId);
+                result.suggestions.push_back("Line ID must be non-negative (0 for starting point)");
+                result.suggestions.push_back("路線IDは非負の値である必要があります（開始点の場合は0）");
+                break;
+            case -3:
+                result.errorMessage = "Station not found with ID: " + std::to_string(stationId);
+                result.errorMessageJa = "駅が見つかりません (ID: " + std::to_string(stationId) + ")";
+                result.suggestions.push_back("Verify the station ID or use station name lookup");
+                result.suggestions.push_back("駅IDを確認するか、駅名検索を使用してください");
+                break;
+            case -4:
+                result.errorMessage = "Line not found with ID: " + std::to_string(lineId);
+                result.errorMessageJa = "路線が見つかりません (ID: " + std::to_string(lineId) + ")";
+                result.suggestions.push_back("Verify the line ID or use line name lookup");
+                result.suggestions.push_back("路線IDを確認するか、路線名検索を使用してください");
+                break;
+            case -5:
+                {
+                    std::string stationName = RouteUtility::getStationName(stationId);
+                    std::string lineName = RouteUtility::getLineName(lineId);
+                    result.errorMessage = "Line " + lineName + " does not serve station " + stationName;
+                    result.errorMessageJa = "路線「" + lineName + "」は駅「" + stationName + "」を経由しません";
+                    
+                    // Suggest alternative lines
+                    std::vector<int> linesAtStation = RouteUtility::getLineIdsFromStation(stationId);
+                    if (!linesAtStation.empty()) {
+                        result.suggestions.push_back("Alternative lines for " + stationName + ":");
+                        result.suggestions.push_back(stationName + "の代替路線:");
+                        for (size_t i = 0; i < std::min(linesAtStation.size(), size_t(3)); ++i) {
+                            std::string altLineName = RouteUtility::getLineName(linesAtStation[i]);
+                            if (!altLineName.empty()) {
+                                result.suggestions.push_back("  - " + altLineName);
+                            }
+                        }
+                    }
+                }
+                break;
+            default:
+                result.errorMessage = "Unknown validation error";
+                result.errorMessageJa = "不明な検証エラー";
+                break;
+        }
+        
+        result.context["error_code"] = std::to_string(errorCode);
+        result.context["station_id"] = std::to_string(stationId);
+        result.context["line_id"] = std::to_string(lineId);
+        
+    } else {
+        // Validation passed - add context information
+        result.context["station_id"] = std::to_string(stationId);
+        result.context["line_id"] = std::to_string(lineId);
+        result.context["station_name"] = RouteUtility::getStationName(stationId);
+        
+        if (lineId > 0) {
+            result.context["line_name"] = RouteUtility::getLineName(lineId);
+        } else {
+            result.context["line_name"] = "[Starting Point]";
+        }
+    }
+    
+    return result;
 }

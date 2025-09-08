@@ -259,29 +259,7 @@ std::string readFromTerminalHistory() {
     return result;
 }
 
-std::string debugStationsResult() {
-    std::string result = "";
-    
-    try {
-        DBO dbo = DBS::getInstance()->compileSql("select rowid, name, samename from t_station where (sflg&(1<<18))=0 limit 10");
-        if (dbo.isvalid()) {
-            int count = 0;
-            while (dbo.moveNext() && count < 10) {
-                int id = dbo.getInt(0);
-                tstring name = dbo.getText(1);
-                tstring samename = dbo.getText(2);
-                result += "ID:" + std::to_string(id) + " Name:" + name + " Same:" + samename + "\n";
-                count++;
-            }
-        } else {
-            result = "SQL compilation failed";
-        }
-    } catch (...) {
-        result = "Exception occurred";
-    }
-    
-    return result;
-}
+// Debug function removed for production optimization
 
 EMSCRIPTEN_KEEPALIVE
 const char* farert_get_station_name(int id) {
@@ -474,23 +452,25 @@ std::string getCompanyOrPrefectName(int id) {
 }
 
 // 会社・都道府県データ取得（JSON形式）
+// Optimized JSON generation for companies and prefects  
 std::string getCompanyAndPrefectsAsJson() {
     RouteUtility::CompanyPrefectData data = RouteUtility::getCompanyAndPrefects();
-    std::string json = "{";
-    json += "\"companies\":[";
+    std::ostringstream json;
+    
+    json << "{\"companies\":[";
     for (size_t i = 0; i < data.companies.size(); i++) {
-        json += "{\"id\":" + std::to_string(data.companies[i].first) + 
-                ",\"name\":\"" + data.companies[i].second + "\"}";
-        if (i < data.companies.size() - 1) json += ",";
+        if (i > 0) json << ",";
+        json << "{\"id\":" << data.companies[i].first 
+             << ",\"name\":\"" << data.companies[i].second << "\"}";
     }
-    json += "],\"prefects\":[";
+    json << "],\"prefects\":[";
     for (size_t i = 0; i < data.prefects.size(); i++) {
-        json += "{\"id\":" + std::to_string(data.prefects[i].first) + 
-                ",\"name\":\"" + data.prefects[i].second + "\"}";
-        if (i < data.prefects.size() - 1) json += ",";
+        if (i > 0) json << ",";
+        json << "{\"id\":" << data.prefects[i].first
+             << ",\"name\":\"" << data.prefects[i].second << "\"}";
     }
-    json += "]}";
-    return json;
+    json << "]}";
+    return json.str();
 }
 
 // ===== 拡張API: 高度な経路操作関数 =====
@@ -519,16 +499,18 @@ std::string getCurrentRouteAsJson() {
 }
 
 // 経路の詳細情報を取得
+// Optimized JSON generation with stringstream  
 std::string getRouteDetailsAsJson() {
     if (!g_route) return "{}";
     
-    std::string json = "{";
-    json += "\"stationCount\":" + std::to_string(g_route->getRouteCount()) + ",";
-    json += "\"startStationId\":" + std::to_string(g_route->startStationId()) + ",";
-    json += "\"lastStationId\":" + std::to_string(g_route->lastStationId()) + ",";
-    json += "\"isEnd\":" + std::string(g_route->isEnd() ? "true" : "false");
-    json += "}";
-    return json;
+    std::ostringstream json;
+    json << "{"
+         << "\"stationCount\":" << g_route->getRouteCount() << ","
+         << "\"startStationId\":" << g_route->startStationId() << ","
+         << "\"lastStationId\":" << g_route->lastStationId() << ","
+         << "\"isEnd\":" << (g_route->isEnd() ? "true" : "false")
+         << "}";
+    return json.str();
 }
 
 // データベースバージョン取得
@@ -661,26 +643,27 @@ int validateMemoryIntegrity() {
     }
 }
 
-// Get heap statistics as JSON string
+// Get heap statistics as JSON string - Optimized with stringstream
 std::string getHeapStats() {
     size_t used_memory = getMemoryUsage();
     int object_count = getObjectInstanceCount();
     
-    std::string json = "{";
-    json += "\"estimatedMemory\":" + std::to_string(used_memory) + ",";
-    json += "\"peakMemory\":" + std::to_string(memory_state.peak_memory_usage) + ",";
-    json += "\"objectCount\":" + std::to_string(object_count) + ",";
-    json += "\"threshold\":" + std::to_string(memory_state.memory_threshold) + ",";
-    json += "\"monitoringEnabled\":" + std::string(memory_state.monitoring_enabled ? "true" : "false") + ",";
-    json += "\"routeWrappers\":" + std::to_string(object_counters.route_wrapper_count) + ",";
-    json += "\"calcRouteWrappers\":" + std::to_string(object_counters.calc_route_wrapper_count) + ",";
-    json += "\"routeListWrappers\":" + std::to_string(object_counters.route_list_wrapper_count) + ",";
-    json += "\"routeItemWrappers\":" + std::to_string(object_counters.route_item_wrapper_count) + ",";
-    json += "\"routeFlagWrappers\":" + std::to_string(object_counters.route_flag_wrapper_count) + ",";
-    json += "\"fareInfoData\":" + std::to_string(object_counters.fare_info_data_count);
-    json += "}";
+    std::ostringstream json;
+    json << "{"
+         << "\"estimatedMemory\":" << used_memory << ","
+         << "\"peakMemory\":" << memory_state.peak_memory_usage << ","
+         << "\"objectCount\":" << object_count << ","
+         << "\"threshold\":" << memory_state.memory_threshold << ","
+         << "\"monitoringEnabled\":" << (memory_state.monitoring_enabled ? "true" : "false") << ","
+         << "\"routeWrappers\":" << object_counters.route_wrapper_count << ","
+         << "\"calcRouteWrappers\":" << object_counters.calc_route_wrapper_count << ","
+         << "\"routeListWrappers\":" << object_counters.route_list_wrapper_count << ","
+         << "\"routeItemWrappers\":" << object_counters.route_item_wrapper_count << ","
+         << "\"routeFlagWrappers\":" << object_counters.route_flag_wrapper_count << ","
+         << "\"fareInfoData\":" << object_counters.fare_info_data_count
+         << "}";
     
-    return json;
+    return json.str();
 }
 
 // Set memory threshold for warnings
@@ -815,7 +798,7 @@ EMSCRIPTEN_BINDINGS(farert_module) {
     emscripten::function("setLongRoute", &farert_set_long_route);
     emscripten::function("setStartAsCity", &farert_set_start_as_city);
     emscripten::function("setArriveAsCity", &farert_set_arrive_as_city);
-    emscripten::function("debugStations", &debugStationsResult);
+    // Debug functions removed for production optimization
     emscripten::function("test", &farert_test);
     
     // ===== 拡張API: 配列系 (JSON文字列として返す) =====
