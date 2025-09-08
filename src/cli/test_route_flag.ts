@@ -381,9 +381,14 @@ class RouteFlagTestSuite {
             routeFlag1.osakaKanPass = 100;
             
             // Verify properties were set
+            const rule86or87Value = routeFlag1.rule86or87 as number;
+            const rule115Value = routeFlag1.rule115 as number;
+            const urbanNeerestValue = routeFlag1.urban_neerest as number;
+            const osakaKanPassValue = routeFlag1.osakaKanPass as number;
+            
             if (!routeFlag1.rule88 || !routeFlag1.rule69 || !routeFlag1.no_rule ||
-                routeFlag1.rule86or87 !== 15 || routeFlag1.rule115 !== 5 ||
-                routeFlag1.urban_neerest !== 10 || routeFlag1.osakaKanPass !== 100) {
+                rule86or87Value !== 15 || rule115Value !== 5 ||
+                urbanNeerestValue !== 10 || osakaKanPassValue !== 100) {
                 console.log('   ❌ プロパティ設定に失敗');
                 return false;
             }
@@ -392,9 +397,14 @@ class RouteFlagTestSuite {
             routeFlag1.clear();
             
             // Verify all properties were cleared
+            const clearedRule86or87 = routeFlag1.rule86or87 as number;
+            const clearedRule115 = routeFlag1.rule115 as number;
+            const clearedUrbanNeerest = routeFlag1.urban_neerest as number;
+            const clearedOsakaKanPass = routeFlag1.osakaKanPass as number;
+            
             if (routeFlag1.rule88 || routeFlag1.rule69 || routeFlag1.no_rule ||
-                routeFlag1.rule86or87 !== 0 || routeFlag1.rule115 !== 0 ||
-                routeFlag1.urban_neerest !== 0 || routeFlag1.osakaKanPass !== 0) {
+                clearedRule86or87 !== 0 || clearedRule115 !== 0 ||
+                clearedUrbanNeerest !== 0 || clearedOsakaKanPass !== 0) {
                 console.log('   ❌ clear()後にプロパティが残存');
                 return false;
             }
@@ -1233,7 +1243,7 @@ class RouteFlagTestSuite {
                 const isRule69Available = routeFlag.isAvailableRule69();
                 
                 if (this.verbose) {
-                    console.log(`   クリア後メソッド呼び出し結果 - isLongRoute: ${isLongRoute}, isRule115: ${isRule115}`);
+                    console.log(`   クリア後メソッド呼び出し結果 - isLongRoute: ${isLongRoute}, isRule115: ${isRule115}, isStartCity: ${isStartCity}`);
                     console.log(`   可用性チェック結果 - Rule88: ${isRule88Available}, Rule69: ${isRule69Available}`);
                 }
                 
