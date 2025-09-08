@@ -20,6 +20,7 @@ import { performanceMonitor } from './performance_monitor';
 import { executeRouteTest } from './route_test';
 import { executeAutoRoute } from './auto_route';
 import { initializeSignalHandling } from './signal_handler';
+import { ErrorHandlingSystemTests } from './test_error_handling';
 import * as fs from 'fs';
 
 // Import complete test suite (when ready)
@@ -46,6 +47,7 @@ function printUsage(programName: string): void {
     console.error('');
     console.error('OPTIONS:');
     console.error('      -exec     : Execute the complete test suite.');
+    console.error('      -test-error : Execute comprehensive error handling system tests (ROUTE_ERR_001-099)');
     console.error('      -5        : Calculate 5-parameter route (station1 line1 station2 line2 station3)');
     console.error('      -h        : Show help message');
     console.error('      --help    : Show help message');
@@ -67,6 +69,7 @@ function printUsage(programName: string): void {
     console.error('');
     console.error('EXAMPLES:');
     console.error('      node main.js -exec');
+    console.error('      node main.js -test-error');
     console.error('      node main.js -5 東京 東海道線 品川 東海道線 新大阪');
     console.error('      node main.js 東京 東海道線 品川');
     console.error('      node main.js routes.txt');
@@ -131,6 +134,11 @@ function printHelp(): void {
     console.log('  -exec');
     console.log('    Execute complete test suite (equivalent to original test_exec.cpp)');
     console.log('    Runs all validation tests to verify WebAssembly implementation');
+    console.log('');
+    console.log('  -test-error');
+    console.log('    Execute comprehensive error handling system tests (Task 31)');
+    console.log('    Tests all error codes ROUTE_ERR_001-099, fuzzy matching suggestions,');
+    console.log('    error recovery scenarios, and object state consistency validation');
     console.log('');
     console.log('  -5 <station1> <line1> <station2> <line2> <station3>');
     console.log('    Calculate fare for specific 5-parameter route');
@@ -203,6 +211,10 @@ function printHelp(): void {
     console.log('  🌟 Test Suite Execution:');
     console.log('    node main.js -exec');
     console.log('    → Run comprehensive validation test suite');
+    console.log('');
+    console.log('    node main.js -test-error');
+    console.log('    → Run error handling system tests (all ROUTE_ERR_001-099 codes)');
+    console.log('    → Validate fuzzy matching suggestions and error recovery');
     console.log('');
     console.log('  🌟 Format Options:');
     console.log('    node main.js -2 東京 東海道線 大阪  # No special rules');
@@ -1304,6 +1316,39 @@ async function main(): Promise<number> {
                 return 0;
             } catch (error) {
                 console.error('❌ Test execution failed:', error);
+                return -1;
+            }
+        } else if (option === '-test-error') {
+            // Execute comprehensive error handling system tests (Task 31)
+            try {
+                console.log('🚀 Starting comprehensive error handling system tests...');
+                console.log('📋 Testing all error codes ROUTE_ERR_001-099 with fuzzy matching and recovery scenarios');
+                
+                // Monitor error handling test performance
+                performanceMonitor.mark('error_handling_tests_start');
+                
+                const errorHandlingTests = new ErrorHandlingSystemTests(true); // verbose mode for detailed output
+                const success = await errorHandlingTests.executeAll();
+                
+                performanceMonitor.mark('error_handling_tests_end');
+                const measurement = performanceMonitor.measure('error_handling_tests_start', 'error_handling_tests_end');
+                
+                if (success) {
+                    console.log('✅ Error handling system tests completed successfully');
+                    console.log('🎯 All error codes, fuzzy matching, and recovery scenarios validated');
+                } else {
+                    console.log('❌ Some error handling tests failed');
+                }
+                
+                // Report performance if debug mode is enabled
+                if (configManager.getConfiguration().debug && measurement) {
+                    const durationSec = (measurement.duration / 1000).toFixed(2);
+                    console.log(`[PERF] Error handling tests execution: ${durationSec}s`);
+                }
+                
+                return success ? 0 : -1;
+            } catch (error) {
+                console.error('❌ Error handling test execution failed:', error);
                 return -1;
             }
         } else if (option === '-5') {
