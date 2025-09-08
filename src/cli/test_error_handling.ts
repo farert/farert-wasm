@@ -1035,7 +1035,7 @@ export class ErrorHandlingSystemTests {
             ];
             
             for (const testCase of testCases) {
-                const suggestions = getFuzzyStationMatches(testCase.input, this.module);
+                const suggestions = getFuzzyStationMatches(testCase.input, this.module || undefined);
                 
                 // Verify we get up to 3 suggestions
                 if (suggestions.length > 3) {
@@ -1071,7 +1071,7 @@ export class ErrorHandlingSystemTests {
             ];
             
             for (const testCase of testCases) {
-                const suggestions = getFuzzyLineMatches(testCase.input, this.module);
+                const suggestions = getFuzzyLineMatches(testCase.input, this.module || undefined);
                 
                 // Verify we get up to 3 suggestions
                 if (suggestions.length > 3) {
@@ -1108,7 +1108,7 @@ export class ErrorHandlingSystemTests {
                     invalidStations,
                     invalidLines,
                     routeSegment: 0,
-                    module: this.module
+                    module: this.module || undefined
                 }
             );
             
@@ -1310,7 +1310,7 @@ export class ErrorHandlingSystemTests {
                     invalidStations: ['テスト駅'],
                     invalidLines: ['テスト線'],
                     routeSegment: 1,
-                    module: this.module
+                    module: this.module || undefined
                 }
             );
             

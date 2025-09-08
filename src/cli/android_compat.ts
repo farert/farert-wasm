@@ -998,23 +998,5 @@ export class AndroidCompatExample {
 // Exports
 // ===============================
 
-export {
-  AndroidFareInfo,
-  AndroidRouteHelper,
-  AndroidRouteHelperCompat,
-  AndroidSerializationCompat,
-  AndroidCompatibilityValidator,
-  AndroidCompatibilityValidationResult
-};
-
-/**
- * Default export for easy importing
- */
-export default {
-  AndroidFareInfo,
-  AndroidRouteHelper,
-  AndroidRouteHelperCompat,
-  AndroidSerializationCompat,
-  AndroidCompatibilityValidator,
-  AndroidCompatExample
-};
+// Export types and classes are already exported individually above
+// Removing duplicate exports to fix TypeScript compilation conflicts

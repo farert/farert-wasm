@@ -606,7 +606,7 @@ export class AndroidCompatibilityTests {
       isRule114Applied: false,
       availCountForFareOfStockDiscount: 0,
       beginStationId: 1130101, // 東京
-      endStationId: 0110101,   // 札幌
+      endStationId: 110101,   // 札幌
       routeList: '東京 東海道線 上野 東北線 青森 津軽海峡線 函館 函館線 札幌',
       isResultCompanyBeginEnd: true,
       isResultCompanyMultipassed: true,

@@ -197,107 +197,1471 @@ export interface FarertModule {
 }
 
 // Object class interfaces (inheritance: cCalcRoute < cRoute < cRouteList)
+
+/**
+ * RouteListWrapper - Base interface for route list operations
+ * 
+ * This is the foundation class in the inheritance hierarchy: cCalcRoute < cRoute < cRouteList.
+ * Provides basic route container functionality with array-like operations for managing
+ * collections of route segments.
+ * 
+ * @example Basic route list operations
+ * ```typescript
+ * // Create a new route list
+ * const routeList = new module.cRouteList();
+ * 
+ * // Check route boundaries
+ * const startId = routeList.startStationId();  // 東京駅: 1130101
+ * const endId = routeList.lastStationId();     // 新大阪駅: 1160101
+ * 
+ * // Get route description
+ * const description = routeList.routeScript(); // "東京 東海道線 新大阪"
+ * 
+ * // Array-like operations
+ * const itemCount = routeList.count();        // Number of route segments
+ * const firstItem = routeList.at(0);          // First route segment
+ * routeList.remove(1);                        // Remove second segment
+ * ```
+ * 
+ * @example Copying route lists
+ * ```typescript
+ * const originalRoute = new module.cRouteList();
+ * const copyRoute = new module.cRouteList();
+ * 
+ * // Copy all route data from original to copy
+ * copyRoute.assign(originalRoute);
+ * ```
+ * 
+ * @interface RouteListWrapper
+ * @since 1.0.0
+ */
 export interface RouteListWrapper {
+  /**
+   * Get the starting station ID of the route
+   * 
+   * @returns {number} Station ID of the first station in the route
+   * 
+   * @example
+   * ```typescript
+   * const route = new module.cRouteList();
+   * // After building route: 東京 → 新大阪
+   * const startId = route.startStationId(); // 1130101 (東京駅)
+   * ```
+   */
   startStationId(): number;
+  
+  /**
+   * Get the ending station ID of the route
+   * 
+   * @returns {number} Station ID of the last station in the route
+   * 
+   * @example
+   * ```typescript
+   * const route = new module.cRouteList();
+   * // After building route: 東京 → 新大阪
+   * const endId = route.lastStationId(); // 1160101 (新大阪駅)
+   * ```
+   */
   lastStationId(): number;
+  
+  /**
+   * Generate a human-readable description of the route
+   * 
+   * @returns {string} Route description showing stations and lines
+   * 
+   * @example
+   * ```typescript
+   * const route = new module.cRouteList();
+   * // After building route: 東京 → 新大阪 via 東海道線
+   * const script = route.routeScript(); // "東京 東海道線 新大阪"
+   * 
+   * // Complex route with multiple lines:
+   * // 新宿 → 品川 → 新大阪
+   * const complexScript = route.routeScript(); // "新宿 山手線 品川 東海道線 新大阪"
+   * ```
+   */
   routeScript(): string;
   
   // Essential RouteList operations (from CLAUDE.md specifications)
+  
+  /**
+   * Remove all route segments from the list
+   * 
+   * Clears the entire route, resetting it to an empty state. This is equivalent
+   * to creating a new route list.
+   * 
+   * @example
+   * ```typescript
+   * const route = new module.cRouteList();
+   * // Build route: 東京 → 新大阪
+   * route.addRoute(1130101); // 東京
+   * route.addRoute(1160101); // 新大阪
+   * 
+   * console.log(route.count()); // 2
+   * route.removeAll();
+   * console.log(route.count()); // 0
+   * ```
+   */
   removeAll(): void;
+  
+  /**
+   * Copy all route data from another RouteListWrapper
+   * 
+   * Performs a deep copy of all route segments, flags, and settings from the
+   * source route list to this route list.
+   * 
+   * @param {RouteListWrapper} obj - Source route list to copy from
+   * 
+   * @example
+   * ```typescript
+   * const originalRoute = new module.cRouteList();
+   * const copyRoute = new module.cRouteList();
+   * 
+   * // Build original route: 東京 → 大阪
+   * originalRoute.setupRoute("東京 東海道線 大阪");
+   * 
+   * // Copy to new route
+   * copyRoute.assign(originalRoute);
+   * 
+   * console.log(copyRoute.routeScript()); // "東京 東海道線 大阪"
+   * ```
+   */
   assign(obj: RouteListWrapper): void;
   
   // Enhanced array operations (Task 30 requirements)
-  count(): number;                                        // Array size
-  at(index: number): RouteItemWrapper;                    // Array element access with bounds checking
-  remove(index: number): void;                            // Remove element at index
-  insert(index: number, item: RouteItemWrapper): void;    // Insert element at index
+  
+  /**
+   * Get the number of route segments in the list
+   * 
+   * @returns {number} Number of route segments (not stations)
+   * 
+   * @example
+   * ```typescript
+   * const route = new module.cRouteList();
+   * 
+   * // Single segment route: 東京 → 品川
+   * route.setupRoute("東京 山手線 品川");
+   * console.log(route.count()); // 1 (one segment)
+   * 
+   * // Multi-segment route: 新宿 → 品川 → 新大阪
+   * route.setupRoute("新宿 山手線 品川 東海道線 新大阪");
+   * console.log(route.count()); // 2 (two segments)
+   * ```
+   */
+  count(): number;
+  
+  /**
+   * Get route item at specified index with bounds checking
+   * 
+   * @param {number} index - Zero-based index of the route item to retrieve
+   * @returns {RouteItemWrapper} Route item at the specified index
+   * @throws {Error} When index is out of bounds
+   * 
+   * @example
+   * ```typescript
+   * const route = new module.cRouteList();
+   * route.setupRoute("新宿 山手線 品川 東海道線 新大阪");
+   * 
+   * // Get first segment (新宿 → 品川 via 山手線)
+   * const firstSegment = route.at(0);
+   * console.log(firstSegment.lineId);    // 山手線のID
+   * console.log(firstSegment.stationId); // 品川駅のID
+   * 
+   * // Get second segment (品川 → 新大阪 via 東海道線)
+   * const secondSegment = route.at(1);
+   * console.log(secondSegment.lineId);    // 東海道線のID
+   * console.log(secondSegment.stationId); // 新大阪駅のID
+   * ```
+   */
+  at(index: number): RouteItemWrapper;
+  
+  /**
+   * Remove route item at specified index
+   * 
+   * @param {number} index - Zero-based index of the route item to remove
+   * @throws {Error} When index is out of bounds
+   * 
+   * @example
+   * ```typescript
+   * const route = new module.cRouteList();
+   * route.setupRoute("新宿 山手線 品川 東海道線 新大阪");
+   * 
+   * console.log(route.count()); // 2
+   * route.remove(0); // Remove first segment (新宿 → 品川)
+   * console.log(route.count()); // 1
+   * console.log(route.routeScript()); // "品川 東海道線 新大阪"
+   * ```
+   */
+  remove(index: number): void;
+  
+  /**
+   * Insert route item at specified index
+   * 
+   * @param {number} index - Zero-based index where to insert the route item
+   * @param {RouteItemWrapper} item - Route item to insert
+   * @throws {Error} When index is out of bounds
+   * 
+   * @example
+   * ```typescript
+   * const route = new module.cRouteList();
+   * const newItem = new module.cRouteItem();
+   * newItem.stationId = 1130601; // 品川駅
+   * newItem.lineId = 11302;      // 山手線
+   * 
+   * route.setupRoute("東京 東海道線 新大阪");
+   * route.insert(0, newItem); // Insert at beginning
+   * console.log(route.routeScript()); // Now includes 品川 segment
+   * ```
+   */
+  insert(index: number, item: RouteItemWrapper): void;
 }
 
+/**
+ * RouteWrapper - Enhanced route building and management interface
+ * 
+ * Extends RouteListWrapper with advanced route construction capabilities including
+ * automatic routing, route reversal, and complex route setup from string descriptions.
+ * This is the intermediate class in the hierarchy: cCalcRoute < cRoute < cRouteList.
+ * 
+ * @example Basic route construction
+ * ```typescript
+ * const route = new module.cRoute();
+ * 
+ * // Method 1: Add stations one by one
+ * route.addRoute(1130101); // 東京駅
+ * route.addRoute(1130601); // 品川駅
+ * route.addRoute(1160101); // 新大阪駅
+ * 
+ * // Method 2: Add with specific line
+ * route.addRouteWithLine(11301, 1130601); // 山手線で品川へ
+ * 
+ * console.log(route.routeScript()); // "東京 山手線 品川 東海道線 新大阪"
+ * ```
+ * 
+ * @example Route setup from string
+ * ```typescript
+ * const route = new module.cRoute();
+ * 
+ * // Parse complete route description
+ * route.setupRoute("新宿 山手線 品川 東海道線 新大阪");
+ * 
+ * console.log(route.getRouteCount());     // 2 segments
+ * console.log(route.startStationId());    // 新宿駅ID
+ * console.log(route.lastStationId());     // 新大阪駅ID
+ * ```
+ * 
+ * @example Auto-routing and reversal
+ * ```typescript
+ * const route = new module.cRoute();
+ * route.addRoute(1130101); // 東京
+ * route.addRoute(1160101); // 新大阪
+ * 
+ * // Let system find optimal route
+ * const autoResult = route.autoRoute();
+ * if (autoResult === 0) {
+ *   console.log("Auto-routing successful");
+ *   console.log(route.routeScript());
+ * }
+ * 
+ * // Reverse the route direction
+ * if (route.isReverseAllow()) {
+ *   route.reverseRoute();
+ *   console.log("Reversed:", route.routeScript());
+ * }
+ * ```
+ * 
+ * @interface RouteWrapper
+ * @extends RouteListWrapper
+ * @since 1.0.0
+ */
 export interface RouteWrapper extends RouteListWrapper {
+  /**
+   * Add a station to the route using automatic line selection
+   * 
+   * Adds a station to the route allowing the system to automatically select
+   * the most appropriate line connecting to the previous station. This is the
+   * simplified version of route building.
+   * 
+   * @param {number} stationId - Station ID to add to the route
+   * @returns {number} Result code (0 = success, non-zero = error)
+   * 
+   * @example Build route with automatic line selection
+   * ```typescript
+   * const route = new module.cRoute();
+   * 
+   * // Build route: 東京 → 品川 → 新大阪
+   * let result = route.addRoute(1130101); // 東京駅
+   * console.log(`東京追加: ${result}`);     // 0 (success)
+   * 
+   * result = route.addRoute(1130601);     // 品川駅 (system selects 山手線 or 東海道線)
+   * console.log(`品川追加: ${result}`);     // 0 (success)
+   * 
+   * result = route.addRoute(1160101);     // 新大阪駅 (system selects 東海道線)
+   * console.log(`新大阪追加: ${result}`);   // 0 (success)
+   * 
+   * console.log(route.routeScript());     // Shows selected route
+   * ```
+   * 
+   * @example Error handling for unreachable stations
+   * ```typescript
+   * const route = new module.cRoute();
+   * route.addRoute(1130101); // 東京駅
+   * 
+   * // Try to add unreachable station
+   * const result = route.addRoute(9999999); // Invalid station ID
+   * if (result !== 0) {
+   *   console.log(`エラー: 駅を追加できませんでした (code: ${result})`);
+   * }
+   * ```
+   */
   addRoute(stationId: number): number;
+  
+  /**
+   * Add a station to the route using specific line selection
+   * 
+   * Adds a station to the route using the specified line ID. This method
+   * provides precise control over the routing path when multiple lines
+   * connect the same stations.
+   * 
+   * @param {number} lineId - Line ID to use for reaching the station
+   * @param {number} stationId - Station ID to add to the route
+   * @returns {number} Result code (0 = success, non-zero = error)
+   * 
+   * @example Precise route control with specific lines
+   * ```typescript
+   * const route = new module.cRoute();
+   * route.addRoute(1130101); // 東京駅
+   * 
+   * // Force use of 山手線 to reach 品川 (instead of 東海道線)
+   * let result = route.addRouteWithLine(11302, 1130601); // 山手線, 品川駅
+   * console.log(`山手線経由品川: ${result}`);
+   * 
+   * // Then use 東海道線 to reach 新大阪
+   * result = route.addRouteWithLine(11301, 1160101);     // 東海道線, 新大阪駅
+   * console.log(`東海道線経由新大阪: ${result}`);
+   * 
+   * console.log(route.routeScript()); // "東京 山手線 品川 東海道線 新大阪"
+   * ```
+   * 
+   * @example Compare routing options
+   * ```typescript
+   * const viaYamanote = new module.cRoute();
+   * const viaTokaido = new module.cRoute();
+   * 
+   * // Route 1: 東京 → 品川 via 山手線
+   * viaYamanote.addRoute(1130101);                        // 東京
+   * viaYamanote.addRouteWithLine(11302, 1130601);         // 山手線 → 品川
+   * 
+   * // Route 2: 東京 → 品川 via 東海道線
+   * viaTokaido.addRoute(1130101);                         // 東京
+   * viaTokaido.addRouteWithLine(11301, 1130601);          // 東海道線 → 品川
+   * 
+   * console.log("山手線経由:", viaYamanote.routeScript());
+   * console.log("東海道線経由:", viaTokaido.routeScript());
+   * ```
+   */
   addRouteWithLine(lineId: number, stationId: number): number;
+  
+  /**
+   * Remove the last station from the route
+   * 
+   * Removes the final station and its connecting line segment from the route.
+   * Useful for correcting mistakes or dynamically modifying routes.
+   * 
+   * @example Route correction
+   * ```typescript
+   * const route = new module.cRoute();
+   * 
+   * // Build route: 東京 → 品川 → 新大阪
+   * route.addRoute(1130101); // 東京
+   * route.addRoute(1130601); // 品川
+   * route.addRoute(1160101); // 新大阪
+   * 
+   * console.log(route.getRouteCount());  // 2 segments
+   * console.log(route.routeScript());    // "東京 ... 新大阪"
+   * 
+   * // Remove 新大阪, go to 横浜 instead
+   * route.removeTail();
+   * console.log(route.getRouteCount());  // 1 segment
+   * 
+   * route.addRoute(1130801);             // 横浜駅
+   * console.log(route.routeScript());    // "東京 ... 横浜"
+   * ```
+   * 
+   * @example Route building with backtracking
+   * ```typescript
+   * const route = new module.cRoute();
+   * route.addRoute(1130101); // 東京
+   * 
+   * // Try different destinations
+   * route.addRoute(1130601); // 品川
+   * console.log("Route 1:", route.routeScript());
+   * 
+   * route.removeTail();      // Remove 品川
+   * route.addRoute(1130701); // 渋谷
+   * console.log("Route 2:", route.routeScript());
+   * ```
+   */
   removeTail(): void;
+  
+  /**
+   * Automatically find the optimal route between start and end stations
+   * 
+   * Uses pathfinding algorithms to automatically determine the best route
+   * between the first and last stations added to the route. This method
+   * clears any intermediate stations and rebuilds the route optimally.
+   * 
+   * @returns {number} Result code (0 = success, non-zero = error)
+   * 
+   * @example Automatic route finding
+   * ```typescript
+   * const route = new module.cRoute();
+   * 
+   * // Set start and end points
+   * route.addRoute(1130101); // 東京駅
+   * route.addRoute(1160101); // 新大阪駅
+   * 
+   * // Let system find optimal route
+   * const result = route.autoRoute();
+   * if (result === 0) {
+   *   console.log("自動経路探索成功");
+   *   console.log(route.routeScript()); // Optimal route found
+   *   console.log(`経路数: ${route.getRouteCount()}`);
+   * } else {
+   *   console.log(`自動経路探索失敗: ${result}`);
+   * }
+   * ```
+   * 
+   * @example Long-distance auto-routing
+   * ```typescript
+   * const route = new module.cRoute();
+   * 
+   * // Complex long-distance route
+   * route.addRoute(1010101); // 札幌駅
+   * route.addRoute(4610101); // 鹿児島中央駅
+   * 
+   * const result = route.autoRoute();
+   * if (result === 0) {
+   *   console.log("長距離自動経路:");
+   *   console.log(route.routeScript());
+   *   
+   *   // Check each segment
+   *   const count = route.getRouteCount();
+   *   for (let i = 0; i < count; i++) {
+   *     const item = route.getRouteItem(i);
+   *     console.log(`区間${i+1}: Line${item.lineId} → Station${item.stationId}`);
+   *   }
+   * }
+   * ```
+   */
   autoRoute(): number;
+  
+  /**
+   * Reverse the direction of the current route
+   * 
+   * Swaps the start and end stations and reverses all intermediate stations
+   * to create the return journey route. Only works if the route is reversible.
+   * 
+   * @returns {number} Result code (0 = success, non-zero = error/not reversible)
+   * 
+   * @example Route reversal
+   * ```typescript
+   * const route = new module.cRoute();
+   * route.setupRoute("東京 東海道線 新大阪");
+   * 
+   * console.log("往路:", route.routeScript()); // "東京 東海道線 新大阪"
+   * 
+   * if (route.isReverseAllow()) {
+   *   const result = route.reverseRoute();
+   *   if (result === 0) {
+   *     console.log("復路:", route.routeScript()); // "新大阪 東海道線 東京"
+   *   }
+   * } else {
+   *   console.log("この経路は復路作成できません");
+   * }
+   * ```
+   * 
+   * @example Complex route reversal
+   * ```typescript
+   * const route = new module.cRoute();
+   * route.setupRoute("新宿 中央線 東京 東海道線 横浜");
+   * 
+   * console.log("往路:", route.routeScript());
+   * 
+   * const reverseResult = route.reverseRoute();
+   * if (reverseResult === 0) {
+   *   console.log("復路:", route.routeScript()); // "横浜 東海道線 東京 中央線 新宿"
+   * }
+   * ```
+   */
   reverseRoute(): number;
+  
+  /**
+   * Parse and setup route from string description
+   * 
+   * Parses a route description string in the format "駅名 路線名 駅名 路線名 駅名"
+   * and builds the complete route automatically. This is the most convenient
+   * method for creating routes from user input.
+   * 
+   * @param {string} route - Route description string in Japanese
+   * @throws {Error} When route string format is invalid or stations/lines not found
+   * 
+   * @example Basic route setup
+   * ```typescript
+   * const route = new module.cRoute();
+   * 
+   * // Simple route: 東京 → 品川
+   * route.setupRoute("東京 山手線 品川");
+   * console.log(route.routeScript()); // "東京 山手線 品川"
+   * console.log(route.getRouteCount()); // 1 segment
+   * ```
+   * 
+   * @example Multi-segment route setup
+   * ```typescript
+   * const route = new module.cRoute();
+   * 
+   * // Complex route: 新宿 → 東京 → 横浜
+   * route.setupRoute("新宿 中央線 東京 東海道線 横浜");
+   * 
+   * console.log(route.getRouteCount()); // 2 segments
+   * console.log(route.startStationId()); // 新宿駅ID
+   * console.log(route.lastStationId());  // 横浜駅ID
+   * 
+   * // Access individual segments
+   * const segment1 = route.getRouteItem(0); // 新宿 → 東京 via 中央線
+   * const segment2 = route.getRouteItem(1); // 東京 → 横浜 via 東海道線
+   * ```
+   * 
+   * @example Error handling for invalid routes
+   * ```typescript
+   * const route = new module.cRoute();
+   * 
+   * try {
+   *   // Invalid station name
+   *   route.setupRoute("無効駅 山手線 東京");
+   * } catch (error) {
+   *   console.log(`経路設定エラー: ${error.message}`);
+   * }
+   * 
+   * try {
+   *   // Invalid line name
+   *   route.setupRoute("東京 無効線 品川");
+   * } catch (error) {
+   *   console.log(`路線設定エラー: ${error.message}`);
+   * }
+   * ```
+   */
   setupRoute(route: string): void;
+  
+  /**
+   * Enable or disable detour routing
+   * 
+   * Controls whether the routing algorithm should consider detour paths
+   * when building routes. When enabled, may find alternative routes that
+   * avoid certain lines or stations.
+   * 
+   * @param {boolean} flag - true to enable detour routing, false to disable
+   * 
+   * @example Enable detour for alternative routing
+   * ```typescript
+   * const directRoute = new module.cRoute();
+   * const detourRoute = new module.cRoute();
+   * 
+   * // Direct route
+   * directRoute.setDetour(false);
+   * directRoute.addRoute(1130101); // 東京
+   * directRoute.addRoute(1160101); // 新大阪
+   * directRoute.autoRoute();
+   * console.log("直通:", directRoute.routeScript());
+   * 
+   * // Detour route (may find alternatives)
+   * detourRoute.setDetour(true);
+   * detourRoute.addRoute(1130101); // 東京
+   * detourRoute.addRoute(1160101); // 新大阪
+   * detourRoute.autoRoute();
+   * console.log("迂回:", detourRoute.routeScript());
+   * ```
+   */
   setDetour(flag: boolean): void;
+  
+  /**
+   * Enable or disable special fare rules processing
+   * 
+   * Controls whether special fare rules (Rule 88, Rule 114, etc.) should
+   * be considered during route planning and fare calculation.
+   * 
+   * @param {boolean} flag - true to disable all rules, false to enable rules
+   * 
+   * @example Compare with and without special rules
+   * ```typescript
+   * const normalRoute = new module.cRoute();
+   * const noRuleRoute = new module.cRoute();
+   * 
+   * // Normal route with special rules
+   * normalRoute.setNoRule(false);
+   * normalRoute.setupRoute("東京 東海道線 新大阪");
+   * 
+   * // Route without special rules
+   * noRuleRoute.setNoRule(true);
+   * noRuleRoute.setupRoute("東京 東海道線 新大阪");
+   * 
+   * console.log("通常ルール適用:", normalRoute.routeScript());
+   * console.log("特別ルール無効:", noRuleRoute.routeScript());
+   * ```
+   */
   setNoRule(flag: boolean): void;
+  
+  /**
+   * Get the total number of route segments
+   * 
+   * Returns the number of line segments in the current route. Each segment
+   * represents a connection between two stations via a specific line.
+   * 
+   * @returns {number} Number of route segments (not stations)
+   * 
+   * @example Count route segments
+   * ```typescript
+   * const route = new module.cRoute();
+   * 
+   * // Single segment: 東京 → 品川
+   * route.setupRoute("東京 山手線 品川");
+   * console.log(route.getRouteCount()); // 1 segment
+   * 
+   * // Two segments: 新宿 → 東京 → 品川
+   * route.setupRoute("新宿 中央線 東京 山手線 品川");
+   * console.log(route.getRouteCount()); // 2 segments
+   * 
+   * // Three segments: 渋谷 → 新宿 → 東京 → 品川
+   * route.setupRoute("渋谷 山手線 新宿 中央線 東京 山手線 品川");
+   * console.log(route.getRouteCount()); // 3 segments
+   * ```
+   */
   getRouteCount(): number;
+  
+  /**
+   * Get route item (segment) at specified index
+   * 
+   * Returns detailed information about a specific route segment including
+   * station ID, line ID, and segment-specific data.
+   * 
+   * @param {number} index - Zero-based index of the route segment
+   * @returns {RouteItemWrapper} Route item containing segment details
+   * @throws {Error} When index is out of bounds
+   * 
+   * @example Access route segments
+   * ```typescript
+   * const route = new module.cRoute();
+   * route.setupRoute("新宿 中央線 東京 東海道線 横浜");
+   * 
+   * const segmentCount = route.getRouteCount(); // 2
+   * 
+   * // Get first segment: 新宿 → 東京 via 中央線
+   * const segment1 = route.getRouteItem(0);
+   * console.log(`区間1: Line ${segment1.lineId} → Station ${segment1.stationId}`);
+   * 
+   * // Get second segment: 東京 → 横浜 via 東海道線
+   * const segment2 = route.getRouteItem(1);
+   * console.log(`区間2: Line ${segment2.lineId} → Station ${segment2.stationId}`);
+   * ```
+   * 
+   * @example Iterate through all segments
+   * ```typescript
+   * const route = new module.cRoute();
+   * route.setupRoute("渋谷 山手線 新宿 中央線 東京 東海道線 品川");
+   * 
+   * for (let i = 0; i < route.getRouteCount(); i++) {
+   *   const item = route.getRouteItem(i);
+   *   console.log(`区間${i+1}: ${item.getDisplayName()}`);
+   * }
+   * ```
+   */
   getRouteItem(index: number): RouteItemWrapper;
+  
+  /**
+   * Get the line ID of the last route segment
+   * 
+   * Returns the line ID used in the final segment of the route.
+   * Useful for determining which line the route ends on.
+   * 
+   * @returns {number} Line ID of the last route segment
+   * 
+   * @example Check final line
+   * ```typescript
+   * const route = new module.cRoute();
+   * route.setupRoute("新宿 中央線 東京 東海道線 品川");
+   * 
+   * const finalLineId = route.lastLineId();
+   * console.log(`最終路線ID: ${finalLineId}`); // 東海道線のID
+   * 
+   * // Compare with first segment line
+   * const firstItem = route.getRouteItem(0);
+   * console.log(`最初路線ID: ${firstItem.lineId}`); // 中央線のID
+   * ```
+   */
   lastLineId(): number;
+  
+  /**
+   * Check if the current route can be reversed
+   * 
+   * Determines whether the route is reversible based on the lines and
+   * stations used. Some routes may not be reversible due to directional
+   * restrictions or line configurations.
+   * 
+   * @returns {boolean} true if route can be reversed, false otherwise
+   * 
+   * @example Check route reversibility
+   * ```typescript
+   * const route = new module.cRoute();
+   * route.setupRoute("東京 東海道線 新大阪");
+   * 
+   * if (route.isReverseAllow()) {
+   *   console.log("この経路は復路作成可能");
+   *   const reverseResult = route.reverseRoute();
+   *   if (reverseResult === 0) {
+   *     console.log("復路:", route.routeScript());
+   *   }
+   * } else {
+   *   console.log("この経路は復路作成不可");
+   * }
+   * ```
+   * 
+   * @example Handle non-reversible routes
+   * ```typescript
+   * const route = new module.cRoute();
+   * // Some complex routes may not be reversible
+   * route.setupRoute("複雑な経路...");
+   * 
+   * if (!route.isReverseAllow()) {
+   *   console.log("復路を手動で作成する必要があります");
+   *   // Create return route manually
+   * }
+   * ```
+   */
   isReverseAllow(): boolean;
+  
+  /**
+   * Check if the route is complete/finalized
+   * 
+   * Determines whether the route building process is complete and
+   * the route is ready for fare calculation.
+   * 
+   * @returns {boolean} true if route is complete, false if still building
+   * 
+   * @example Check route completion
+   * ```typescript
+   * const route = new module.cRoute();
+   * 
+   * console.log(route.isEnd()); // true (empty route is "ended")
+   * 
+   * route.addRoute(1130101); // 東京
+   * console.log(route.isEnd()); // false (still building)
+   * 
+   * route.addRoute(1130601); // 品川
+   * console.log(route.isEnd()); // false (could add more)
+   * 
+   * // After finalizing route somehow
+   * // console.log(route.isEnd()); // true (route complete)
+   * ```
+   */
   isEnd(): boolean;
 }
 
+/**
+ * CalcRouteWrapper - Advanced fare calculation and route optimization interface
+ * 
+ * The top-level interface in the inheritance hierarchy: cCalcRoute < cRoute < cRouteList.
+ * Provides comprehensive fare calculation capabilities including special rules, discounts,
+ * long-distance routing, and city-to-city pricing optimization.
+ * 
+ * @example Basic fare calculation
+ * ```typescript
+ * const calcRoute = new module.cCalcRoute();
+ * 
+ * // Build route: 東京 → 新大阪 via 東海道線
+ * calcRoute.setupRoute("東京 東海道線 新大阪");
+ * 
+ * // Calculate fare with default settings
+ * const fareInfo = calcRoute.calcFare();
+ * console.log(`運賃: ${fareInfo.fare}円`); // "運賃: 8910円"
+ * 
+ * // Display formatted fare information
+ * const fareDisplay = calcRoute.showFare();
+ * console.log(fareDisplay); // "東京→新大阪 8910円 (東海道線)"
+ * ```
+ * 
+ * @example Long-distance route optimization
+ * ```typescript
+ * const calcRoute = new module.cCalcRoute();
+ * 
+ * // Enable long-distance routing for complex routes
+ * calcRoute.setLongRoute(true);
+ * 
+ * // Build complex route: 札幌 → 鹿児島中央
+ * calcRoute.addRoute(1010101); // 札幌
+ * calcRoute.addRoute(4610101); // 鹿児島中央
+ * calcRoute.autoRoute();        // Auto-find optimal routing
+ * 
+ * console.log(`Long route enabled: ${calcRoute.isEnableLongRoute()}`); // true
+ * 
+ * const fareInfo = calcRoute.calcFare();
+ * console.log(`長距離運賃: ${fareInfo.fare}円`);
+ * console.log(`適用規則: Rule114=${fareInfo.isRule114Applied}`);
+ * ```
+ * 
+ * @example City-to-city fare optimization
+ * ```typescript
+ * const calcRoute = new module.cCalcRoute();
+ * 
+ * // Enable city-to-city pricing (特定都区市内)
+ * calcRoute.setStartAsCity();  // 出発駅を都区市内扱い
+ * calcRoute.setArriveAsCity(); // 到着駅を都区市内扱い
+ * 
+ * // Route: 東京都区内 → 大阪市内
+ * calcRoute.setupRoute("東京 東海道線 新大阪");
+ * 
+ * const fareInfo = calcRoute.calcFare();
+ * const fareJson = calcRoute.calcFareJson();
+ * console.log(`都区市内運賃: ${fareInfo.fare}円`);
+ * 
+ * // JSON contains detailed fare breakdown
+ * const parsed = JSON.parse(fareJson);
+ * console.log(`特定都区市内適用: ${parsed.cityFareApplied}`);
+ * ```
+ * 
+ * @example Stock discount and special fares
+ * ```typescript
+ * const calcRoute = new module.cCalcRoute();
+ * 
+ * // Build route eligible for stock discounts
+ * calcRoute.setupRoute("東京 東海道線 名古屋");
+ * 
+ * const fareInfo = calcRoute.calcFare();
+ * 
+ * // Check for available stock discounts
+ * if (fareInfo.availCountForFareOfStockDiscount > 0) {
+ *   console.log(`割引運賃数: ${fareInfo.availCountForFareOfStockDiscount}`);
+ *   
+ *   // Get specific discount fares
+ *   for (let i = 0; i < fareInfo.availCountForFareOfStockDiscount; i++) {
+ *     const discountFare = fareInfo.fareForStockDiscount(i);
+ *     const discountTitle = fareInfo.fareForStockDiscountTitle(i);
+ *     console.log(`${discountTitle}: ${discountFare}円`);
+ *   }
+ * }
+ * ```
+ * 
+ * @interface CalcRouteWrapper
+ * @extends RouteWrapper
+ * @since 1.0.0
+ */
 export interface CalcRouteWrapper extends RouteWrapper {
+  /**
+   * Calculate the complete fare information for the current route
+   * 
+   * Executes comprehensive fare calculation including base fare, special rules,
+   * stock discounts, and any applicable surcharges. This is the primary method
+   * for obtaining detailed fare information.
+   * 
+   * @returns {FareInfoData} Complete fare calculation results with all details
+   * 
+   * @example Basic fare calculation
+   * ```typescript
+   * const calcRoute = new module.cCalcRoute();
+   * calcRoute.setupRoute("新宿 中央線 東京");
+   * 
+   * const fareInfo = calcRoute.calcFare();
+   * console.log(`運賃: ${fareInfo.fare}円`);           // 160円
+   * console.log(`計算結果: ${fareInfo.result}`);        // 0 (成功)
+   * console.log(`出発駅: ${fareInfo.beginStationId}`);  // 新宿駅ID
+   * console.log(`到着駅: ${fareInfo.endStationId}`);    // 東京駅ID
+   * ```
+   * 
+   * @example Complex fare with special rules
+   * ```typescript
+   * const calcRoute = new module.cCalcRoute();
+   * calcRoute.setupRoute("品川 東海道線 熱海 東海道線 沼津");
+   * 
+   * const fareInfo = calcRoute.calcFare();
+   * if (fareInfo.isRule114Applied) {
+   *   console.log("Rule 114 (長距離逓減) が適用されました");
+   * }
+   * 
+   * console.log(`経路: ${fareInfo.routeList}`);
+   * ```
+   */
   calcFare(): FareInfoData;
+  
+  /**
+   * Calculate fare and return results as JSON string
+   * 
+   * Convenience method that performs fare calculation and returns the complete
+   * results serialized as a JSON string. Useful for API responses and data storage.
+   * 
+   * @returns {string} JSON string containing complete fare calculation results
+   * 
+   * @example JSON fare calculation
+   * ```typescript
+   * const calcRoute = new module.cCalcRoute();
+   * calcRoute.setupRoute("渋谷 山手線 新橋 東海道線 川崎");
+   * 
+   * const fareJson = calcRoute.calcFareJson();
+   * const fareData = JSON.parse(fareJson);
+   * 
+   * console.log(`運賃: ${fareData.fare}円`);
+   * console.log(`経路: ${fareData.routeList}`);
+   * console.log(`規則適用: ${fareData.isRule114Applied}`);
+   * ```
+   * 
+   * @example API response usage
+   * ```typescript
+   * // Express.js API endpoint example
+   * app.get('/api/fare/:route', (req, res) => {
+   *   const calcRoute = new module.cCalcRoute();
+   *   calcRoute.setupRoute(req.params.route);
+   *   
+   *   const fareJson = calcRoute.calcFareJson();
+   *   res.setHeader('Content-Type', 'application/json');
+   *   res.send(fareJson);
+   * });
+   * ```
+   */
   calcFareJson(): string;
+  
+  /**
+   * Generate human-readable fare display string
+   * 
+   * Creates a formatted string showing the route and fare information in a
+   * user-friendly format suitable for display in applications.
+   * 
+   * @returns {string} Formatted fare display string in Japanese
+   * 
+   * @example Basic fare display
+   * ```typescript
+   * const calcRoute = new module.cCalcRoute();
+   * calcRoute.setupRoute("上野 山手線 東京");
+   * 
+   * const display = calcRoute.showFare();
+   * console.log(display); // "上野→東京 160円 (山手線)"
+   * ```
+   * 
+   * @example Complex route display
+   * ```typescript
+   * const calcRoute = new module.cCalcRoute();
+   * calcRoute.setupRoute("新宿 中央線 東京 東海道線 横浜");
+   * 
+   * const display = calcRoute.showFare();
+   * console.log(display); // "新宿→横浜 550円 (中央線・東海道線)"
+   * ```
+   */
   showFare(): string;
+  
+  /**
+   * Check if long-distance routing is currently enabled
+   * 
+   * Returns the current state of long-distance routing mode, which affects
+   * how complex routes are calculated and optimized.
+   * 
+   * @returns {boolean} true if long-distance routing is enabled, false otherwise
+   * 
+   * @example Check long route status
+   * ```typescript
+   * const calcRoute = new module.cCalcRoute();
+   * console.log(calcRoute.isEnableLongRoute()); // false (default)
+   * 
+   * calcRoute.setLongRoute(true);
+   * console.log(calcRoute.isEnableLongRoute()); // true
+   * ```
+   */
   isEnableLongRoute(): boolean;
+  
+  /**
+   * Enable or disable long-distance routing optimization
+   * 
+   * Controls whether the route calculation should use long-distance optimization
+   * algorithms. When enabled, the system can find more complex routing patterns
+   * and apply long-distance fare rules like Rule 114.
+   * 
+   * @param {boolean} flag - true to enable long-distance routing, false to disable
+   * 
+   * @example Enable for cross-country routes
+   * ```typescript
+   * const calcRoute = new module.cCalcRoute();
+   * 
+   * // For long routes like 東京 → 鹿児島, enable optimization
+   * calcRoute.setLongRoute(true);
+   * calcRoute.setupRoute("東京 東海道線 京都 山陽線 広島 鹿児島線 鹿児島中央");
+   * 
+   * const fareInfo = calcRoute.calcFare();
+   * console.log(`長距離運賃: ${fareInfo.fare}円`);
+   * ```
+   * 
+   * @example Disable for local routes
+   * ```typescript
+   * const calcRoute = new module.cCalcRoute();
+   * 
+   * // For local routes, standard calculation is sufficient
+   * calcRoute.setLongRoute(false);
+   * calcRoute.setupRoute("渋谷 山手線 新宿");
+   * 
+   * const fareInfo = calcRoute.calcFare();
+   * console.log(`近距離運賃: ${fareInfo.fare}円`); // 160円
+   * ```
+   */
   setLongRoute(flag: boolean): void;
+  
+  /**
+   * Set departure station to be treated as city area (特定都区市内)
+   * 
+   * Enables special city-area pricing for the departure station. When enabled,
+   * fares are calculated as if departing from the entire city area rather than
+   * the specific station, often resulting in simplified pricing.
+   * 
+   * @example Tokyo Metropolitan Area departure
+   * ```typescript
+   * const calcRoute = new module.cCalcRoute();
+   * 
+   * // Treat departure as "東京都区内" instead of specific station
+   * calcRoute.setStartAsCity();
+   * calcRoute.setupRoute("東京 東海道線 大阪");
+   * 
+   * const fareInfo = calcRoute.calcFare();
+   * console.log("東京都区内発として計算されました");
+   * console.log(`運賃: ${fareInfo.fare}円`);
+   * ```
+   * 
+   * @example Compare city vs station pricing
+   * ```typescript
+   * const stationRoute = new module.cCalcRoute();
+   * const cityRoute = new module.cCalcRoute();
+   * 
+   * // Station-specific pricing
+   * stationRoute.setupRoute("品川 東海道線 新大阪");
+   * const stationFare = stationRoute.calcFare();
+   * 
+   * // City-area pricing
+   * cityRoute.setStartAsCity();
+   * cityRoute.setupRoute("品川 東海道線 新大阪");
+   * const cityFare = cityRoute.calcFare();
+   * 
+   * console.log(`駅発: ${stationFare.fare}円`);
+   * console.log(`都区内発: ${cityFare.fare}円`);
+   * ```
+   */
   setStartAsCity(): void;
+  
+  /**
+   * Set arrival station to be treated as city area (特定都区市内)
+   * 
+   * Enables special city-area pricing for the arrival station. When enabled,
+   * fares are calculated as if arriving at the entire city area rather than
+   * the specific station.
+   * 
+   * @example Osaka City Area arrival
+   * ```typescript
+   * const calcRoute = new module.cCalcRoute();
+   * 
+   * // Treat arrival as "大阪市内" instead of specific station
+   * calcRoute.setArriveAsCity();
+   * calcRoute.setupRoute("東京 東海道線 新大阪");
+   * 
+   * const fareInfo = calcRoute.calcFare();
+   * console.log("大阪市内着として計算されました");
+   * console.log(`運賃: ${fareInfo.fare}円`);
+   * ```
+   * 
+   * @example City-to-city pricing
+   * ```typescript
+   * const calcRoute = new module.cCalcRoute();
+   * 
+   * // Enable both city area pricing
+   * calcRoute.setStartAsCity();
+   * calcRoute.setArriveAsCity();
+   * calcRoute.setupRoute("東京 東海道線 新大阪");
+   * 
+   * const fareInfo = calcRoute.calcFare();
+   * console.log("東京都区内→大阪市内として計算");
+   * console.log(`都市間運賃: ${fareInfo.fare}円`);
+   * ```
+   */
   setArriveAsCity(): void;
 }
 
 /**
- * RouteItemWrapper interface representing a single route item/segment
- * Based on CLAUDE.md specifications and C++ cRouteItem class
+ * RouteItemWrapper - Individual route segment with detailed station and line information
  * 
- * This interface wraps the C++ cRouteItem class and provides type-safe access
- * to route segment information including station, line, fare, and distance data.
+ * Represents a single segment in a railway route containing station, line, fare, and
+ * distance data. Based on CLAUDE.md specifications and C++ cRouteItem class.
+ * This interface provides type-safe access to route segment information used in
+ * fare calculations and route display.
+ * 
+ * @example Basic route item usage
+ * ```typescript
+ * const route = new module.cRoute();
+ * route.setupRoute("東京 山手線 品川 東海道線 横浜");
+ * 
+ * // Get first segment: 東京 → 品川 via 山手線
+ * const item1 = route.getRouteItem(0);
+ * console.log(`駅ID: ${item1.stationId}`);     // 品川駅のID
+ * console.log(`路線ID: ${item1.lineId}`);      // 山手線のID
+ * console.log(`運賃: ${item1.fare}円`);        // 区間運賃
+ * console.log(`距離: ${item1.salesKm}km`);     // 営業キロ
+ * 
+ * // Get display information
+ * console.log(item1.getDisplayName());        // "品川 (山手線)"
+ * console.log(item1.toString());              // Debug information
+ * ```
+ * 
+ * @example Route analysis and debugging
+ * ```typescript
+ * const route = new module.cRoute();
+ * route.setupRoute("新宿 中央線 東京 東海道線 新大阪");
+ * 
+ * console.log("Route Analysis:");
+ * for (let i = 0; i < route.getRouteCount(); i++) {
+ *   const item = route.getRouteItem(i);
+ *   
+ *   if (item.isValid()) {
+ *     console.log(`区間 ${i+1}:`);
+ *     console.log(`  到着駅: ${item.stationId}`);
+ *     console.log(`  使用路線: ${item.lineId}`);
+ *     console.log(`  区間運賃: ${item.fare}円`);
+ *     console.log(`  営業キロ: ${item.salesKm}km`);
+ *     console.log(`  フラグ: 0x${item.flag.toString(16)}`);
+ *     console.log(`  表示名: ${item.getDisplayName()}`);
+ *   } else {
+ *     console.log(`区間 ${i+1}: 無効なデータ`);
+ *   }
+ * }
+ * ```
+ * 
+ * @example Flag analysis for special conditions
+ * ```typescript
+ * const route = new module.cRoute();
+ * route.setupRoute("東京 東海道線 新大阪"); // Long distance route
+ * 
+ * const item = route.getRouteItem(0);
+ * 
+ * // Check for special routing flags
+ * if (item.flag & 0x01) console.log("特別ルール適用");
+ * if (item.flag & 0x02) console.log("新幹線区間");
+ * if (item.flag & 0x04) console.log("特定都区市内");
+ * 
+ * // Aggregate route analysis
+ * if (item.indexOfAggregate >= 0) {
+ *   console.log(`集約経路の一部 (index: ${item.indexOfAggregate})`);
+ * }
+ * ```
+ * 
+ * @interface RouteItemWrapper
+ * @since 1.0.0
  */
 export interface RouteItemWrapper {
   /**
    * Station ID at this route point
-   * @type {number} Station identifier from database
+   * 
+   * Identifies the destination station for this route segment. This is the station
+   * ID where this segment ends (not where it starts).
+   * 
+   * @type {number} Station identifier from the railway database
+   * 
+   * @example Station ID usage
+   * ```typescript
+   * const route = new module.cRoute();
+   * route.setupRoute("東京 山手線 品川");
+   * 
+   * const item = route.getRouteItem(0);
+   * console.log(item.stationId); // 品川駅のID (1130601)
+   * 
+   * // Convert back to station name
+   * const stationName = module.getStationName(item.stationId);
+   * console.log(stationName); // "品川"
+   * ```
    */
   stationId: number;
   
   /**
    * Line ID for this route segment
-   * @type {number} Line identifier from database
+   * 
+   * Identifies the railway line used to reach the destination station in this segment.
+   * 
+   * @type {number} Line identifier from the railway database
+   * 
+   * @example Line ID usage
+   * ```typescript
+   * const route = new module.cRoute();
+   * route.setupRoute("新宿 中央線 東京");
+   * 
+   * const item = route.getRouteItem(0);
+   * console.log(item.lineId); // 中央線のID (11303)
+   * 
+   * // Convert back to line name
+   * const lineName = module.getLineName(item.lineId);
+   * console.log(lineName); // "中央線"
+   * ```
    */
   lineId: number;
   
   /**
    * Route-specific flags for this segment
+   * 
+   * Bitfield containing routing flags and special conditions that apply to this
+   * specific route segment. Flags indicate special rules, route types, and
+   * calculation modifiers.
+   * 
    * @type {number} Bitfield containing routing flags and special conditions
+   * 
+   * @example Flag interpretation
+   * ```typescript
+   * const route = new module.cRoute();
+   * route.setupRoute("東京 東海道線 新大阪");
+   * 
+   * const item = route.getRouteItem(0);
+   * const flags = item.flag;
+   * 
+   * // Common flag interpretations (example values)
+   * if (flags & 0x01) console.log("特別ルール適用");
+   * if (flags & 0x02) console.log("新幹線利用可能");
+   * if (flags & 0x04) console.log("特定都区市内適用");
+   * if (flags & 0x08) console.log("長距離割引対象");
+   * 
+   * console.log(`フラグ値: 0x${flags.toString(16)}`);
+   * ```
    */
   flag: number;
   
   /**
    * Calculated fare for this route segment
+   * 
+   * The fare amount in yen for this specific route segment. This may be a base
+   * fare or include special rule modifications.
+   * 
    * @type {number} Fare amount in yen for this segment
+   * 
+   * @example Fare analysis by segment
+   * ```typescript
+   * const route = new module.cRoute();
+   * route.setupRoute("新宿 中央線 東京 東海道線 横浜");
+   * 
+   * let totalFare = 0;
+   * for (let i = 0; i < route.getRouteCount(); i++) {
+   *   const item = route.getRouteItem(i);
+   *   console.log(`区間${i+1} 運賃: ${item.fare}円`);
+   *   totalFare += item.fare;
+   * }
+   * 
+   * console.log(`合計運賃: ${totalFare}円`);
+   * 
+   * // Compare with total calculation
+   * const calcRoute = new module.cCalcRoute();
+   * calcRoute.setupRoute("新宿 中央線 東京 東海道線 横浜");
+   * const fareInfo = calcRoute.calcFare();
+   * console.log(`正式計算: ${fareInfo.fare}円`);
+   * ```
    */
   fare: number;
   
   /**
    * Sales distance in kilometers for this segment
+   * 
+   * The distance used for fare calculation, which may differ from the actual
+   * physical distance. This is the "営業キロ" (business kilometers) used by
+   * Japanese railways for fare determination.
+   * 
    * @type {number} Distance used for fare calculation (may differ from actual distance)
+   * 
+   * @example Distance analysis
+   * ```typescript
+   * const route = new module.cRoute();
+   * route.setupRoute("東京 東海道線 新大阪");
+   * 
+   * const item = route.getRouteItem(0);
+   * console.log(`営業キロ: ${item.salesKm}km`);
+   * 
+   * // Calculate fare per kilometer
+   * if (item.salesKm > 0) {
+   *   const farePerKm = item.fare / item.salesKm;
+   *   console.log(`キロ単価: ${farePerKm.toFixed(2)}円/km`);
+   * }
+   * ```
+   * 
+   * @example Multi-segment distance
+   * ```typescript
+   * const route = new module.cRoute();
+   * route.setupRoute("札幌 函館線 函館 津軽海峡線 本州");
+   * 
+   * let totalDistance = 0;
+   * for (let i = 0; i < route.getRouteCount(); i++) {
+   *   const item = route.getRouteItem(i);
+   *   console.log(`区間${i+1}: ${item.salesKm}km`);
+   *   totalDistance += item.salesKm;
+   * }
+   * 
+   * console.log(`総距離: ${totalDistance}km`);
+   * ```
    */
   salesKm: number;
   
   /**
    * Index in aggregate route calculation
+   * 
+   * Position index when this route item is part of an aggregate route calculation.
+   * Used internally for complex route processing and fare rule applications.
+   * 
    * @type {number} Position index when this item is part of an aggregate route
+   * 
+   * @example Aggregate route analysis
+   * ```typescript
+   * const route = new module.cRoute();
+   * route.setupRoute("複雑な長距離経路...");
+   * 
+   * for (let i = 0; i < route.getRouteCount(); i++) {
+   *   const item = route.getRouteItem(i);
+   *   
+   *   if (item.indexOfAggregate >= 0) {
+   *     console.log(`区間${i+1}は集約経路の一部 (集約index: ${item.indexOfAggregate})`);
+   *   } else {
+   *     console.log(`区間${i+1}は独立区間`);
+   *   }
+   * }
+   * ```
    */
   indexOfAggregate: number;
   
   /**
    * Check if this route item contains valid data
+   * 
+   * Validates that the route item has valid station and line IDs and can be
+   * used for route calculations. Invalid items should not be used in fare
+   * calculations or route display.
+   * 
    * @returns {boolean} true if the route item has valid station and line IDs
+   * 
+   * @example Validate route items
+   * ```typescript
+   * const route = new module.cRoute();
+   * 
+   * try {
+   *   route.setupRoute("東京 山手線 品川");
+   *   
+   *   for (let i = 0; i < route.getRouteCount(); i++) {
+   *     const item = route.getRouteItem(i);
+   *     
+   *     if (item.isValid()) {
+   *       console.log(`区間${i+1}: 有効 - ${item.getDisplayName()}`);
+   *     } else {
+   *       console.warn(`区間${i+1}: 無効なデータ`);
+   *       console.warn(`  Station ID: ${item.stationId}`);
+   *       console.warn(`  Line ID: ${item.lineId}`);
+   *     }
+   *   }
+   * } catch (error) {
+   *   console.error("経路設定エラー:", error.message);
+   * }
+   * ```
+   * 
+   * @example Error recovery with validation
+   * ```typescript
+   * const route = new module.cRoute();
+   * 
+   * // Build route with potential errors
+   * route.addRoute(1130101); // 東京 (valid)
+   * // Some error condition might create invalid items
+   * 
+   * // Filter valid items only
+   * const validItems = [];
+   * for (let i = 0; i < route.getRouteCount(); i++) {
+   *   const item = route.getRouteItem(i);
+   *   if (item.isValid()) {
+   *     validItems.push(item);
+   *   }
+   * }
+   * 
+   * console.log(`有効区間数: ${validItems.length}`);
+   * ```
    */
   isValid(): boolean;
   
   /**
    * Get display name for this route item
+   * 
+   * Returns a formatted display name showing station and line information
+   * suitable for user interface display. The format typically includes
+   * the station name and line name in a readable format.
+   * 
    * @returns {string} Formatted display name showing station and line information
+   * 
+   * @example Display formatted route information
+   * ```typescript
+   * const route = new module.cRoute();
+   * route.setupRoute("新宿 山手線 品川 東海道線 新大阪");
+   * 
+   * console.log("Route Display:");
+   * for (let i = 0; i < route.getRouteCount(); i++) {
+   *   const item = route.getRouteItem(i);
+   *   console.log(`${i+1}. ${item.getDisplayName()}`);
+   * }
+   * 
+   * // Example output:
+   * // 1. 品川 (山手線)
+   * // 2. 新大阪 (東海道線)
+   * ```
+   * 
+   * @example Create route summary for UI
+   * ```typescript
+   * const route = new module.cRoute();
+   * route.setupRoute("渋谷 山手線 新宿 中央線 東京");
+   * 
+   * const routeSummary = [];
+   * routeSummary.push("渋谷"); // Starting station
+   * 
+   * for (let i = 0; i < route.getRouteCount(); i++) {
+   *   const item = route.getRouteItem(i);
+   *   routeSummary.push(`→ ${item.getDisplayName()}`);
+   * }
+   * 
+   * console.log(routeSummary.join(" "));
+   * // Output: "渋谷 → 新宿 (山手線) → 東京 (中央線)"
+   * ```
    */
   getDisplayName(): string;
   
   /**
    * Get string representation of this route item
+   * 
+   * Returns a detailed string representation including all properties,
+   * primarily intended for debugging and logging purposes. Contains
+   * technical information about the route item state.
+   * 
    * @returns {string} String representation for debugging and display purposes
+   * 
+   * @example Debug route items
+   * ```typescript
+   * const route = new module.cRoute();
+   * route.setupRoute("東京 東海道線 新大阪");
+   * 
+   * const item = route.getRouteItem(0);
+   * console.log("Route Item Debug Info:");
+   * console.log(item.toString());
+   * 
+   * // Example output:
+   * // RouteItem{stationId=1160101, lineId=11301, fare=8910, salesKm=515.4, flag=0x08, indexOfAggregate=-1}
+   * ```
+   * 
+   * @example Log route construction process
+   * ```typescript
+   * const route = new module.cRoute();
+   * 
+   * console.log("Building route step by step:");
+   * route.addRoute(1130101); // 東京
+   * 
+   * route.addRoute(1130601); // 品川
+   * console.log("After adding 品川:");
+   * console.log(route.getRouteItem(0).toString());
+   * 
+   * route.addRoute(1160101); // 新大阪
+   * console.log("After adding 新大阪:");
+   * console.log(route.getRouteItem(1).toString());
+   * ```
    */
   toString(): string;
 }
@@ -1211,14 +2575,409 @@ export interface RouteFlagWrapper {
   setUrbanNeerest(value: number): void;
 }
 
+/**
+ * FareInfoData - Comprehensive fare calculation results and route information
+ * 
+ * Contains detailed results from fare calculations including the base fare,
+ * special rules applied, discount information, and route details. This interface
+ * represents the complete output of fare calculation operations.
+ * 
+ * @example Basic fare calculation result
+ * ```typescript
+ * const calcRoute = new module.cCalcRoute();
+ * calcRoute.setupRoute("東京 山手線 品川");
+ * 
+ * const fareInfo = calcRoute.calcFare();
+ * console.log(`運賃: ${fareInfo.fare}円`);                    // 160円
+ * console.log(`計算結果: ${fareInfo.result}`);                // 0 (成功)
+ * console.log(`出発駅ID: ${fareInfo.beginStationId}`);        // 東京駅ID
+ * console.log(`到着駅ID: ${fareInfo.endStationId}`);          // 品川駅ID
+ * console.log(`経路: ${fareInfo.routeList}`);                 // "東京 山手線 品川"
+ * ```
+ * 
+ * @example Long-distance route with special rules
+ * ```typescript
+ * const calcRoute = new module.cCalcRoute();
+ * calcRoute.setupRoute("東京 東海道線 新大阪");
+ * 
+ * const fareInfo = calcRoute.calcFare();
+ * console.log(`長距離運賃: ${fareInfo.fare}円`);              // 8910円
+ * 
+ * if (fareInfo.isRule114Applied) {
+ *   console.log("Rule 114 (長距離逓減制) が適用されました");
+ * }
+ * 
+ * console.log(`計算コード: ${fareInfo.result}`);              // 0 = 正常終了
+ * console.log(`経路詳細: ${fareInfo.routeList}`);
+ * ```
+ * 
+ * @example Stock discount analysis
+ * ```typescript
+ * const calcRoute = new module.cCalcRoute();
+ * calcRoute.setupRoute("東京 東海道線 名古屋");
+ * 
+ * const fareInfo = calcRoute.calcFare();
+ * 
+ * // Check for available stock discounts
+ * if (fareInfo.availCountForFareOfStockDiscount > 0) {
+ *   console.log(`利用可能な割引運賃: ${fareInfo.availCountForFareOfStockDiscount}種類`);
+ *   
+ *   // Access stock discount methods (if available)
+ *   if (typeof fareInfo.fareForStockDiscount === 'function') {
+ *     for (let i = 0; i < fareInfo.availCountForFareOfStockDiscount; i++) {
+ *       const discountFare = fareInfo.fareForStockDiscount(i);
+ *       const discountTitle = fareInfo.fareForStockDiscountTitle(i);
+ *       console.log(`${discountTitle}: ${discountFare}円`);
+ *     }
+ *   }
+ * } else {
+ *   console.log("割引運賃の設定はありません");
+ * }
+ * ```
+ * 
+ * @example Error handling for calculation failures
+ * ```typescript
+ * const calcRoute = new module.cCalcRoute();
+ * 
+ * try {
+ *   calcRoute.setupRoute("無効な経路設定");
+ *   const fareInfo = calcRoute.calcFare();
+ *   
+ *   if (fareInfo.result !== 0) {
+ *     console.error(`運賃計算エラー (code: ${fareInfo.result})`);
+ *     console.error(`経路: ${fareInfo.routeList}`);
+ *   } else {
+ *     console.log(`計算成功: ${fareInfo.fare}円`);
+ *   }
+ * } catch (error) {
+ *   console.error("経路設定エラー:", error.message);
+ * }
+ * ```
+ * 
+ * @interface FareInfoData
+ * @since 1.0.0
+ */
 export interface FareInfoData {
+  /**
+   * Calculation result code
+   * 
+   * Indicates the success or failure status of the fare calculation.
+   * A value of 0 indicates successful calculation, while non-zero values
+   * indicate various error conditions.
+   * 
+   * @type {number} Result code (0 = success, non-zero = error)
+   * 
+   * @example Check calculation result
+   * ```typescript
+   * const calcRoute = new module.cCalcRoute();
+   * calcRoute.setupRoute("東京 山手線 品川");
+   * 
+   * const fareInfo = calcRoute.calcFare();
+   * 
+   * switch (fareInfo.result) {
+   *   case 0:
+   *     console.log("運賃計算成功");
+   *     console.log(`運賃: ${fareInfo.fare}円`);
+   *     break;
+   *   case -1:
+   *     console.error("経路が見つかりません");
+   *     break;
+   *   case -2:
+   *     console.error("駅データエラー");
+   *     break;
+   *   default:
+   *     console.error(`計算エラー (code: ${fareInfo.result})`);
+   * }
+   * ```
+   */
   result: number;
+  
+  /**
+   * Calculated fare amount in yen
+   * 
+   * The total fare for the route in Japanese yen. This includes base fare
+   * and any applicable special rules, discounts, or surcharges.
+   * 
+   * @type {number} Total fare amount in yen
+   * 
+   * @example Fare amount usage
+   * ```typescript
+   * const calcRoute = new module.cCalcRoute();
+   * 
+   * // Local route fare
+   * calcRoute.setupRoute("新宿 山手線 渋谷");
+   * let fareInfo = calcRoute.calcFare();
+   * console.log(`近距離運賃: ${fareInfo.fare}円`); // 160円
+   * 
+   * // Long-distance route fare
+   * calcRoute.setupRoute("東京 東海道線 新大阪");
+   * fareInfo = calcRoute.calcFare();
+   * console.log(`長距離運賃: ${fareInfo.fare}円`); // 8910円
+   * 
+   * // Calculate fare per kilometer
+   * const route = new module.cRoute();
+   * route.setupRoute("東京 東海道線 新大阪");
+   * const item = route.getRouteItem(0);
+   * if (item.salesKm > 0) {
+   *   const farePerKm = fareInfo.fare / item.salesKm;
+   *   console.log(`キロ単価: ${farePerKm.toFixed(2)}円/km`);
+   * }
+   * ```
+   */
   fare: number;
+  
+  /**
+   * Rule 114 (long-distance reduction) application status
+   * 
+   * Indicates whether Rule 114 (長距離逓減制) was applied to the fare calculation.
+   * This special rule provides fare reductions for long-distance travel exceeding
+   * certain distance thresholds.
+   * 
+   * @type {boolean} true if Rule 114 was applied, false otherwise
+   * 
+   * @example Rule 114 detection
+   * ```typescript
+   * const calcRoute = new module.cCalcRoute();
+   * 
+   * // Short route - Rule 114 not applicable
+   * calcRoute.setupRoute("東京 山手線 品川");
+   * let fareInfo = calcRoute.calcFare();
+   * console.log(`短距離 Rule114: ${fareInfo.isRule114Applied}`); // false
+   * 
+   * // Long route - Rule 114 may be applied
+   * calcRoute.setupRoute("東京 東海道線 京都 山陽線 広島");
+   * fareInfo = calcRoute.calcFare();
+   * if (fareInfo.isRule114Applied) {
+   *   console.log("長距離逓減制が適用されました");
+   *   console.log(`割引運賃: ${fareInfo.fare}円`);
+   * } else {
+   *   console.log("通常運賃が適用されました");
+   * }
+   * ```
+   * 
+   * @example Compare with and without Rule 114
+   * ```typescript
+   * const normalRoute = new module.cCalcRoute();
+   * const noRuleRoute = new module.cCalcRoute();
+   * 
+   * const routeString = "東京 東海道線 新大阪";
+   * 
+   * // Normal calculation with rules
+   * normalRoute.setupRoute(routeString);
+   * const normalFare = normalRoute.calcFare();
+   * 
+   * // Calculation without special rules
+   * noRuleRoute.setNoRule(true);
+   * noRuleRoute.setupRoute(routeString);
+   * const noRuleFare = noRuleRoute.calcFare();
+   * 
+   * console.log(`通常運賃: ${normalFare.fare}円 (Rule114: ${normalFare.isRule114Applied})`);
+   * console.log(`ルール無効: ${noRuleFare.fare}円 (Rule114: ${noRuleFare.isRule114Applied})`);
+   * ```
+   */
   isRule114Applied: boolean;
+  
+  /**
+   * Number of available stock discount fares
+   * 
+   * Indicates how many different stock discount fare options are available
+   * for this route. Stock discounts are special promotional fares offered
+   * by railway companies.
+   * 
+   * @type {number} Count of available stock discount options
+   * 
+   * @example Stock discount enumeration
+   * ```typescript
+   * const calcRoute = new module.cCalcRoute();
+   * calcRoute.setupRoute("東京 東海道線 名古屋");
+   * 
+   * const fareInfo = calcRoute.calcFare();
+   * 
+   * console.log(`通常運賃: ${fareInfo.fare}円`);
+   * console.log(`利用可能割引数: ${fareInfo.availCountForFareOfStockDiscount}`);
+   * 
+   * if (fareInfo.availCountForFareOfStockDiscount > 0) {
+   *   console.log("利用可能な割引運賃:");
+   *   
+   *   // Note: actual discount methods depend on implementation
+   *   for (let i = 0; i < fareInfo.availCountForFareOfStockDiscount; i++) {
+   *     console.log(`  割引${i+1}: 詳細は fareForStockDiscount() で取得`);
+   *   }
+   * } else {
+   *   console.log("この経路には割引運賃の設定はありません");
+   * }
+   * ```
+   * 
+   * @example Filter routes with discounts
+   * ```typescript
+   * const routes = [
+   *   "東京 山手線 品川",
+   *   "東京 東海道線 名古屋",
+   *   "新宿 中央線 立川"
+   * ];
+   * 
+   * console.log("割引対象経路:");
+   * routes.forEach((routeStr, index) => {
+   *   const calcRoute = new module.cCalcRoute();
+   *   calcRoute.setupRoute(routeStr);
+   *   const fareInfo = calcRoute.calcFare();
+   *   
+   *   if (fareInfo.availCountForFareOfStockDiscount > 0) {
+   *     console.log(`${index+1}. ${routeStr} (${fareInfo.availCountForFareOfStockDiscount}種類の割引)`);
+   *   }
+   * });
+   * ```
+   */
   availCountForFareOfStockDiscount: number;
+  
+  /**
+   * Starting station ID for the calculated route
+   * 
+   * The station ID where the route begins. This corresponds to the first
+   * station added to the route or parsed from the route string.
+   * 
+   * @type {number} Station ID of the departure station
+   * 
+   * @example Route endpoint analysis
+   * ```typescript
+   * const calcRoute = new module.cCalcRoute();
+   * calcRoute.setupRoute("新宿 中央線 東京 東海道線 横浜");
+   * 
+   * const fareInfo = calcRoute.calcFare();
+   * 
+   * // Get station names from IDs
+   * const startName = module.getStationName(fareInfo.beginStationId);
+   * const endName = module.getStationName(fareInfo.endStationId);
+   * 
+   * console.log(`${startName}駅(${fareInfo.beginStationId}) → ${endName}駅(${fareInfo.endStationId})`);
+   * console.log(`運賃: ${fareInfo.fare}円`);
+   * console.log(`経路: ${fareInfo.routeList}`);
+   * ```
+   * 
+   * @example Validate route endpoints
+   * ```typescript
+   * const calcRoute = new module.cCalcRoute();
+   * calcRoute.addRoute(1130101); // 東京駅
+   * calcRoute.addRoute(1130601); // 品川駅
+   * 
+   * const fareInfo = calcRoute.calcFare();
+   * 
+   * // Verify endpoints match expectations
+   * const expectedStart = 1130101; // 東京駅ID
+   * const expectedEnd = 1130601;   // 品川駅ID
+   * 
+   * if (fareInfo.beginStationId === expectedStart && fareInfo.endStationId === expectedEnd) {
+   *   console.log("経路設定が正しく認識されました");
+   * } else {
+   *   console.warn("経路設定に問題があります");
+   *   console.warn(`期待: ${expectedStart} → ${expectedEnd}`);
+   *   console.warn(`実際: ${fareInfo.beginStationId} → ${fareInfo.endStationId}`);
+   * }
+   * ```
+   */
   beginStationId: number;
+  
+  /**
+   * Ending station ID for the calculated route
+   * 
+   * The station ID where the route ends. This corresponds to the last
+   * station added to the route or parsed from the route string.
+   * 
+   * @type {number} Station ID of the arrival station
+   * 
+   * @example Route distance calculation
+   * ```typescript
+   * const calcRoute = new module.cCalcRoute();
+   * calcRoute.setupRoute("東京 東海道線 新大阪");
+   * 
+   * const fareInfo = calcRoute.calcFare();
+   * 
+   * console.log(`出発: ${module.getStationName(fareInfo.beginStationId)}`);
+   * console.log(`到着: ${module.getStationName(fareInfo.endStationId)}`);
+   * console.log(`運賃: ${fareInfo.fare}円`);
+   * 
+   * // Get route details for distance
+   * const route = new module.cRoute();
+   * route.setupRoute("東京 東海道線 新大阪");
+   * const item = route.getRouteItem(0);
+   * console.log(`距離: ${item.salesKm}km`);
+   * ```
+   */
   endStationId: number;
+  
+  /**
+   * Detailed route description string
+   * 
+   * A string representation of the complete route including stations and lines.
+   * This provides a human-readable description of the path taken for the
+   * fare calculation.
+   * 
+   * @type {string} Human-readable route description
+   * 
+   * @example Route description usage
+   * ```typescript
+   * const calcRoute = new module.cCalcRoute();
+   * calcRoute.setupRoute("新宿 山手線 品川 東海道線 横浜");
+   * 
+   * const fareInfo = calcRoute.calcFare();
+   * 
+   * console.log("運賃計算結果:");
+   * console.log(`経路: ${fareInfo.routeList}`);
+   * console.log(`運賃: ${fareInfo.fare}円`);
+   * console.log(`出発: ${module.getStationName(fareInfo.beginStationId)}`);
+   * console.log(`到着: ${module.getStationName(fareInfo.endStationId)}`);
+   * ```
+   * 
+   * @example Parse route information
+   * ```typescript
+   * const calcRoute = new module.cCalcRoute();
+   * calcRoute.setupRoute("渋谷 山手線 新宿 中央線 東京");
+   * 
+   * const fareInfo = calcRoute.calcFare();
+   * 
+   * // Extract route components from description
+   * const routeParts = fareInfo.routeList.split(' ');
+   * console.log("経路分析:");
+   * for (let i = 0; i < routeParts.length; i += 2) {
+   *   const station = routeParts[i];
+   *   const line = routeParts[i + 1];
+   *   if (line) {
+   *     console.log(`${station} → ${line}`);
+   *   } else {
+   *     console.log(`${station} (到着)`);
+   *   }
+   * }
+   * ```
+   * 
+   * @example Route comparison
+   * ```typescript
+   * const routes = [
+   *   "東京 山手線 品川",
+   *   "東京 東海道線 品川"
+   * ];
+   * 
+   * console.log("経路比較:");
+   * routes.forEach((routeStr, index) => {
+   *   const calcRoute = new module.cCalcRoute();
+   *   calcRoute.setupRoute(routeStr);
+   *   const fareInfo = calcRoute.calcFare();
+   *   
+   *   console.log(`${index+1}. ${fareInfo.routeList}`);
+   *   console.log(`   運賃: ${fareInfo.fare}円`);
+   * });
+   * ```
+   */
   routeList: string;
+  
+  /**
+   * Additional properties for extended fare information
+   * 
+   * Allows for additional properties that may be added by specific implementations
+   * or extensions. This provides flexibility for future enhancements without
+   * breaking interface compatibility.
+   * 
+   * @type {Record<string, any>} Additional properties as key-value pairs
+   */
   [key: string]: any;
 }
 

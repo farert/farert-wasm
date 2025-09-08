@@ -292,7 +292,7 @@ Tech.md alignment through:
   - _Leverage: all interface files from previous tasks_
   - _Requirements: REQ-API-006_
 
-- [ ] 27. Create main SDK export in src/sdk/index.ts
+- [x] 27. Create main SDK export in src/sdk/index.ts
   - File: src/sdk/index.ts
   - Export all framework integrations and utilities
   - Add version information and initialization helpers
