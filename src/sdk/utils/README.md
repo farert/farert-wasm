@@ -18,7 +18,12 @@ import {
   formatFare, 
   validateRoute, 
   createRouteBuilder,
-  formatFareBreakdown 
+  formatFareBreakdown,
+  // Station utilities
+  formatStationName,
+  fuzzySearchStations,
+  validateStationId,
+  getStationDisplayName
 } from '@farert/sdk/utils';
 
 // Format fare with Japanese yen
@@ -186,6 +191,275 @@ const route2 = builder
 
 // Get as array
 const routeArray = builder.buildArray(); // ['東京', '東海道線', '横浜', ...]
+```
+
+### Station Utilities
+
+Advanced station handling utilities for Japanese railway stations with comprehensive formatting, search, and validation capabilities.
+
+#### `formatStationName(station: StationInfo, options?: StationFormatOptions): string`
+
+Format station information with flexible display options and Japanese text support.
+
+```typescript
+const station = {
+  name: '東京',
+  nameExtended: '東京駅', 
+  kana: 'とうきょう',
+  prefecture: '東京都'
+};
+
+// Basic formatting
+formatStationName(station); // "東京"
+
+// With prefecture
+formatStationName(station, { includePrefecture: true }); // "東京 (東京都)"
+
+// With kana reading
+formatStationName(station, { includeKana: true }); // "東京 (とうきょう)"
+
+// With both
+formatStationName(station, { 
+  includePrefecture: true, 
+  includeKana: true 
+}); // "東京 (とうきょう・東京都)"
+
+// Length limiting
+formatStationName(station, { maxLength: 10 }); // "東京"
+```
+
+**Options:**
+- `includePrefecture?: boolean` - Include prefecture information
+- `includeKana?: boolean` - Include Hiragana reading
+- `maxLength?: number` - Maximum display length with intelligent truncation
+- `fallback?: 'id' | 'name' | 'empty'` - Fallback behavior for missing data
+- `separator?: string` - Text separator between components (default: '・')
+- `parenthesesStyle?: 'round' | 'square' | 'none'` - Parentheses style for additional info
+
+#### `getStationDisplayName(station: StationInfo, context?: string): string`
+
+Get context-aware station display name with automatic format selection.
+
+```typescript
+// Different contexts
+getStationDisplayName(station, 'search'); // "東京" (compact)
+getStationDisplayName(station, 'route'); // "東京" or "東京 (東京都)" for locals
+getStationDisplayName(station, 'detailed'); // "東京 (とうきょう・東京都)"
+getStationDisplayName(station, 'compact'); // "東京"
+```
+
+#### `fuzzySearchStations(query: string, stations: StationInfo[], options?: EnhancedSearchOptions): StationSearchResult[]`
+
+Intelligent station search with fuzzy matching, typo tolerance, and multiple language support.
+
+```typescript
+// Exact match
+const results1 = fuzzySearchStations('東京', stations);
+// [{ station: {...}, score: 1.0, matchedField: 'name' }]
+
+// Hiragana input
+const results2 = fuzzySearchStations('しんじゅく', stations);
+// [{ station: {...}, score: 1.0, matchedField: 'kana' }]
+
+// Typo tolerance
+const results3 = fuzzySearchStations('Tokyio', stations, {
+  enableRomanization: true,
+  fuzzyMinScore: 0.7
+});
+
+// With options
+const results4 = fuzzySearchStations('新', stations, {
+  limit: 10,
+  boostMajorStations: true,
+  enableFuzzyMatching: true
+});
+```
+
+**Options:**
+- `enableFuzzyMatching?: boolean` - Enable typo tolerance
+- `fuzzyMinScore?: number` - Minimum similarity score (0-1)
+- `enableRomanization?: boolean` - Enable romanization matching
+- `boostMajorStations?: boolean` - Boost major stations in results
+- `limit?: number` - Maximum results to return
+
+#### `searchStationsByReading(reading: string, stations: StationInfo[], options?: StationSearchOptions): StationSearchResult[]`
+
+Search stations by Hiragana or romanized pronunciation.
+
+```typescript
+// Hiragana search
+const results1 = searchStationsByReading('とうきょう', stations);
+
+// Romanized search
+const results2 = searchStationsByReading('tokyo', stations);
+
+// Partial reading
+const results3 = searchStationsByReading('しん', stations, { limit: 5 });
+```
+
+#### `getStationSuggestions(query: string, stations: StationInfo[], maxSuggestions?: number): string[]`
+
+Get intelligent suggestions for partial or invalid station input.
+
+```typescript
+// Partial input suggestions
+const suggestions1 = getStationSuggestions('新', stations, 10);
+// ["新宿", "新橋", "新木場", "新大久保", "新小岩", ...]
+
+// Empty input returns popular stations
+const suggestions2 = getStationSuggestions('', stations, 5);
+// ["東京", "新宿", "渋谷", "池袋", "品川"]
+
+// Typo suggestions
+const suggestions3 = getStationSuggestions('Shibuya', stations);
+// ["渋谷", "新宿", "品川", ...]
+```
+
+#### `filterStationsByPrefix(prefix: string, stations: StationInfo[], options?: object): StationInfo[]`
+
+Efficient prefix-based filtering for autocomplete scenarios.
+
+```typescript
+// Name prefix
+const matches1 = filterStationsByPrefix('新', stations, { limit: 10 });
+
+// Kana prefix
+const matches2 = filterStationsByPrefix('しん', stations, { 
+  includeKana: true,
+  limit: 5 
+});
+```
+
+#### `validateStationId(id: number): StationValidationResult`
+
+Comprehensive station ID validation with detailed feedback.
+
+```typescript
+// Valid ID
+const result1 = validateStationId(1130101);
+// { isValid: true, errors: [], suggestions: [] }
+
+// Invalid ID
+const result2 = validateStationId(-1);
+// { 
+//   isValid: false, 
+//   errors: [{ 
+//     code: 'INVALID_FORMAT', 
+//     message: 'Station ID must be a positive integer',
+//     suggestions: ['Station IDs start from 1']
+//   }]
+// }
+```
+
+#### `validateStationName(name: string): StationValidationResult`
+
+Validate station name format with helpful suggestions.
+
+```typescript
+// Valid name
+const result1 = validateStationName('東京');
+// { isValid: true, errors: [], suggestions: [] }
+
+// English name (valid but with suggestions)
+const result2 = validateStationName('Tokyo');
+// { 
+//   isValid: true, 
+//   errors: [], 
+//   suggestions: ['Consider using the Japanese name for better results']
+// }
+
+// Empty name
+const result3 = validateStationName('');
+// { 
+//   isValid: false,
+//   errors: [{ code: 'INVALID_FORMAT', message: 'Station name cannot be empty' }]
+// }
+```
+
+#### `getStationMetadata(station: StationInfo): StationMetadata`
+
+Generate comprehensive metadata for enhanced UI display.
+
+```typescript
+const metadata = getStationMetadata(station);
+
+// Access display variants
+console.log(metadata.displayVariants.short); // "東京"
+console.log(metadata.displayVariants.withPrefecture); // "東京 (東京都)"
+
+// Search optimization data
+console.log(metadata.searchData.searchableTerms); 
+// ["東京", "東京駅", "とうきょう", "tokyo", ...]
+
+// UI helpers
+console.log(metadata.uiHelpers.cssClass); // "station-major"
+console.log(metadata.uiHelpers.priority); // 150
+```
+
+#### `groupStationsByPrefecture(stations: StationInfo[]): StationsByPrefecture[]`
+
+Organize stations by prefecture with metadata for hierarchical displays.
+
+```typescript
+const grouped = groupStationsByPrefecture(stations);
+
+grouped.forEach(group => {
+  console.log(`${group.prefecture.name}: ${group.count} stations`);
+  console.log(`Major stations: ${group.majorStations.length}`);
+  
+  group.stations.forEach(station => {
+    console.log(`  - ${station.name}`);
+  });
+});
+
+/*
+東京都: 150 stations
+Major stations: 25
+  - 東京
+  - 新宿
+  - 渋谷
+  ...
+
+大阪府: 87 stations  
+Major stations: 12
+  - 大阪
+  - 梅田
+  - 難波
+  ...
+*/
+```
+
+#### `getPopularStations(stations: StationInfo[], limit?: number): StationInfo[]`
+
+Get curated list of popular stations sorted by relevance.
+
+```typescript
+// Top 10 popular stations
+const popular = getPopularStations(stations, 10);
+console.log(popular.map(s => s.name)); 
+// ["東京", "新宿", "渋谷", "池袋", "品川", "新橋", "上野", "大阪", "梅田", "難波"]
+
+// All major/junction stations
+const allPopular = getPopularStations(stations);
+```
+
+#### Utility Helper Functions
+
+```typescript
+// Check if station is a junction
+isJunctionStation(station); // true/false
+
+// Get formatted line information
+getStationLines(station); // ["山手線", "東海道線"]
+getStationLines(station, true); // ["JR山手線", "JR東海道線"] (with company)
+
+// Compare stations for sorting
+const comparison = compareStations(stationA, stationB, 'popularity');
+stations.sort((a, b) => compareStations(a, b, 'alphabetical').result);
+
+// Convenience formatting functions
+formatStationWithPrefecture(station); // "東京 (東京都)"
+formatStationWithKana(station); // "東京 (とうきょう)"
 ```
 
 ### Utility Functions
