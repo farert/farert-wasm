@@ -120,7 +120,7 @@ Tech.md alignment through:
 
 ### Phase 2: Framework-Agnostic Utilities
 
-- [ ] 9. Create station utilities in src/sdk/utils/station-utils.ts
+- [x] 9. Create station utilities in src/sdk/utils/station-utils.ts
   - File: src/sdk/utils/station-utils.ts
   - Implement Japanese text handling for station names and kana
   - Add station search with fuzzy matching and caching
@@ -129,7 +129,7 @@ Tech.md alignment through:
   - _Leverage: src/sdk/core/farert-sdk.ts station APIs_
   - _Requirements: REQ-API-005_
 
-- [ ] 10. Create route building utilities in src/sdk/utils/route-utils.ts
+- [x] 10. Create route building utilities in src/sdk/utils/route-utils.ts
   - File: src/sdk/utils/route-utils.ts
   - Implement fluent API for programmatic route construction
   - Add route validation with detailed error messages
