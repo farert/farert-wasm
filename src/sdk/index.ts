@@ -65,6 +65,141 @@ export {
 } from './svelte';
 
 // ============================================================================
+// MAIN FARERT SDK CLASS
+// ============================================================================
+
+/**
+ * Main FarertSDK class that provides unified access to all WebAssembly functionality
+ * with enhanced TypeScript support, intelligent caching, and comprehensive error handling.
+ * This is the primary entry point for the Frontend API Layer SDK.
+ */
+export {
+  // Main SDK class and factory functions
+  FarertSDK,
+  createFarertSDK,
+  createDevelopmentSDK,
+  createProductionSDK,
+  
+  // Core SDK types and interfaces
+  type FarertSDKInterface,
+  type SDKState,
+  type SDKConfig
+} from './core/farert-sdk';
+
+// ============================================================================
+// CORE WEBASSEMBLY WRAPPER
+// ============================================================================
+
+/**
+ * Core WebAssembly wrapper with type safety, caching, and error handling
+ * Provides direct access to all 39+ WebAssembly APIs with production-ready features
+ */
+export {
+  // Main WebAssembly wrapper class and factory functions
+  WasmWrapper,
+  createWasmWrapper,
+  createSvelteWasmWrapper,
+  createProductionWasmWrapper,
+  
+  // Core infrastructure types
+  type WasmWrapperConfig,
+  type WasmWrapperStats,
+  type ApiCallContext,
+  type ApiCallResult
+} from './core';
+
+// ============================================================================
+// ENHANCED OBJECT CLASSES
+// ============================================================================
+
+/**
+ * Enhanced object classes with fluent APIs and lifecycle management
+ * Provides modern JavaScript patterns for the 6 core WebAssembly object classes
+ */
+export {
+  // Enhanced object class implementations
+  ObjectLifecycleManager,
+  ObjectClassFactory,
+  createObjectClassFactory,
+  
+  // Enhanced object class interfaces
+  type EnhancedRouteList,
+  type EnhancedRoute,
+  type EnhancedCalcRoute,
+  type EnhancedRouteItem,
+  type EnhancedRouteFlag,
+  type EnhancedFareInfo,
+  
+  // Supporting types and enums
+  RouteFlagType
+} from './core/object-classes';
+
+// ============================================================================
+// CACHING AND PERFORMANCE
+// ============================================================================
+
+/**
+ * Intelligent caching system for WebAssembly API calls
+ * Provides LRU caching with category-specific TTL values and memory management
+ */
+export {
+  // Cache manager for WebAssembly API caching
+  CacheManager,
+  CacheCategory,
+  createCacheManager,
+  createSvelteCacheManager,
+  createProductionCacheManager,
+  
+  // LRU cache implementation
+  LRUCache,
+  CACHE_PRESETS,
+  
+  // Cache-specific types
+  type CacheManagerConfig,
+  type CacheManagerStats,
+  type CacheConfig,
+  type CacheStats,
+  type CacheEntry
+} from './cache';
+
+// ============================================================================
+// ERROR MANAGEMENT SYSTEM
+// ============================================================================
+
+/**
+ * Comprehensive error management with retry logic and WebAssembly error handling
+ * Includes automatic retry, circuit breaker, and user-friendly error messaging
+ */
+export {
+  // Enhanced error management system
+  ErrorManager,
+  ManagedError,
+  ErrorSeverity,
+  ErrorCategory,
+  createErrorManager,
+  createSvelteErrorManager,
+  createProductionErrorManager,
+  isManagedError,
+  convertCLIError,
+  
+  // Retry strategies
+  DEVELOPMENT_RETRY_STRATEGY,
+  PRODUCTION_RETRY_STRATEGY,
+  SVELTE_ERROR_MANAGER_CONFIG,
+  MINIMAL_ERROR_MANAGER_CONFIG,
+  
+  // Enhanced error types
+  type RetryStrategy,
+  type ErrorContext,
+  type ErrorRecoveryAction,
+  type ErrorSuggestion,
+  type ErrorManagerConfig,
+  type ErrorManagerStats,
+  type CircuitBreakerInfo,
+  type UserFriendlyError
+} from './errors';
+
+// ============================================================================
 // FRAMEWORK-AGNOSTIC UTILITIES
 // ============================================================================
 
@@ -181,6 +316,36 @@ export {
   InputValidationError
 } from './types';
 
+/**
+ * Comprehensive error management system
+ * Provides retry logic, WebAssembly error handling, and user-friendly messaging
+ */
+export {
+  ErrorManager,
+  ManagedError,
+  ErrorSeverity,
+  ErrorCategory,
+  createErrorManager,
+  createSvelteErrorManager,
+  createProductionErrorManager,
+  isManagedError,
+  convertCLIError,
+  DEVELOPMENT_RETRY_STRATEGY,
+  PRODUCTION_RETRY_STRATEGY,
+  SVELTE_ERROR_MANAGER_CONFIG,
+  MINIMAL_ERROR_MANAGER_CONFIG
+} from './errors';
+
+export type {
+  RetryStrategy,
+  ErrorContext,
+  ErrorRecoveryAction,
+  ErrorSuggestion,
+  ErrorManagerConfig,
+  ErrorManagerStats,
+  CircuitBreakerInfo
+} from './errors';
+
 // ============================================================================
 // TYPE GUARDS AND UTILITIES
 // ============================================================================
@@ -272,24 +437,23 @@ export const SDK_INFO = {
  * ```typescript
  * import { quickStart } from '@farert/sdk';
  * 
- * const { farertStore, utils } = await quickStart();
+ * const { sdk, utils } = await quickStart();
  * 
- * // Use the store in Svelte components
- * $: isReady = $farertStore.isReady;
+ * // Initialize and use the SDK
+ * await sdk.initialize();
+ * const station = await sdk.getStationById("東京");
  * ```
  */
-export async function quickStart(config?: Partial<FarertStoreConfig>) {
-  // Import Svelte SDK for initialization
-  const { farertStore, initializeSvelteSDK } = await import('./svelte');
+export async function quickStart(config?: Partial<SDKConfig>) {
+  // Import main SDK class
+  const { createFarertSDK } = await import('./core/farert-sdk');
   const utils = await import('./utils');
   
-  // Initialize with provided config or defaults
-  if (config) {
-    initializeSvelteSDK(config);
-  }
+  // Create SDK with provided config or defaults
+  const sdk = createFarertSDK(config);
   
   return {
-    store: farertStore,
+    sdk,
     utils: utils.fareUtils,
     version: SDK_INFO.version
   };
@@ -304,24 +468,48 @@ export async function quickStart(config?: Partial<FarertStoreConfig>) {
  * import { createCalculator } from '@farert/sdk';
  * 
  * const calculator = await createCalculator();
+ * await calculator.initialize();
  * const fare = await calculator.calculate('東京', '横浜');
  * ```
  */
 export async function createCalculator() {
-  const { farertStore } = await import('./svelte');
+  const { createFarertSDK } = await import('./core/farert-sdk');
   const { createRouteBuilder } = await import('./utils');
   
+  const sdk = createFarertSDK({
+    caching: { enabled: true },
+    errorHandling: { retryAttempts: 2 }
+  });
+  
   return {
+    // Initialize the SDK
+    initialize: () => sdk.initialize(),
+    
+    // Simple calculation interface
     calculate: async (startStation: string, endStation: string) => {
-      // Implementation would use the WebAssembly module
-      // This is a placeholder for the actual implementation
-      throw new Error('createCalculator not yet implemented - use farertStore for full functionality');
+      const result = await sdk.calculateFare({
+        start: startStation,
+        end: endStation
+      });
+      return result.totalFare;
     },
     
+    // Advanced calculation with full result
+    calculateAdvanced: (startStation: string, endStation: string) => {
+      return sdk.calculateFare({
+        start: startStation,
+        end: endStation
+      });
+    },
+    
+    // Search stations
+    searchStations: (query: string) => sdk.searchStations(query),
+    
+    // Route builder utility
     routeBuilder: createRouteBuilder(),
     
-    // Provide access to the full store for advanced usage
-    store: farertStore
+    // Access to full SDK for advanced usage
+    sdk
   };
 }
 
@@ -365,7 +553,14 @@ export const devUtils = {
  * This allows for `import FarertSDK from '@farert/sdk'` usage patterns
  */
 export default {
-  // Primary SDK components
+  // Main SDK class
+  SDK: {
+    get create() { return import('./core/farert-sdk').then(m => m.createFarertSDK); },
+    get createDevelopment() { return import('./core/farert-sdk').then(m => m.createDevelopmentSDK); },
+    get createProduction() { return import('./core/farert-sdk').then(m => m.createProductionSDK); }
+  },
+  
+  // Legacy Svelte stores for backward compatibility
   stores: {
     get farert() { return import('./svelte').then(m => m.farertStore); },
     get routeBuilder() { return import('./svelte').then(m => m.createRouteBuilderStore); }
@@ -411,16 +606,42 @@ export default {
  * ## Quick Start
  * 
  * ```typescript
- * import { quickStart } from '@farert/sdk';
+ * import { FarertSDK, createFarertSDK } from '@farert/sdk';
  * 
- * const { store, utils } = await quickStart();
+ * const sdk = createFarertSDK();
+ * await sdk.initialize();
  * 
- * // In Svelte components:
- * $: isReady = $store.isReady;
- * $: module = $store.wasmModule;
+ * // Get station information
+ * const station = await sdk.getStationById("東京");
+ * 
+ * // Calculate fares
+ * const result = await sdk.calculateFare("東京 東海道線 横浜");
+ * console.log(`Fare: ${result.totalFare}円`);
  * ```
  * 
- * ## Svelte Integration
+ * ## Object-Oriented API
+ * 
+ * ```typescript
+ * import { FarertSDK } from '@farert/sdk';
+ * 
+ * const sdk = new FarertSDK();
+ * await sdk.initialize();
+ * 
+ * // Create routes with fluent API
+ * const route = sdk.objectClasses.Route.create()
+ *   .from("東京")
+ *   .via("品川")
+ *   .to("横浜");
+ * 
+ * const calcRoute = sdk.objectClasses.CalcRoute.create()
+ *   .from("東京")
+ *   .to("大阪")
+ *   .setLongRouteEnabled(true);
+ * 
+ * const fareResult = await calcRoute.calculateFare();
+ * ```
+ * 
+ * ## Svelte Integration (Legacy)
  * 
  * ```typescript
  * import { farertStore, createRouteBuilderStore } from '@farert/sdk';
