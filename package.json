@@ -40,7 +40,17 @@
     "test:pipeline:cli": "node scripts/cli-test-pipeline.js --test-pattern cli",
     "test:pipeline:skip-build": "node scripts/cli-test-pipeline.js --skip-build",
     "ci:pipeline": "node scripts/cli-test-pipeline.js --verbose",
-    "ci:pipeline:fast": "node scripts/cli-test-pipeline.js --skip-build --verbose"
+    "ci:pipeline:fast": "node scripts/cli-test-pipeline.js --skip-build --verbose",
+    "test:cache": "node tests/sdk/cache/run-cache-tests.js",
+    "test:cache:verbose": "node tests/sdk/cache/run-cache-tests.js --verbose",
+    "test:cache:coverage": "node tests/sdk/cache/run-cache-tests.js --coverage",
+    "test:cache:watch": "node tests/sdk/cache/run-cache-tests.js --watch",
+    "test:cache:debug": "node tests/sdk/cache/run-cache-tests.js --debug",
+    "test:cache:quick": "node tests/sdk/cache/run-cache-tests.js --quick",
+    "test:cache:lru": "node tests/sdk/cache/run-cache-tests.js --pattern 'LRU Eviction'",
+    "test:cache:ttl": "node tests/sdk/cache/run-cache-tests.js --pattern 'TTL Expiration'",
+    "test:cache:memory": "node tests/sdk/cache/run-cache-tests.js --pattern 'Memory Limit'",
+    "test:cache:performance": "node tests/sdk/cache/run-cache-tests.js --pattern 'Performance Benchmarks'"
   },
   "keywords": [
     "webassembly",
