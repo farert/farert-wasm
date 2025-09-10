@@ -269,6 +269,33 @@ export {
 } from './errors';
 
 // ============================================================================
+// DEBUG TOOLS AND DIAGNOSTICS
+// ============================================================================
+
+/**
+ * Comprehensive debugging utilities for troubleshooting SDK issues,
+ * performance optimization, and understanding internal behavior
+ */
+export {
+  // Main debug tools class and factory functions
+  DebugTools,
+  createDevelopmentDebugTools,
+  createProductionDebugTools,
+  createPerformanceDebugTools,
+  
+  // Debug level enumeration
+  DebugLevel,
+  
+  // Debug-specific types
+  type DebugConfig,
+  type CacheInspectionResult,
+  type PerformanceMonitoringData,
+  type WebAssemblyMemoryAnalysis,
+  type SDKStateSnapshot,
+  type DiagnosticReport
+} from './debug';
+
+// ============================================================================
 // FRAMEWORK-AGNOSTIC UTILITIES
 // ============================================================================
 
@@ -626,6 +653,16 @@ export const devUtils = {
         webWorker: typeof self !== 'undefined' && 'importScripts' in self
       }
     };
+  },
+  
+  // Debug tools for development
+  get debugTools() {
+    return import('./debug').then(m => m.createDevelopmentDebugTools);
+  },
+  
+  // Performance debug tools
+  get performanceDebugTools() {
+    return import('./debug').then(m => m.createPerformanceDebugTools);
   },
   
   // Re-export development utilities from Svelte SDK
