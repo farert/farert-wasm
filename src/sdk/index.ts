@@ -19,7 +19,7 @@
  */
 
 // ============================================================================
-// SVELTE SDK EXPORTS
+// SVELTE SDK EXPORTS (PRIMARY)
 // ============================================================================
 
 /**
@@ -63,6 +63,75 @@ export {
   type FareCalculationResult,
   type RouteBuilderConfig
 } from './svelte';
+
+// ============================================================================
+// REACT SDK EXPORTS (SECONDARY)
+// ============================================================================
+
+/**
+ * Secondary React integration with hooks and context patterns
+ * Provides React-native development experience using the core SDK
+ */
+export {
+  // React Context and Provider
+  FarertSDKContext,
+  FarertSDKProvider,
+  
+  // Core React hooks
+  useFarertSDK,
+  useStationSearch,
+  useFareCalculation,
+  useRouteBuilder,
+  useReferenceData,
+  
+  // Error boundary for WebAssembly failures
+  FarertErrorBoundary
+} from './react';
+
+// React-specific types
+export type {
+  FarertSDKContextValue,
+  FarertSDKProviderProps,
+  UseStationSearchOptions,
+  UseStationSearchResult,
+  UseFareCalculationResult,
+  UseRouteBuilderResult,
+  UseReferenceDataResult,
+  FarertErrorBoundaryProps
+} from './react';
+
+// ============================================================================
+// VUE SDK EXPORTS (SECONDARY)
+// ============================================================================
+
+/**
+ * Secondary Vue 3 integration with composables and plugin system
+ * Provides Vue-native development experience using the core SDK
+ */
+export {
+  // Vue Plugin System
+  FarertSDKPlugin,
+  FarertSDKKey,
+  
+  // Core Vue composables
+  useFarertSDK as useVueFarertSDK,
+  useStationSearch as useVueStationSearch,
+  useFareCalculation as useVueFareCalculation,
+  useRouteBuilder as useVueRouteBuilder,
+  useReferenceData as useVueReferenceData
+} from './vue';
+
+// Vue-specific types
+export type {
+  FarertSDKPluginOptions,
+  VueSDKState,
+  UseFarertSDKResult as VueUseFarertSDKResult,
+  UseStationSearchOptions as VueUseStationSearchOptions,
+  UseStationSearchResult as VueUseStationSearchResult,
+  UseFareCalculationResult as VueUseFareCalculationResult,
+  UseRouteBuilderResult as VueUseRouteBuilderResult,
+  UseReferenceDataResult as VueUseReferenceDataResult
+} from './vue';
 
 // ============================================================================
 // MAIN FARERT SDK CLASS
@@ -204,8 +273,8 @@ export {
 // ============================================================================
 
 /**
- * Framework-agnostic utilities for fare formatting, validation, and route building
- * Can be used in any JavaScript framework or vanilla JavaScript applications
+ * Framework-agnostic utilities for fare formatting, validation, route building,
+ * and framework detection - Can be used in any JavaScript framework or vanilla JavaScript applications
  */
 export {
   // Fare formatting utilities
@@ -225,6 +294,16 @@ export {
   isFareReasonable,
   formatKilometers,
   compareFares,
+  
+  // Framework detection utilities
+  FrameworkDetector,
+  detectFramework,
+  getOptimizedSDKLoader,
+  getFrameworkConfig,
+  isFrameworkSupported,
+  createFrameworkDetector,
+  frameworkDetector,
+  frameworkDetectorDev,
   
   // Utility collection with async loading
   utils,
@@ -296,7 +375,18 @@ export type {
   // Utility formatting types
   LocaleOptions,
   FareBreakdownOptions,
-  StationNameOptions
+  StationNameOptions,
+  
+  // Framework detection types
+  FrameworkDetectionResult,
+  FrameworkType,
+  MetaFrameworkType,
+  EnvironmentInfo,
+  FrameworkDetails,
+  BundlerInfo,
+  FrameworkAdapter,
+  ConditionalLoadingConfig,
+  DetectionRule
 } from './types';
 
 // ============================================================================
@@ -401,8 +491,8 @@ export const SDK_INFO = {
   features: {
     webAssembly: true,
     svelteStores: true,
-    reactHooks: false, // Future implementation
-    vueComposables: false, // Future implementation
+    reactHooks: true, // ✅ Implemented - Task 18
+    vueComposables: true, // ✅ Implemented - Task 19
     angularServices: false, // Future implementation
     svelteKitSSR: true,
     caching: true,
