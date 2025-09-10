@@ -7,6 +7,19 @@
 // Re-export all CLI types for convenience
 export * from '../cli/types';
 
+// Re-export framework detection types
+export type {
+  FrameworkDetectionResult,
+  FrameworkType,
+  MetaFrameworkType,
+  EnvironmentInfo,
+  FrameworkDetails,
+  BundlerInfo,
+  FrameworkAdapter,
+  ConditionalLoadingConfig,
+  DetectionRule
+} from './utils/framework-detector';
+
 // Import specific types for extension
 import {
   FarertModule as BaseFarertModule,
@@ -16,6 +29,31 @@ import {
   CLIError,
   CLIErrorCode
 } from '../cli/types';
+
+// Station search result interface for component integration
+export interface StationSearchResult {
+  results: StationInfo[];
+  query: string;
+  isLoading: boolean;
+  error: string | null;
+  hasMore: boolean;
+  total: number;
+  page: number;
+  suggestions: string[];
+}
+
+// Fare discount information
+export interface FareDiscount {
+  id: string;
+  name: string;
+  description: string;
+  discountAmount: number;
+  discountPercentage?: number;
+  validFrom?: Date;
+  validUntil?: Date;
+  conditions?: string[];
+  applicable: boolean;
+}
 
 // Extended interfaces for React SDK
 export interface ExtendedFarertModule extends BaseFarertModule {
@@ -35,7 +73,23 @@ export interface ExtendedFarertModule extends BaseFarertModule {
   getAlternativeRoutes?(startStationId: number, endStationId: number): number[][];
 }
 
-// Enhanced station information for UI components
+// Station type alias for compatibility
+export interface Station {
+  id: number;
+  name: string;
+  nameExtended: string;
+  kana: string;
+  prefecture: string;
+  prefectureId: number;
+  isJunction: boolean;
+  lines: LineInfo[];
+  coordinates?: {
+    latitude: number;
+    longitude: number;
+  };
+}
+
+// Enhanced station information for UI components (alias)
 export interface StationInfo {
   id: number;
   name: string;
@@ -144,10 +198,11 @@ export interface RouteValidationResult {
 }
 
 export interface RouteValidationError {
-  field: 'startStation' | 'endStation' | 'viaStations' | 'route';
+  type: string;
   message: string;
-  code: string;
-  value?: any;
+  position?: number;
+  value?: string;
+  suggestions?: string[];
 }
 
 export interface RouteValidationWarning {

@@ -57,8 +57,9 @@
   "license": "GPL-3.0",
   "devDependencies": {
     "@types/node": "^20.0.0",
-    "typescript": "^5.0.0",
-    "commander": "^11.0.0"
+    "commander": "^11.0.0",
+    "svelte": "^5.38.8",
+    "typescript": "^5.0.0"
   },
   "dependencies": {
     "commander": "^11.0.0"

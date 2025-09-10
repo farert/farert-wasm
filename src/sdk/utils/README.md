@@ -1,6 +1,6 @@
 # Farert SDK Utilities
 
-Framework-agnostic utilities for Japanese railway fare calculations and formatting. These utilities are designed to work with React, Vue, Angular, Svelte, or vanilla JavaScript applications.
+Framework-agnostic utilities for Japanese railway fare calculations, formatting, and runtime framework detection. These utilities are designed to work with React, Vue, Angular, Svelte, or vanilla JavaScript applications.
 
 ## Features
 
@@ -9,6 +9,8 @@ Framework-agnostic utilities for Japanese railway fare calculations and formatti
 - 💰 **Comprehensive fare formatting**: Currency display, breakdowns, and comparisons
 - ✅ **Route validation**: Detailed validation with helpful error messages
 - 🔧 **Fluent API**: Easy-to-use route builder pattern
+- 🚀 **Framework detection**: Runtime detection for optimal SDK loading
+- 📱 **Environment detection**: Browser, Node.js, SSR, bundler detection
 - 🌳 **Tree-shakeable**: Import only what you need
 
 ## Quick Start
@@ -23,7 +25,11 @@ import {
   formatStationName,
   fuzzySearchStations,
   validateStationId,
-  getStationDisplayName
+  getStationDisplayName,
+  // Framework detection
+  detectFramework,
+  getOptimizedSDKLoader,
+  FrameworkDetector
 } from '@farert/sdk/utils';
 
 // Format fare with Japanese yen
@@ -47,6 +53,13 @@ const breakdown = formatFareBreakdown(fareInfoData, {
   showDetails: true,
   includeDiscounts: true
 });
+
+// Detect current framework and optimize loading
+const detection = await detectFramework();
+console.log(`Detected: ${detection.framework}`); // "svelte", "react", "vue", etc.
+
+const loader = await getOptimizedSDKLoader();
+const sdk = await loader(); // Loads framework-specific adapter
 ```
 
 ## API Reference
@@ -735,6 +748,253 @@ function displayFareBreakdown(fareInfo) {
   });
   
   document.getElementById('fare-breakdown').textContent = breakdown;
+}
+```
+
+### Framework Detection
+
+#### `detectFramework(): Promise<FrameworkDetectionResult>`
+
+Detect the current JavaScript framework and environment with comprehensive analysis.
+
+```typescript
+const detection = await detectFramework();
+
+console.log('Framework:', detection.framework); // "svelte", "react", "vue", "angular", "vanilla"
+console.log('Meta-framework:', detection.metaFramework); // "sveltekit", "nextjs", "nuxtjs", etc.
+console.log('Confidence:', detection.confidence); // 0.0 - 1.0
+console.log('Version:', detection.version); // Framework version if detectable
+
+// Environment details
+console.log('Runtime:', detection.details.bundler?.type); // "vite", "webpack", "rollup"
+console.log('Has HMR:', detection.details.bundler?.hasHMR); // true/false
+console.log('Supports SSR:', detection.details.supportsSSR); // true/false
+console.log('Has Virtual DOM:', detection.details.hasVirtualDOM); // true/false
+
+// Optimization recommendations
+console.log('Recommendations:', detection.details.optimizationHints);
+/*
+[
+  "Use Svelte stores for reactive state management",
+  "Leverage compile-time optimizations", 
+  "Use context API for dependency injection"
+]
+*/
+```
+
+#### `getOptimizedSDKLoader(): Promise<() => Promise<any>>`
+
+Get an optimized SDK loader function for the detected framework.
+
+```typescript
+// Automatically loads the best SDK adapter
+const loader = await getOptimizedSDKLoader();
+const sdk = await loader();
+
+// Uses Svelte adapter if Svelte detected
+// Uses React adapter if React detected  
+// Falls back to core SDK for vanilla JS
+```
+
+#### `getFrameworkConfig(): Promise<Record<string, any>>`
+
+Get framework-specific configuration and recommendations.
+
+```typescript
+const config = await getFrameworkConfig();
+
+console.log('Framework:', config.framework);
+console.log('Detection result:', config.detection);
+console.log('Recommendations:', config.recommendations);
+
+// Example output for Svelte:
+/*
+{
+  framework: "svelte",
+  useStores: true,
+  detection: { framework: "svelte", confidence: 0.95, ... },
+  recommendations: [
+    "Use Svelte stores for reactive state management",
+    "Leverage compile-time optimizations",
+    "Use context API for component communication"
+  ]
+}
+*/
+```
+
+#### `isFrameworkSupported(framework: FrameworkType): Promise<boolean>`
+
+Check if a specific framework adapter is available and compatible.
+
+```typescript
+const reactSupported = await isFrameworkSupported('react');
+const vueSupported = await isFrameworkSupported('vue');
+
+if (reactSupported) {
+  // Load React-specific features
+} else {
+  // Fallback to core SDK
+}
+```
+
+#### `FrameworkDetector` Class
+
+Advanced framework detection with custom rules and caching.
+
+```typescript
+import { FrameworkDetector, type DetectionRule } from '@farert/sdk/utils';
+
+// Create detector with custom configuration
+const detector = new FrameworkDetector({
+  enableLazyLoading: true,
+  preloadDetectedAdapters: true,
+  cacheDetection: true,
+  cacheTimeout: 5 * 60 * 1000, // 5 minutes
+  fallbackStrategy: 'vanilla'
+});
+
+// Add custom detection rules
+const customRules: DetectionRule[] = [
+  {
+    name: 'electron-app',
+    detect: () => typeof (globalThis as any).require === 'function' && 
+                  typeof process?.versions?.electron !== 'undefined',
+    framework: 'vanilla',
+    metaFramework: 'electron',
+    confidence: 0.95,
+    priority: 100
+  }
+];
+
+const customDetector = new FrameworkDetector({
+  customDetectionRules: customRules
+});
+
+// Perform detection
+const result = await detector.detectFramework();
+
+// Get framework adapter
+const adapter = await detector.getAdapter('react');
+
+// Clear cache
+detector.clearCache();
+
+// Get debug information
+const debugInfo = await detector.getDebugInfo();
+```
+
+#### Development Utilities
+
+Debug and optimize framework detection in development mode.
+
+```typescript
+import { frameworkDetectorDev } from '@farert/sdk/utils';
+
+// Only available in development mode
+if (process.env.NODE_ENV === 'development') {
+  // Log comprehensive detection information
+  await frameworkDetectorDev.logDetectionInfo();
+  
+  // Force fresh detection (clears cache)
+  const freshResult = await frameworkDetectorDev.forceRedetection();
+  
+  // Benchmark detection performance
+  const avgTime = await frameworkDetectorDev.benchmarkDetection(10);
+  console.log(`Average detection time: ${avgTime}ms`);
+  
+  // Test custom detection rules
+  const testRules = [/* custom rules */];
+  const matchingRules = await frameworkDetectorDev.testCustomRules(testRules);
+}
+```
+
+### Framework Detection Types
+
+```typescript
+interface FrameworkDetectionResult {
+  framework: FrameworkType; // Primary framework
+  metaFramework?: MetaFrameworkType; // Meta-framework (Next.js, Nuxt.js, etc.)
+  version?: string; // Framework version
+  confidence: number; // Detection confidence (0-1)
+  details: FrameworkDetails; // Environment and optimization details
+}
+
+type FrameworkType = 
+  | 'svelte' | 'react' | 'vue' | 'angular' | 'vanilla' | 'unknown';
+
+type MetaFrameworkType = 
+  | 'sveltekit' | 'nextjs' | 'nuxtjs' | 'gatsby' | 'remix' 
+  | 'quasar' | 'ionic' | 'electron' | 'tauri' | 'none';
+
+interface FrameworkDetails {
+  hasVirtualDOM: boolean;
+  supportsSSR: boolean;  
+  isComponentBased: boolean;
+  hasReactiveState: boolean;
+  optimizationHints: string[];
+  bundler?: BundlerInfo;
+}
+
+interface BundlerInfo {
+  type: 'vite' | 'webpack' | 'rollup' | 'parcel' | 'unknown';
+  version?: string;
+  hasHMR: boolean;
+  hasTreeShaking: boolean;
+}
+```
+
+### Use Cases
+
+**Automatic SDK Optimization:**
+```typescript
+// Automatically load optimal SDK configuration
+const detection = await detectFramework();
+const loader = await getOptimizedSDKLoader();
+const sdk = await loader();
+
+if (detection.framework === 'svelte') {
+  // Use Svelte stores and reactivity
+  const stores = await sdk.createStoreCollection();
+} else if (detection.framework === 'react') {
+  // Use React hooks and context
+  const { useFareCalculation } = sdk;
+}
+```
+
+**Conditional Feature Loading:**
+```typescript
+const detection = await detectFramework();
+
+// Load only framework-specific features
+if (detection.framework === 'react') {
+  await import('../react/hooks');
+} else if (detection.framework === 'vue') {
+  await import('../vue/composables');
+}
+```
+
+**Bundle Size Optimization:**
+```typescript
+// Dynamic imports based on detected framework
+const imports = {
+  core: () => import('../core'),
+  ...(detection.framework === 'svelte' && {
+    svelte: () => import('../svelte')
+  }),
+  ...(detection.framework === 'react' && {
+    react: () => import('../react')
+  })
+};
+```
+
+**Development Tools Integration:**
+```typescript
+if (detection.details.bundler?.hasHMR) {
+  console.log('🔥 HMR detected - enabling development optimizations');
+}
+
+if (detection.details.bundler?.hasTreeShaking) {
+  console.log('🌳 Tree shaking enabled - using modular imports');
 }
 ```
 

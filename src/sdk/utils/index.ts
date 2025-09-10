@@ -89,6 +89,27 @@ export {
   default as routeUtils
 } from './route-utils';
 
+// Export framework detection utilities
+export {
+  FrameworkDetector,
+  detectFramework,
+  getOptimizedSDKLoader,
+  getFrameworkConfig,
+  isFrameworkSupported,
+  createFrameworkDetector,
+  frameworkDetector,
+  type FrameworkDetectionResult,
+  type FrameworkType,
+  type MetaFrameworkType,
+  type EnvironmentInfo,
+  type FrameworkDetails,
+  type BundlerInfo,
+  type FrameworkAdapter,
+  type ConditionalLoadingConfig,
+  type DetectionRule,
+  dev as frameworkDetectorDev
+} from './framework-detector';
+
 // Re-export types from CLI for convenience
 export type { FareInfoData } from '../../cli/types';
 
@@ -172,5 +193,25 @@ export const utils = {
   
   distance: {
     formatKilometers: (km: number) => import('./fare-utils').then(m => m.formatKilometers(km))
+  },
+  
+  framework: {
+    // Framework detection
+    detect: () => import('./framework-detector').then(m => m.detectFramework()),
+    getConfig: () => import('./framework-detector').then(m => m.getFrameworkConfig()),
+    isSupported: (framework: any) => import('./framework-detector').then(m => m.isFrameworkSupported(framework)),
+    getOptimizedLoader: () => import('./framework-detector').then(m => m.getOptimizedSDKLoader()),
+    
+    // Utilities
+    createDetector: (config?: any) => import('./framework-detector').then(m => m.createFrameworkDetector(config)),
+    getInstance: () => import('./framework-detector').then(m => m.frameworkDetector),
+    
+    // Development utilities  
+    dev: {
+      logInfo: () => import('./framework-detector').then(m => m.dev.logDetectionInfo()),
+      forceRedetection: () => import('./framework-detector').then(m => m.dev.forceRedetection()),
+      testRules: (rules: any[]) => import('./framework-detector').then(m => m.dev.testCustomRules(rules)),
+      benchmark: (iterations?: number) => import('./framework-detector').then(m => m.dev.benchmarkDetection(iterations))
+    }
   }
 };

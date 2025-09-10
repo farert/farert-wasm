@@ -32,6 +32,73 @@ export {
   type RouteBuilderConfig
 } from './route-builder-store';
 
+// Comprehensive Svelte stores exports
+export {
+  // Store creators
+  createStationSearchStore,
+  createRouteBuilderStore as createRouteBuilderStoreNew,
+  createFareCalculationStore,
+  createReferenceDataStore,
+  createAppStateStore,
+  
+  // Store collection factory
+  createStoreCollection,
+  initializeStores,
+  destroyStores,
+  
+  // Store state types
+  type StationSearchState,
+  type RouteBuilderState,
+  type FareCalculationState,
+  type ReferenceDataState,
+  type AppState,
+  type SvelteStoreCollection,
+  type StoreConfig
+} from './stores';
+
+// Context system exports
+export {
+  // Context creation and management
+  createSvelteSDKContext,
+  setSvelteSDKContext,
+  getSDK,
+  requireSDK,
+  getSDKContext,
+  getSDKStores,
+  requireSDKStores,
+  
+  // Specialized contexts
+  createStationDataContext,
+  getStationDataContext,
+  createRouteBuilderContext,
+  getRouteBuilderContext,
+  createFareCalculatorContext,
+  getFareCalculatorContext,
+  
+  // Context utilities
+  initializeSDKContext,
+  destroySDKContext,
+  isSDKContextAvailable,
+  waitForSDKReady,
+  
+  // Development utilities
+  getContextDebugInfo,
+  logContextState,
+  
+  // Context key symbols
+  FARERT_SDK_CONTEXT_KEY,
+  STATION_DATA_CONTEXT_KEY,
+  ROUTE_BUILDER_CONTEXT_KEY,
+  FARE_CALCULATOR_CONTEXT_KEY,
+  
+  // Context types
+  type SvelteSDKContext,
+  type StationDataContext,
+  type RouteBuilderContext,
+  type FareCalculatorContext,
+  type ContextConfig
+} from './context';
+
 // Type exports
 export {
   type StationInfo,
@@ -75,6 +142,11 @@ export const FEATURES = {
   CACHING: true,
   ERROR_HANDLING: true,
   REACTIVE_STORES: true,
+  CONTEXT_SYSTEM: true, // New comprehensive context management
+  SSR_SUPPORT: true, // SvelteKit server-side rendering support
+  CONTEXT_PROVIDERS: true, // Hierarchical context providers
+  CONTEXT_CONSUMERS: true, // Type-safe context consumers
+  AUTOMATIC_CLEANUP: true, // Automatic resource cleanup
   PERFORMANCE_MONITORING: false, // Will be enabled in future versions
   DRAG_DROP: true,
   ACCESSIBILITY: true
