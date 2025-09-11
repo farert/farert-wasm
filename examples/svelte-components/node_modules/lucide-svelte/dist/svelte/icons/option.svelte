@@ -1,0 +1,7 @@
+<script>import Icon from '../Icon.svelte';
+const iconNode = [["path", { "d": "M3 3h6l6 18h6" }], ["path", { "d": "M14 3h7" }]];
+</script>
+
+<Icon name="option" {...$$props} iconNode={iconNode}>
+  <slot/>
+</Icon>
