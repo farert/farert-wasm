@@ -1,0 +1,337 @@
+/* Tailwind CSS imports */
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+/* Custom CSS Variables for theming */
+:root {
+	/* Farert brand colors */
+	--farert-primary: #0ea5e9;
+	--farert-primary-dark: #0284c7;
+	--farert-secondary: #64748b;
+	--farert-accent: #10b981;
+	--farert-warning: #f59e0b;
+	--farert-error: #dc2626;
+	
+	/* Railway company colors */
+	--jr-east: #00a650;
+	--jr-central: #00aaff;
+	--jr-west: #0072bc;
+	--jr-kyushu: #ff4d00;
+	--jr-shikoku: #00a0e6;
+	--jr-hokkaido: #7cb342;
+	
+	/* Station type colors */
+	--station-start: #10b981;
+	--station-via: #06b6d4;
+	--station-end: #dc2626;
+	--station-junction: #f59e0b;
+	
+	/* Layout */
+	--header-height: 4rem;
+	--sidebar-width: 16rem;
+	--mobile-breakpoint: 768px;
+	
+	/* Typography */
+	--font-size-xs: 0.75rem;
+	--font-size-sm: 0.875rem;
+	--font-size-base: 1rem;
+	--font-size-lg: 1.125rem;
+	--font-size-xl: 1.25rem;
+	--font-size-2xl: 1.5rem;
+	--font-size-3xl: 1.875rem;
+	
+	/* Spacing */
+	--spacing-xs: 0.25rem;
+	--spacing-sm: 0.5rem;
+	--spacing-md: 1rem;
+	--spacing-lg: 1.5rem;
+	--spacing-xl: 2rem;
+	--spacing-2xl: 3rem;
+	
+	/* Shadows */
+	--shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+	--shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+	--shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+	--shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+	
+	/* Transitions */
+	--transition-fast: 150ms ease;
+	--transition-base: 300ms ease;
+	--transition-slow: 500ms ease;
+	
+	/* Border radius */
+	--radius-sm: 0.25rem;
+	--radius-md: 0.375rem;
+	--radius-lg: 0.5rem;
+	--radius-xl: 0.75rem;
+	--radius-2xl: 1rem;
+	--radius-full: 9999px;
+}
+
+/* Dark mode variables */
+@media (prefers-color-scheme: dark) {
+	:root {
+		--farert-primary: #38bdf8;
+		--farert-primary-dark: #0ea5e9;
+	}
+}
+
+/* Base styles */
+html {
+	scroll-behavior: smooth;
+	line-height: 1.6;
+}
+
+body {
+	font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;
+	text-rendering: optimizeLegibility;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+/* Japanese typography improvements */
+.jp-text {
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Hiragino Sans', 'Noto Sans CJK JP', sans-serif;
+	line-height: 1.7;
+	letter-spacing: 0.025em;
+}
+
+/* Focus styles for accessibility */
+*:focus {
+	outline: 2px solid var(--farert-primary);
+	outline-offset: 2px;
+}
+
+*:focus:not(:focus-visible) {
+	outline: none;
+}
+
+/* Custom utility classes */
+@layer components {
+	/* Farert-specific button styles */
+	.btn-farert {
+		@apply inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-farert-500 hover:bg-farert-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-farert-500 transition-colors duration-200;
+	}
+	
+	.btn-farert-outline {
+		@apply inline-flex items-center justify-center px-4 py-2 border border-farert-300 text-sm font-medium rounded-md text-farert-700 bg-white hover:bg-farert-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-farert-500 transition-colors duration-200;
+	}
+	
+	/* Card styles */
+	.card {
+		@apply bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700;
+	}
+	
+	.card-hover {
+		@apply card hover:shadow-lg hover:border-farert-200 dark:hover:border-farert-700 transition-all duration-200;
+	}
+	
+	/* Station indicator styles */
+	.station-indicator {
+		@apply w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm;
+	}
+	
+	.station-start {
+		@apply bg-green-500;
+	}
+	
+	.station-via {
+		@apply bg-cyan-500;
+	}
+	
+	.station-end {
+		@apply bg-red-500;
+	}
+	
+	.station-junction {
+		@apply bg-amber-500;
+	}
+	
+	/* Railway line styles */
+	.line-jr-east { @apply border-l-4 border-green-600; }
+	.line-jr-central { @apply border-l-4 border-blue-500; }
+	.line-jr-west { @apply border-l-4 border-blue-700; }
+	.line-jr-kyushu { @apply border-l-4 border-orange-600; }
+	.line-jr-shikoku { @apply border-l-4 border-sky-500; }
+	.line-jr-hokkaido { @apply border-l-4 border-lime-600; }
+	
+	/* Loading states */
+	.loading-skeleton {
+		@apply bg-gray-200 dark:bg-gray-700 animate-pulse rounded;
+	}
+	
+	.loading-spinner {
+		@apply w-6 h-6 border-2 border-farert-200 border-t-farert-600 rounded-full animate-spin;
+	}
+	
+	/* Error states */
+	.error-text {
+		@apply text-red-600 dark:text-red-400;
+	}
+	
+	.error-bg {
+		@apply bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800;
+	}
+	
+	/* Success states */
+	.success-text {
+		@apply text-green-600 dark:text-green-400;
+	}
+	
+	.success-bg {
+		@apply bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800;
+	}
+	
+	/* Warning states */
+	.warning-text {
+		@apply text-amber-600 dark:text-amber-400;
+	}
+	
+	.warning-bg {
+		@apply bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800;
+	}
+	
+	/* Info states */
+	.info-text {
+		@apply text-blue-600 dark:text-blue-400;
+	}
+	
+	.info-bg {
+		@apply bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800;
+	}
+}
+
+@layer utilities {
+	/* Text balance utility for better typography */
+	.text-balance {
+		text-wrap: balance;
+	}
+	
+	/* Hide scrollbar but keep functionality */
+	.scrollbar-hide {
+		-ms-overflow-style: none;
+		scrollbar-width: none;
+	}
+	
+	.scrollbar-hide::-webkit-scrollbar {
+		display: none;
+	}
+	
+	/* Custom scrollbar */
+	.scrollbar-custom {
+		scrollbar-width: thin;
+		scrollbar-color: var(--farert-primary) transparent;
+	}
+	
+	.scrollbar-custom::-webkit-scrollbar {
+		width: 6px;
+	}
+	
+	.scrollbar-custom::-webkit-scrollbar-track {
+		background: transparent;
+	}
+	
+	.scrollbar-custom::-webkit-scrollbar-thumb {
+		background: var(--farert-primary);
+		border-radius: 3px;
+	}
+	
+	.scrollbar-custom::-webkit-scrollbar-thumb:hover {
+		background: var(--farert-primary-dark);
+	}
+	
+	/* Responsive text sizing */
+	.text-responsive {
+		font-size: clamp(0.875rem, 2.5vw, 1.125rem);
+	}
+	
+	.text-responsive-lg {
+		font-size: clamp(1.125rem, 3vw, 1.5rem);
+	}
+	
+	.text-responsive-xl {
+		font-size: clamp(1.5rem, 4vw, 2.25rem);
+	}
+	
+	/* Animation utilities */
+	.animate-fade-in {
+		animation: fade-in 0.5s ease-in-out;
+	}
+	
+	.animate-slide-up {
+		animation: slide-up 0.3s ease-out;
+	}
+	
+	.animate-slide-down {
+		animation: slide-down 0.3s ease-out;
+	}
+	
+	/* Print styles */
+	@media print {
+		.print-hide {
+			display: none !important;
+		}
+		
+		.print-show {
+			display: block !important;
+		}
+	}
+}
+
+/* Animation keyframes */
+@keyframes fade-in {
+	from {
+		opacity: 0;
+		transform: translateY(10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes slide-up {
+	from {
+		transform: translateY(100%);
+	}
+	to {
+		transform: translateY(0);
+	}
+}
+
+@keyframes slide-down {
+	from {
+		transform: translateY(-100%);
+	}
+	to {
+		transform: translateY(0);
+	}
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+	:root {
+		--farert-primary: #0066cc;
+		--farert-primary-dark: #004499;
+	}
+	
+	.card {
+		@apply border-2 border-black dark:border-white;
+	}
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+	}
+	
+	html {
+		scroll-behavior: auto;
+	}
+}
