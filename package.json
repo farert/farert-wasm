@@ -3,6 +3,41 @@
   "version": "2.0.0",
   "description": "Japanese railway fare calculation system with WebAssembly core and Frontend API Layer SDK supporting Svelte/React/Vue",
   "main": "dist/farert.js",
+  "module": "dist/sdk/index.esm.js",
+  "types": "dist/sdk/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/sdk/index.esm.js",
+      "require": "./dist/farert.js",
+      "types": "./dist/sdk/index.d.ts"
+    },
+    "./svelte": {
+      "import": "./dist/sdk/frameworks/svelte.esm.js",
+      "types": "./dist/sdk/frameworks/svelte.d.ts"
+    },
+    "./react": {
+      "import": "./dist/sdk/frameworks/react.esm.js",
+      "types": "./dist/sdk/frameworks/react.d.ts"
+    },
+    "./vue": {
+      "import": "./dist/sdk/frameworks/vue.esm.js",
+      "types": "./dist/sdk/frameworks/vue.d.ts"
+    }
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE",
+    "package.json"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/farert-dev/farert-wasm.git"
+  },
+  "homepage": "https://github.com/farert-dev/farert-wasm#readme",
+  "bugs": {
+    "url": "https://github.com/farert-dev/farert-wasm/issues"
+  },
   "scripts": {
     "build": "npm run build:wasm && npm run build:cli",
     "build:wasm": "source setup_env.sh && make",
@@ -62,7 +97,15 @@
     "build:sdk:react": "node build/sdk-build.js prod --frameworks react --verbose",
     "build:sdk:vue": "node build/sdk-build.js prod --frameworks vue --verbose",
     "build:sdk:core": "node build/sdk-build.js prod --frameworks core --verbose",
-    "test:integration:full-stack": "npm run build:sdk:prod && npx vitest run tests/integration/full-stack.test.ts"
+    "test:integration:full-stack": "npm run build:sdk:prod && npx vitest run tests/integration/full-stack.test.ts",
+    "prepublishOnly": "npm run build:sdk:prod && npm run test:integration:full-stack",
+    "publish:check": "npm pack --dry-run",
+    "publish:beta": "npm publish --tag beta",
+    "publish:prod": "npm publish",
+    "deploy:cdn": "npm run build:sdk:prod && node scripts/deploy-cdn.js",
+    "deploy:pages": "npm run build:sdk:prod && gh-pages -d docs/demo",
+    "pages:validate": "node scripts/validate-pages.js",
+    "test:cdn": "node scripts/test-cdn.js"
   },
   "keywords": [
     "webassembly",
