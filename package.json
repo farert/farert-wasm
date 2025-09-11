@@ -1,7 +1,7 @@
 {
   "name": "farert-wasm",
   "version": "2.0.0",
-  "description": "Japanese railway fare calculation system fully ported to WebAssembly with 39 APIs",
+  "description": "Japanese railway fare calculation system with WebAssembly core and Frontend API Layer SDK supporting Svelte/React/Vue",
   "main": "dist/farert.js",
   "scripts": {
     "build": "npm run build:wasm && npm run build:cli",
@@ -50,7 +50,19 @@
     "test:cache:lru": "node tests/sdk/cache/run-cache-tests.js --pattern 'LRU Eviction'",
     "test:cache:ttl": "node tests/sdk/cache/run-cache-tests.js --pattern 'TTL Expiration'",
     "test:cache:memory": "node tests/sdk/cache/run-cache-tests.js --pattern 'Memory Limit'",
-    "test:cache:performance": "node tests/sdk/cache/run-cache-tests.js --pattern 'Performance Benchmarks'"
+    "test:cache:performance": "node tests/sdk/cache/run-cache-tests.js --pattern 'Performance Benchmarks'",
+    "build:sdk": "node build/sdk-build.js",
+    "build:sdk:dev": "node build/sdk-build.js dev --verbose",
+    "build:sdk:prod": "node build/sdk-build.js prod --verbose",
+    "build:sdk:test": "node build/sdk-build.js test --verbose",
+    "build:sdk:analyze": "node build/sdk-build.js analyze --verbose",
+    "build:sdk:perf": "node build/sdk-build.js perf --verbose",
+    "build:sdk:types": "node build/sdk-build.js types --verbose",
+    "build:sdk:svelte": "node build/sdk-build.js prod --frameworks svelte --verbose",
+    "build:sdk:react": "node build/sdk-build.js prod --frameworks react --verbose",
+    "build:sdk:vue": "node build/sdk-build.js prod --frameworks vue --verbose",
+    "build:sdk:core": "node build/sdk-build.js prod --frameworks core --verbose",
+    "test:integration:full-stack": "npm run build:sdk:prod && npx vitest run tests/integration/full-stack.test.ts"
   },
   "keywords": [
     "webassembly",
@@ -61,14 +73,22 @@
     "emscripten",
     "c++",
     "sqlite",
-    "transport"
+    "transport",
+    "svelte",
+    "react",
+    "vue",
+    "typescript",
+    "frontend-sdk",
+    "api-layer"
   ],
   "author": "Farert Development Team",
   "license": "GPL-3.0",
   "devDependencies": {
     "@types/node": "^20.0.0",
     "commander": "^11.0.0",
+    "esbuild": "^0.25.9",
     "svelte": "^5.38.8",
+    "terser": "^5.44.0",
     "typescript": "^5.0.0"
   },
   "dependencies": {

@@ -28,6 +28,22 @@ export {
 } from './wasm-wrapper';
 
 // ============================================================================
+// MEMORY MANAGER EXPORTS
+// ============================================================================
+
+export {
+  MemoryManager,
+  SvelteMemoryManager,
+  ReactMemoryManager,
+  createMemoryManager,
+  createSvelteMemoryManager,
+  createReactMemoryManager,
+  globalMemoryStats,
+  detectGlobalLeaks,
+  forceGarbageCollection
+} from './memory-manager';
+
+// ============================================================================
 // TYPE EXPORTS
 // ============================================================================
 
@@ -37,6 +53,12 @@ export type {
   ApiCallContext,
   ApiCallResult
 } from './wasm-wrapper';
+
+export type {
+  MemoryStats,
+  ResourceHandle,
+  MemoryManagerOptions
+} from './memory-manager';
 
 // ============================================================================
 // RE-EXPORTS FROM CLI TYPES (for convenience)

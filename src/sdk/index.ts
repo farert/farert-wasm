@@ -170,11 +170,25 @@ export {
   createSvelteWasmWrapper,
   createProductionWasmWrapper,
   
+  // Memory management system for leak prevention
+  MemoryManager,
+  SvelteMemoryManager,
+  ReactMemoryManager,
+  createMemoryManager,
+  createSvelteMemoryManager,
+  createReactMemoryManager,
+  globalMemoryStats,
+  detectGlobalLeaks,
+  forceGarbageCollection,
+  
   // Core infrastructure types
   type WasmWrapperConfig,
   type WasmWrapperStats,
   type ApiCallContext,
-  type ApiCallResult
+  type ApiCallResult,
+  type MemoryStats,
+  type ResourceHandle,
+  type MemoryManagerOptions
 } from './core';
 
 // ============================================================================
@@ -267,6 +281,36 @@ export {
   type CircuitBreakerInfo,
   type UserFriendlyError
 } from './errors';
+
+// ============================================================================
+// SECURITY INPUT VALIDATION
+// ============================================================================
+
+/**
+ * Comprehensive security input validation system
+ * Prevents injection attacks, validates Japanese text, and provides secure input sanitization
+ */
+export {
+  // Main input validator class and factory functions
+  InputValidator,
+  createInputValidator,
+  createStrictInputValidator,
+  createPermissiveInputValidator,
+  
+  // Security enums and types
+  SecurityLevel,
+  SecurityViolationType,
+  SecurityWarningType,
+  ValidationErrorCode,
+  
+  // Validation result types
+  type ValidationResult,
+  type ValidationError,
+  type ValidationWarning,
+  type ValidatorOptions,
+  type RouteValidationOptions,
+  type PaginationParams
+} from './security';
 
 // ============================================================================
 // DEBUG TOOLS AND DIAGNOSTICS
