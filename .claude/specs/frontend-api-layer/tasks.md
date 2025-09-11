@@ -359,7 +359,7 @@ Tech.md alignment through:
 
 ### Phase 9: Documentation and Examples
 
-- [ ] 34. Create SvelteKit example application in examples/sveltekit-example/
+- [x] 34. Create SvelteKit example application in examples/sveltekit-example/
   - Files: examples/sveltekit-example/src/routes/, examples/sveltekit-example/src/lib/
   - Implement complete SvelteKit application using all stores and components
   - Add realistic Japanese station data and route examples
@@ -368,7 +368,7 @@ Tech.md alignment through:
   - _Leverage: src/sdk/svelte/ stores and components_
   - _Requirements: REQ-API-006_
 
-- [ ] 35. Create Svelte component library showcase in examples/svelte-components/
+- [x] 35. Create Svelte component library showcase in examples/svelte-components/
   - Files: examples/svelte-components/src/lib/, examples/svelte-components/src/routes/
   - Implement component showcase with interactive examples
   - Add documentation and props tables for each component
@@ -377,7 +377,7 @@ Tech.md alignment through:
   - _Leverage: src/sdk/svelte/ components_
   - _Requirements: REQ-API-006_
 
-- [ ] 36. Create API documentation in docs/api-reference.md
+- [x] 36. Create API documentation in docs/api-reference.md
   - File: docs/api-reference.md
   - Document all public APIs with parameters and return types
   - Add code examples for Svelte, SvelteKit, and framework-agnostic usage
