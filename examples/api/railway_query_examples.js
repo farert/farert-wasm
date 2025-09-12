@@ -11,10 +11,10 @@
  *    npm run build
  * 
  * 2. サンプルスクリプトを実行 (Run the sample script):
- *    node examples/railway_query_examples.js
+ *    node examples/api/railway_query_examples.js
  * 
  * 3. 個別の関数をテスト (Test individual functions):
- *    node -e "require('./examples/railway_query_examples.js').queryYamanoteStations()"
+ *    node -e "require('./examples/api/railway_query_examples.js').queryYamanoteStations()"
  * 
  * 機能 (Features):
  * - 山手線の各駅表示 (Display all Yamanote Line stations)
@@ -25,7 +25,7 @@
  */
 
 const path = require('path');
-const { wasmLoader } = require('../dist/cli/cli/wasm_loader.js');
+const { wasmLoader } = require('../../dist/cli/cli/wasm_loader.js');
 
 /**
  * Query Yamanote Line stations

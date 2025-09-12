@@ -15,16 +15,22 @@
  * Inheritance: cCalcRoute < cRoute < cRouteList
  */
 
-import { wasmLoader } from '../wasm_loader';
-import { 
-    FarertModule, 
-    RouteListWrapper, 
-    RouteWrapper, 
-    CalcRouteWrapper,
-    RouteItemWrapper,
-    RouteFlagWrapper,
-    FareInfoData
-} from '../types';
+// Import using dynamic imports to handle CommonJS modules
+async function importModules() {
+    const wasmLoaderModule = await import('../../dist/cli/cli/wasm_loader.js');
+    const typesModule = await import('../../dist/cli/cli/types.js');
+    
+    return {
+        wasmLoader: wasmLoaderModule.wasmLoader || wasmLoaderModule.default?.wasmLoader,
+        FarertModule: typesModule.FarertModule || typesModule.default?.FarertModule,
+        RouteListWrapper: typesModule.RouteListWrapper || typesModule.default?.RouteListWrapper,
+        RouteWrapper: typesModule.RouteWrapper || typesModule.default?.RouteWrapper,
+        CalcRouteWrapper: typesModule.CalcRouteWrapper || typesModule.default?.CalcRouteWrapper,
+        RouteItemWrapper: typesModule.RouteItemWrapper || typesModule.default?.RouteItemWrapper,
+        RouteFlagWrapper: typesModule.RouteFlagWrapper || typesModule.default?.RouteFlagWrapper,
+        FareInfoData: typesModule.FareInfoData || typesModule.default?.FareInfoData
+    };
+}
 
 /**
  * Basic cRouteList Usage Example
@@ -32,7 +38,7 @@ import {
  * cRouteList is the base class for all route operations.
  * It provides fundamental array-like operations for managing route segments.
  */
-async function demonstrateRouteList(module: FarertModule): Promise<void> {
+async function demonstrateRouteList(module: any): Promise<void> {
     console.log('=== cRouteList Basic Usage ===\n');
     
     try {
@@ -86,7 +92,7 @@ async function demonstrateRouteList(module: FarertModule): Promise<void> {
  * cRoute extends cRouteList and provides route construction capabilities.
  * It allows building routes by adding stations and lines step by step.
  */
-async function demonstrateRoute(module: FarertModule): Promise<void> {
+async function demonstrateRoute(module: any): Promise<void> {
     console.log('=== cRoute Basic Usage ===\n');
     
     try {
@@ -167,7 +173,7 @@ async function demonstrateRoute(module: FarertModule): Promise<void> {
  * cCalcRoute extends cRoute and provides fare calculation capabilities.
  * This is the primary class for calculating Japanese railway fares.
  */
-async function demonstrateCalcRoute(module: FarertModule): Promise<void> {
+async function demonstrateCalcRoute(module: any): Promise<void> {
     console.log('=== cCalcRoute Basic Usage ===\n');
     
     try {
@@ -264,6 +270,9 @@ async function runBasicObjectClassExamples(): Promise<void> {
     console.log('cCalcRoute < cRoute < cRouteList\n');
     
     try {
+        // Import modules dynamically
+        const { wasmLoader } = await importModules();
+        
         // Initialize WebAssembly module
         console.log('🔄 Initializing WebAssembly module...');
         const module = await wasmLoader.loadModule();
@@ -292,7 +301,7 @@ async function runBasicObjectClassExamples(): Promise<void> {
 }
 
 // Execute demonstrations if run directly
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
     runBasicObjectClassExamples().catch(error => {
         console.error('❌ Fatal error:', error);
         process.exit(1);

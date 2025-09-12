@@ -13,12 +13,12 @@
  * Focus: Route flags, special rules, and advanced routing control
  */
 
-import { wasmLoader } from '../wasm_loader';
+import { wasmLoader } from '../../cli/wasm_loader';
 import { 
     FarertModule, 
     CalcRouteWrapper,
     RouteFlagWrapper
-} from '../types';
+} from '../../cli/types';
 
 /**
  * RouteFlag Basic Usage Example

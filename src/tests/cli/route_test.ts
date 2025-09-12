@@ -13,7 +13,7 @@
  * - Japanese text processing with proper encoding
  */
 
-import { FarertModule } from './types';
+import { FarertModule } from '../../cli/types';
 import { TestOutputWriter } from './test_output';
 
 /**

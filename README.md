@@ -270,8 +270,11 @@ farert-wasm/
 │   └── sdk/                  # SDK build outputs (ESM, CJS, UMD, IIFE)
 ├── docs/              # API documentation and examples
 ├── examples/          # Framework integration examples
-│   └── svelte-components/    # Svelte component showcase
-├── tests/integration/ # Full-stack integration tests
+│   ├── cli/               # CLI usage examples and demos
+│   └── svelte-components/ # Svelte component showcase
+├── tests/             # Testing infrastructure
+│   ├── cli/               # CLI tests and validation
+│   └── integration/       # Full-stack integration tests
 ├── build/             # Build configuration
 ├── data/              # SQLite database
 ├── .claude/           # Claude Code specifications

@@ -26,11 +26,9 @@
   "exclude": [
     "node_modules",
     "dist", 
-    "tests",
+    "src/tests/**/*",
+    "src/examples/**/*",
     "**/*.test.ts",
-    "src/sdk/**/*",
-    "src/cli/examples/**/*",
-    "src/cli/comprehensive_validation.ts",
-    "src/cli/interface_validation.ts"
+    "src/sdk/**/*"
   ]
 }

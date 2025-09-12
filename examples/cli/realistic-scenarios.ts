@@ -15,11 +15,11 @@
  * Focus: Real-world applications and practical usage scenarios
  */
 
-import { wasmLoader } from '../wasm_loader';
+import { wasmLoader } from '../../cli/wasm_loader';
 import { 
     FarertModule, 
     CalcRouteWrapper
-} from '../types';
+} from '../../cli/types';
 
 /**
  * Daily Commuting Scenarios

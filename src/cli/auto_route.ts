@@ -6,7 +6,7 @@
  */
 
 import { FarertModule } from './types';
-import { TestOutputWriter } from './test_output';
+import { TestOutputWriter } from '../tests/cli/test_output';
 
 /**
  * Parse auto route options from option number

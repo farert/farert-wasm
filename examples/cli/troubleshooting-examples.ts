@@ -15,13 +15,13 @@
  * Focus: Error prevention, detection, handling, and recovery patterns
  */
 
-import { wasmLoader } from '../wasm_loader';
+import { wasmLoader } from '../../cli/wasm_loader';
 import { 
     FarertModule, 
     CalcRouteWrapper,
     CLIError,
     CLIErrorCode
-} from '../types';
+} from '../../cli/types';
 
 /**
  * Input Validation and Sanitization Examples

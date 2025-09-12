@@ -166,10 +166,13 @@ farert-wasm/
 │   │   ├── react/           # React hooks and utilities
 │   │   ├── vue/             # Vue composables and utilities
 │   │   └── utils/           # Framework-agnostic utilities
+│   ├── tests/              # Testing infrastructure
+│   │   └── cli/             # CLI tests and validation
 │   └── db/                 # Database operations
 ├── dist/                   # Build outputs (farert.js, farert.wasm)
 ├── docs/                   # API documentation and examples
 ├── examples/               # Framework integration examples
+│   ├── cli/                # CLI usage examples and demos
 │   └── svelte-components/   # Svelte component showcase
 ├── tests/integration/      # Full-stack integration tests
 ├── build/                  # Build configuration
