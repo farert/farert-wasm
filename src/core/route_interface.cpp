@@ -1252,21 +1252,42 @@ void RouteListWrapper::setRouteFlag(const RouteFlag& flag) {
 CalcRouteWrapper::CalcRouteWrapper(const RouteWrapper& routeWrapper) {
     calcRoute = new CalcRoute(*routeWrapper.route);
     lastFareResult = -1;  // Initialize to invalid state
+    
+    // Initialize lifecycle management (Task 25: REQ-OBJ-007)
+    magicValue = MemorySafetyValidator::MAGIC_VALUE_VALID;
+    refCounter = new RefCounter(this);
 }
 
 CalcRouteWrapper::CalcRouteWrapper(const RouteWrapper& route, int count) {
     // TODO: Implement constructor with count parameter
     calcRoute = new CalcRoute(*route.route);
     lastFareResult = -1;  // Initialize to invalid state
+    
+    // Initialize lifecycle management (Task 25: REQ-OBJ-007)
+    magicValue = MemorySafetyValidator::MAGIC_VALUE_VALID;
+    refCounter = new RefCounter(this);
 }
 
 CalcRouteWrapper::CalcRouteWrapper(const RouteListWrapper& routeList) {
     calcRoute = new CalcRoute(*routeList.routeList);
     lastFareResult = -1;  // Initialize to invalid state
+    
+    // Initialize lifecycle management (Task 25: REQ-OBJ-007)
+    magicValue = MemorySafetyValidator::MAGIC_VALUE_VALID;
+    refCounter = new RefCounter(this);
 }
 
 CalcRouteWrapper::~CalcRouteWrapper() {
     delete calcRoute;
+    
+    // Cleanup lifecycle management (Task 25: REQ-OBJ-007)
+    if (refCounter) {
+        refCounter->count--;
+        if (refCounter->count <= 0) {
+            delete refCounter;
+        }
+    }
+    magicValue = MemorySafetyValidator::MAGIC_VALUE_DESTROYED;
 }
 
 void CalcRouteWrapper::sync(const RouteWrapper& route) {
@@ -2211,7 +2232,7 @@ std::vector<int> RouteUtility::getLineIdsFromStation(int stationId) {
     std::vector<int> lineIds;
     
     while (dbo.moveNext()) {
-        lineIds.push_back(dbo.getInt(0));
+        lineIds.push_back(dbo.getInt(1));  // field1(int32_t):路線id
     }
     
     return lineIds;
