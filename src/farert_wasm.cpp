@@ -448,6 +448,18 @@ std::string getPrefectsAsJson() {
     return json;
 }
 
+// 特定の会社・都道府県内で特定路線の駅IDリストを取得（JSON文字列として返す）
+std::string stationsWithinCompanyOrPrefectAndLineAsJson(int companyOrPrefectId, int lineId) {
+    std::vector<int> stationIds = RouteUtility::stationsWithinCompanyOrPrefectAndLine(companyOrPrefectId, lineId);
+    std::string json = "[";
+    for (size_t i = 0; i < stationIds.size(); i++) {
+        json += std::to_string(stationIds[i]);
+        if (i < stationIds.size() - 1) json += ",";
+    }
+    json += "]";
+    return json;
+}
+
 // ===== 拡張API: 詳細情報取得関数 =====
 
 // 駅のかな取得
@@ -834,6 +846,7 @@ EMSCRIPTEN_BINDINGS(farert_module) {
     emscripten::function("linesCompanyOrPrefectId", &linesFromCompanyOrPrefectAsJson);  // Alias for compatibility
     emscripten::function("getJRCompanys", &getJRCompanysAsJson);
     emscripten::function("getPrefects", &getPrefectsAsJson);
+    emscripten::function("stationsWithinCompanyOrPrefectAndLine", &stationsWithinCompanyOrPrefectAndLineAsJson);
     
     // ===== 拡張API: 詳細情報取得 =====
     emscripten::function("getStationKana", &getStationKana);

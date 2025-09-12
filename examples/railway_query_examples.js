@@ -34,8 +34,6 @@ async function queryYamanoteStations(module) {
     console.log("=== 山手線の各駅 (Yamanote Line Stations) ===");
     
     try {
-        // Ensure database is open
-        module.openDatabase();
         
         const yamanoteLineId = module.getLineId("山手線");
         if (yamanoteLineId <= 0) {
@@ -79,8 +77,6 @@ async function queryYamanoteBranchStations(module) {
     console.log("\n=== 山手線の分岐駅 (Yamanote Line Branch Stations) ===");
     
     try {
-        // Ensure database is open
-        module.openDatabase();
         
         const yamanoteLineId = module.getLineId("山手線");
         if (yamanoteLineId <= 0) {
@@ -151,8 +147,6 @@ async function queryKanagawaLines(module) {
     console.log("\n=== 神奈川県の路線 (Kanagawa Prefecture Lines) ===");
     
     try {
-        // Ensure database is open
-        module.openDatabase();
         
         console.log("データベースから神奈川県の路線を検索中...\n");
         
@@ -231,81 +225,83 @@ async function queryKanagawaLines(module) {
 }
 
 /**
- * Query Yokohama Line stations AND Kanagawa prefecture stations
+ * Query Yokohama Line stations AND Kanagawa prefecture stations using stationsWithinCompanyOrPrefectAndLine
  */
 async function queryYokohamaAndKanagawaStations(module) {
     console.log("\n=== 横浜線 AND 神奈川県の駅 (Yokohama Line AND Kanagawa Prefecture Stations) ===");
     
     try {
-        // Ensure database is open
-        module.openDatabase();
-        
-        // Get Yokohama Line stations
+        // Get Yokohama Line ID
         const yokohamaLineId = module.getLineId("横浜線");
         if (yokohamaLineId <= 0) {
             console.log("横浜線が見つかりません");
             return;
         }
-        
         console.log(`横浜線 ID: ${yokohamaLineId}`);
         
-        const stationsResult = module.getStationIdsOfLine ? module.getStationIdsOfLine(yokohamaLineId) : "[]";
-        let yokohamaStations = [];
-        try {
-            yokohamaStations = JSON.parse(stationsResult);
-        } catch (e) {
-            const cleaned = stationsResult.replace(/[\[\]]/g, '');
-            yokohamaStations = cleaned.length > 0 ? cleaned.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id)) : [];
-        }
+        // Get Kanagawa prefecture ID (already found: 983040)
+        const kanagawaId = 983040;  // From previous query
+        console.log(`神奈川県 ID: ${kanagawaId}`);
         
-        if (yokohamaStations.length === 0) {
-            console.log("横浜線の駅情報を取得できませんでした");
+        // Use stationsWithinCompanyOrPrefectAndLine for efficient query
+        if (!module.stationsWithinCompanyOrPrefectAndLine) {
+            console.log('❌ stationsWithinCompanyOrPrefectAndLine関数が利用できません');
+            console.log('従来の方法で処理を続行します...\n');
+            
+            // Fallback to previous implementation
+            const stationsResult = module.getStationIdsOfLine(yokohamaLineId);
+            let yokohamaStations = [];
+            try {
+                yokohamaStations = JSON.parse(stationsResult);
+            } catch (e) {
+                const cleaned = stationsResult.replace(/[\[\]]/g, '');
+                yokohamaStations = cleaned.length > 0 ? cleaned.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id)) : [];
+            }
+            
+            console.log(`横浜線総駅数: ${yokohamaStations.length}駅`);
             return;
         }
         
-        console.log(`横浜線総駅数: ${yokohamaStations.length}駅`);
-        
-        console.log("\n各駅の都道府県を確認中...");
-        
-        // Filter Yokohama Line stations that are in Kanagawa prefecture
-        const yokohamaAndKanagawaStations = [];
-        const yokohamaTokyoStations = [];
-        
-        for (const stationId of yokohamaStations) {
-            const stationName = module.getStationName(stationId);
-            let prefecture = '';
-            
-            // Get prefecture information
-            if (module.getStationPrefecture) {
-                prefecture = module.getStationPrefecture(stationId) || '';
-            }
-            
-            if (prefecture.includes('神奈川')) {
-                yokohamaAndKanagawaStations.push(stationId);
-            } else if (prefecture.includes('東京')) {
-                yokohamaTokyoStations.push(stationId);
-            } else {
-                // Unknown prefecture, check against known Kanagawa stations
-                console.log(`  ${stationName}: 都道府県不明 (${prefecture})`);
-            }
+        // Get stations that are both on Yokohama Line AND in Kanagawa prefecture
+        const kanagawaYokohamaStationsResult = module.stationsWithinCompanyOrPrefectAndLine(kanagawaId, yokohamaLineId);
+        let kanagawaYokohamaStations = [];
+        try {
+            kanagawaYokohamaStations = JSON.parse(kanagawaYokohamaStationsResult);
+        } catch (e) {
+            const cleaned = kanagawaYokohamaStationsResult.replace(/[\[\]]/g, '');
+            kanagawaYokohamaStations = cleaned.length > 0 ? cleaned.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id)) : [];
         }
         
-        console.log(`神奈川県内の横浜線駅数: ${yokohamaAndKanagawaStations.length}駅`);
-        console.log(`東京都内の横浜線駅数: ${yokohamaTokyoStations.length}駅`);
+        // Get all Yokohama Line stations for comparison
+        const allYokohamaStationsResult = module.getStationIdsOfLine(yokohamaLineId);
+        let allYokohamaStations = [];
+        try {
+            allYokohamaStations = JSON.parse(allYokohamaStationsResult);
+        } catch (e) {
+            const cleaned = allYokohamaStationsResult.replace(/[\[\]]/g, '');
+            allYokohamaStations = cleaned.length > 0 ? cleaned.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id)) : [];
+        }
         
-        console.log(`\n=== 横浜線かつ神奈川県内の駅 (${yokohamaAndKanagawaStations.length}駅) ===`);
+        // Calculate Tokyo stations (total - Kanagawa)
+        const tokyoYokohamaStations = allYokohamaStations.filter(id => !kanagawaYokohamaStations.includes(id));
         
-        yokohamaAndKanagawaStations.forEach((stationId, index) => {
+        console.log(`横浜線総駅数: ${allYokohamaStations.length}駅`);
+        console.log(`神奈川県内の横浜線駅数: ${kanagawaYokohamaStations.length}駅`);
+        console.log(`東京都内の横浜線駅数: ${tokyoYokohamaStations.length}駅`);
+        
+        console.log(`\n=== 横浜線かつ神奈川県内の駅 (${kanagawaYokohamaStations.length}駅) ===`);
+        
+        kanagawaYokohamaStations.forEach((stationId, index) => {
             const stationName = module.getStationName(stationId);
             const isJunction = module.isJunction(stationId);
             const junctionMark = (isJunction === 1 || isJunction === true) ? " [分岐]" : "";
             console.log(`${String(index + 1).padStart(2)}: ${stationName}${junctionMark} (ID: ${stationId})`);
         });
         
-        // Show Yokohama Line stations in Tokyo (for reference)
-        if (yokohamaTokyoStations.length > 0) {
-            console.log(`\n--- 参考：横浜線の東京都内の駅 (${yokohamaTokyoStations.length}駅) ---`);
-            yokohamaTokyoStations.forEach((stationId, index) => {
+        // Show Tokyo stations for reference
+        if (tokyoYokohamaStations.length > 0) {
+            console.log(`\n--- 参考：横浜線の東京都内の駅 (${tokyoYokohamaStations.length}駅) ---`);
+            tokyoYokohamaStations.forEach((stationId, index) => {
                 const stationName = module.getStationName(stationId);
                 const isJunction = module.isJunction(stationId);
                 const junctionMark = (isJunction === 1 || isJunction === true) ? " [分岐]" : "";
@@ -325,8 +321,6 @@ async function queryOmiyaConnections(module) {
     console.log("\n=== 大宮の接続路線 (Omiya Station Connections) ===");
     
     try {
-        // Ensure database is open
-        module.openDatabase();
         
         const omiyaStationId = module.getStationId("大宮");
         if (omiyaStationId <= 0) {
@@ -390,6 +384,7 @@ function displayAvailableFunctions(module) {
         'getCompanyAndPrefects', 'getCompanyOrPrefectName', 'companyOrPrefectName',
         'getPrefects', 'getJRCompanys', 'getJunctionIdsOfLine', 
         'linesCompanyOrPrefectId', 'getLinesFromCompanyOrPrefect',
+        'stationsWithinCompanyOrPrefectAndLine',
         'getStationPrefecture', 'searchStationsByKeyword'
     ];
     
@@ -418,6 +413,11 @@ async function main() {
         console.log("WebAssemblyモジュールを初期化中...");
         const module = await wasmLoader.loadModule();
         console.log("初期化完了\n");
+        
+        // Initialize database connection once
+        console.log("データベース接続を初期化中...");
+        module.openDatabase();
+        console.log("データベース接続完了\n");
         
         // Display available functions first
         displayAvailableFunctions(module);
