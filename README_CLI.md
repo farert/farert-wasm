@@ -422,6 +422,8 @@ export CLI_PERFORMANCE_MONITORING=1
 
 ### 開発者向け資料
 - **[src/cli/](./src/cli/)**: TypeScript CLI実装のソースコード
+- **[src/tests/cli/](./src/tests/cli/)**: CLI関連テストとバリデーション
+- **[src/examples/cli/](./src/examples/cli/)**: CLI使用例とデモコード
 - **[src/core/](./src/core/)**: C++ WebAssembly コアロジック
 - **[.claude/steering/](./claude/steering/)**: 開発指針とアーキテクチャ文書
 

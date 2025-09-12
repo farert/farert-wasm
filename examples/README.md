@@ -1,170 +1,78 @@
-# Railway Query Examples
+# Farert WebAssembly Examples
 
-鉄道情報クエリの使用例とサンプルコード
+このディレクトリには、Farert WebAssemblyモジュールの使用例とサンプルコードが含まれています。
 
-## 📋 概要
+## 📂 サンプル分類
 
-このディレクトリには、Farert WebAssemblyモジュールを使用して特定の鉄道情報を取得する方法を示すサンプルコードが含まれています。
+### 🔧 [api/](./api/) - 一般的なAPI使用例
+- **[railway_query_examples.js](./api/railway_query_examples.js)** - WebAssembly API直接使用例
+  - 山手線の駅一覧取得
+  - 県別路線検索
+  - 駅の接続路線表示
+  - 基本的なクエリパターン
+
+### ⚡ [cli/](./cli/) - CLIツール使用例
+- **[basic-object-classes.ts](./cli/basic-object-classes.ts)** - オブジェクトクラス基本使用法
+- **[route-flag-examples.ts](./cli/route-flag-examples.ts)** - ルートフラグと特殊条件
+- **[realistic-scenarios.ts](./cli/realistic-scenarios.ts)** - 実際の日本の鉄道ルート例
+- **[framework-integration.ts](./cli/framework-integration.ts)** - React/Vue/Svelte統合例
+
+### 🎨 [svelte-components/](./svelte-components/) - Svelteコンポーネント
+- インタラクティブなUI要素
+- リアクティブな運賃計算
+- ステーション検索
+
+### 🌐 [sveltekit-example/](./sveltekit-example/) - SvelteKitアプリケーション
+- フルスタックアプリケーション例
+- SSRサポート
+- 完全なルート計算UI
 
 ## 🚀 実行方法
 
-### 1. プロジェクトのビルド
-
+### 1. プロジェクトビルド
 ```bash
-# WebAssemblyモジュールとTypeScriptをビルド
 npm run build
 ```
 
-### 2. サンプルスクリプトの実行
+### 2. 各サンプル実行
 
+#### API使用例
 ```bash
-# 全ての機能を実行
-node examples/railway_query_examples.js
+node examples/api/railway_query_examples.js
 ```
 
-### 3. 個別機能のテスト
-
+#### CLI使用例
 ```bash
-# 山手線の駅一覧
-node -e "
-const { queryYamanoteStations } = require('./examples/railway_query_examples.js');
-const { wasmLoader } = require('./dist/cli/cli/wasm_loader.js');
-wasmLoader.loadModule().then(queryYamanoteStations);
-"
-
-# 大宮の接続路線
-node -e "
-const { queryOmiyaConnections } = require('./examples/railway_query_examples.js');
-const { wasmLoader } = require('./dist/cli/cli/wasm_loader.js');
-wasmLoader.loadModule().then(queryOmiyaConnections);
-"
+node examples/cli/basic-object-classes.ts
+node examples/cli/realistic-scenarios.ts
 ```
 
-## 📝 利用可能な機能
-
-### `railway_query_examples.js`
-
-| 機能 | 説明 |
-|------|------|
-| `queryYamanoteStations()` | 山手線の全駅を表示 |
-| `queryYamanoteBranchStations()` | 山手線の分岐駅（他路線との接続駅）を表示 |
-| `queryKanagawaLines()` | 神奈川県内のJR路線を表示 |
-| `queryYokohamaAndKanagawaStations()` | 横浜線かつ神奈川県内の駅のみを表示（集合の積） |
-| `queryOmiyaConnections()` | 大宮駅に接続する全路線を表示 |
-
-## 🔧 WebAssembly API 関数
-
-使用される主要なWebAssembly関数：
-
-```typescript
-// 基本的な名前⇔ID変換
-getStationId(name: string): number      // 駅名 → ID
-getStationName(id: number): string      // 駅ID → 駅名
-getLineId(name: string): number         // 路線名 → ID  
-getLineName(id: number): string         // 路線ID → 路線名
-
-// 路線・駅の関係性
-getStationsOnLine(lineId: number): number[]     // 路線上の全駅
-getLinesAtStation(stationId: number): number[]  // 駅の全接続路線
-isJunction(stationId: number): number          // 分岐駅判定
-
-// 地域情報
-getPrefectureIds(): number[]                        // 都道府県ID一覧
-getCompanyOrPrefectureName(id: number): string     // 会社・都道府県名
-```
-
-## 💡 使用例コード
-
-### 駅の接続路線を調べる
-
-```javascript
-const { wasmLoader } = require('./dist/cli/cli/wasm_loader.js');
-
-async function getStationConnections(stationName) {
-    const module = await wasmLoader.loadModule();
-    
-    // 駅IDを取得
-    const stationId = module.getStationId(stationName);
-    if (stationId <= 0) {
-        console.log(`${stationName}が見つかりません`);
-        return;
-    }
-    
-    // 接続路線を取得
-    const lines = module.getLinesAtStation(stationId);
-    console.log(`${stationName}の接続路線:`);
-    
-    lines.forEach(lineId => {
-        const lineName = module.getLineName(lineId);
-        console.log(`- ${lineName} (ID: ${lineId})`);
-    });
-}
-
-// 使用例
-getStationConnections("新宿");
-getStationConnections("東京");
-```
-
-### 路線の全駅を取得する
-
-```javascript
-async function getLineStations(lineName) {
-    const module = await wasmLoader.loadModule();
-    
-    const lineId = module.getLineId(lineName);
-    if (lineId <= 0) {
-        console.log(`${lineName}が見つかりません`);
-        return;
-    }
-    
-    const stations = module.getStationsOnLine(lineId);
-    console.log(`${lineName}の駅 (${stations.length}駅):`);
-    
-    stations.forEach((stationId, index) => {
-        const stationName = module.getStationName(stationId);
-        console.log(`${index + 1}: ${stationName}`);
-    });
-}
-
-// 使用例
-getLineStations("中央線");
-getLineStations("東海道線");
-```
-
-## ⚠️ 注意事項
-
-1. **データベース範囲**: JR各線と一部の第三セクター鉄道のみ対応
-2. **私鉄未対応**: 東急、小田急、西武、東武などの大手私鉄は含まれません
-3. **エラーハンドリング**: 存在しない駅・路線名を指定すると0またはエラーが返されます
-
-## 🐛 トラブルシューティング
-
-### よくあるエラー
-
+#### フロントエンド例
 ```bash
-# WebAssemblyモジュール読み込みエラー
-Error: Cannot find module './dist/cli/wasm_loader.js'
-→ 解決: npm run build を実行してください
+# Svelte コンポーネント
+cd examples/svelte-components && npm run dev
 
-# 駅・路線が見つからない
-駅ID: 0, 路線ID: 0 が返される
-→ 解決: 駅名・路線名の表記を確認してください（ひらがな・カタカナ・漢字）
-
-# メモリエラー
-WebAssembly memory allocation failed
-→ 解決: Node.jsを再起動してください
+# SvelteKit アプリケーション  
+cd examples/sveltekit-example && npm run dev
 ```
 
-### デバッグモード
+## 📚 学習の順序
 
-詳細なログを表示するには：
+1. **[api/railway_query_examples.js](./api/railway_query_examples.js)** - 基本的なAPI理解
+2. **[cli/basic-object-classes.ts](./cli/basic-object-classes.ts)** - オブジェクト指向パターン
+3. **[cli/realistic-scenarios.ts](./cli/realistic-scenarios.ts)** - 実用的なルート計算
+4. **[svelte-components/](./svelte-components/)** - UI開発
+5. **[sveltekit-example/](./sveltekit-example/)** - フルアプリケーション
 
-```bash
-CLI_DEBUG=1 node examples/railway_query_examples.js
-```
+## 💡 ヒント
 
-## 📚 参考資料
+- 全てのサンプルは実際のJR路線データベースを使用
+- サポート路線は229線（主にJRと第三セクター）
+- 私鉄線は現在未対応（つくばエクスプレス、小田急線等）
+- TypeScriptサンプルは`tsx`を使用すると便利
 
-- [API Documentation](../docs/api-reference.md)
-- [TypeScript CLI Interface](../src/cli/types.ts)
-- [WebAssembly Interface](../src/core/route_interface.cpp)
+## 🔗 関連ドキュメント
+
+- [API リファレンス](../docs/api-reference.md)
+- [プロジェクト概要](../README.md)
+- [技術仕様](../CLAUDE.md)

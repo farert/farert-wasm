@@ -17,10 +17,10 @@ import {
 } from './types';
 import { configManager } from './config_manager';
 import { performanceMonitor } from './performance_monitor';
-import { executeRouteTest } from './route_test';
+import { executeRouteTest } from '../tests/cli/route_test';
 import { executeAutoRoute } from './auto_route';
 import { initializeSignalHandling } from './signal_handler';
-import { ErrorHandlingSystemTests } from './test_error_handling';
+import { ErrorHandlingSystemTests } from '../tests/cli/test_error_handling';
 import * as fs from 'fs';
 
 // Import complete test suite (when ready)

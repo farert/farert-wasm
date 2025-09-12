@@ -25,8 +25,8 @@
  *   node examples/index.js --help             # Show detailed help
  */
 
-import { wasmLoader } from '../wasm_loader';
-import { FarertModule } from '../types';
+import { wasmLoader } from '../../cli/wasm_loader';
+import { FarertModule } from '../../cli/types';
 
 // Import all example modules
 import { runBasicObjectClassExamples } from './basic-object-classes';

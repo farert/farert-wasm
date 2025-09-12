@@ -30,8 +30,8 @@ import {
     RouteConstructionError,
     FareCalculationError,
     CLIError
-} from './types';
-import { wasmLoader } from './wasm_loader';
+} from '../../cli/types';
+import { wasmLoader } from '../../cli/wasm_loader';
 import { 
     RouteConstructionError as EnhancedRouteConstructionError,
     FareCalculationError as EnhancedFareCalculationError,
@@ -41,7 +41,7 @@ import {
     generateUserFriendlyMessage,
     validateRouteConstruction,
     createErrorReport
-} from './error_handling';
+} from '../../cli/error_handling';
 
 /**
  * Comprehensive error handling system tests covering all error scenarios

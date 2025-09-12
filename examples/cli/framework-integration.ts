@@ -15,12 +15,12 @@
  * Focus: Modern frontend development patterns with Japanese railway fare calculation
  */
 
-import { wasmLoader } from '../wasm_loader';
+import { wasmLoader } from '../../cli/wasm_loader';
 import { 
     FarertModule, 
     CalcRouteWrapper,
     FareInfoData
-} from '../types';
+} from '../../cli/types';
 
 /**
  * React Integration Examples
@@ -36,8 +36,8 @@ function demonstrateReactIntegration(): void {
     console.log(`
 // useFarertCalculator.ts - Custom React Hook
 import { useState, useEffect, useCallback } from 'react';
-import { wasmLoader } from '../wasm_loader';
-import { FarertModule, CalcRouteWrapper, FareInfoData } from '../types';
+import { wasmLoader } from '../../cli/wasm_loader';
+import { FarertModule, CalcRouteWrapper, FareInfoData } from '../../cli/types';
 
 interface FarertState {
   module: FarertModule | null;
@@ -365,8 +365,8 @@ export const FareCalculator: React.FC = () => {
     console.log(`
 // FarertProvider.tsx - Context Provider for App-wide WASM Access
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { wasmLoader } from '../wasm_loader';
-import { FarertModule } from '../types';
+import { wasmLoader } from '../../cli/wasm_loader';
+import { FarertModule } from '../../cli/types';
 
 interface FarertContextType {
   module: FarertModule | null;
@@ -458,8 +458,8 @@ function demonstrateVueIntegration(): void {
     console.log(`
 // composables/useFarert.ts - Vue 3 Composable
 import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { wasmLoader } from '../wasm_loader';
-import type { FarertModule, FareInfoData } from '../types';
+import { wasmLoader } from '../../cli/wasm_loader';
+import type { FarertModule, FareInfoData } from '../../cli/types';
 
 interface FarertState {
   module: FarertModule | null;
@@ -1010,8 +1010,8 @@ function demonstrateSvelteIntegration(): void {
     console.log(`
 // stores/farert.ts - Svelte Store
 import { writable, derived, get } from 'svelte/store';
-import { wasmLoader } from '../wasm_loader';
-import type { FarertModule, FareInfoData } from '../types';
+import { wasmLoader } from '../../cli/wasm_loader';
+import type { FarertModule, FareInfoData } from '../../cli/types';
 
 interface FarertState {
   module: FarertModule | null;
@@ -1535,8 +1535,8 @@ function demonstrateTypeScriptServicePattern(): void {
     console.log('--- Framework-Agnostic Service Implementation ---');
     console.log(`
 // services/FarertService.ts - Framework-agnostic service
-import { wasmLoader } from '../wasm_loader';
-import type { FarertModule, CalcRouteWrapper, FareInfoData, RouteItemWrapper } from '../types';
+import { wasmLoader } from '../../cli/wasm_loader';
+import type { FarertModule, CalcRouteWrapper, FareInfoData, RouteItemWrapper } from '../../cli/types';
 
 export interface RouteCalculationRequest {
   startStation: string;

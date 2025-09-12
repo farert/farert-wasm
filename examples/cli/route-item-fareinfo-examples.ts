@@ -12,13 +12,13 @@
  * Focus: Individual route segments and detailed fare information
  */
 
-import { wasmLoader } from '../wasm_loader';
+import { wasmLoader } from '../../cli/wasm_loader';
 import { 
     FarertModule, 
     CalcRouteWrapper,
     RouteItemWrapper,
     FareInfoData
-} from '../types';
+} from '../../cli/types';
 
 /**
  * RouteItem Detailed Usage Example

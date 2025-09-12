@@ -14,7 +14,7 @@
  */
 
 import { MemoryUsageStats } from './types';
-import { TestOutputWriter } from './test_output';
+import { TestOutputWriter } from '../tests/cli/test_output';
 import { configManager } from './config_manager';
 
 // Performance timing markers
