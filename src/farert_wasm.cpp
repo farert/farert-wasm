@@ -424,6 +424,30 @@ std::string linesFromCompanyOrPrefectAsJson(int id) {
     return json;
 }
 
+// JR会社IDリストを取得（JSON文字列として返す）
+std::string getJRCompanysAsJson() {
+    std::vector<int> companyIds = RouteUtility::getJRCompanys();
+    std::string json = "[";
+    for (size_t i = 0; i < companyIds.size(); i++) {
+        json += std::to_string(companyIds[i]);
+        if (i < companyIds.size() - 1) json += ",";
+    }
+    json += "]";
+    return json;
+}
+
+// 都道府県IDリストを取得（JSON文字列として返す）
+std::string getPrefectsAsJson() {
+    std::vector<int> prefectIds = RouteUtility::getPrefects();
+    std::string json = "[";
+    for (size_t i = 0; i < prefectIds.size(); i++) {
+        json += std::to_string(prefectIds[i]);
+        if (i < prefectIds.size() - 1) json += ",";
+    }
+    json += "]";
+    return json;
+}
+
 // ===== 拡張API: 詳細情報取得関数 =====
 
 // 駅のかな取得
@@ -807,6 +831,9 @@ EMSCRIPTEN_BINDINGS(farert_module) {
     emscripten::function("getJunctionIdsOfLine", &getJunctionIdsOfLineAsJson);
     emscripten::function("searchStationsByKeyword", &keyMatchStationsAsJson);
     emscripten::function("getLinesFromCompanyOrPrefect", &linesFromCompanyOrPrefectAsJson);
+    emscripten::function("linesCompanyOrPrefectId", &linesFromCompanyOrPrefectAsJson);  // Alias for compatibility
+    emscripten::function("getJRCompanys", &getJRCompanysAsJson);
+    emscripten::function("getPrefects", &getPrefectsAsJson);
     
     // ===== 拡張API: 詳細情報取得 =====
     emscripten::function("getStationKana", &getStationKana);
@@ -814,6 +841,7 @@ EMSCRIPTEN_BINDINGS(farert_module) {
     emscripten::function("getStationNameExtended", &getStationNameExtended);
     emscripten::function("getTerminalStationName", &getTerminalStationName);
     emscripten::function("getCompanyOrPrefectName", &getCompanyOrPrefectName);
+    emscripten::function("companyOrPrefectName", &getCompanyOrPrefectName);  // Alias for compatibility
     emscripten::function("getCompanyAndPrefects", &getCompanyAndPrefectsAsJson);
     emscripten::function("getDatabaseVersion", &getDatabaseVersionNumber);
     
