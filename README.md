@@ -12,6 +12,22 @@ Provides modern WebAssembly APIs and Frontend SDK while maintaining **100% compa
 - ✅ **Cross-Platform**: Browser, Node.js, and SvelteKit SSR support
 - ✅ **Performance**: <150KB bundle, <2s initialization, <500ms calculations
 
+## ⚠️ Current Database Coverage
+
+**Supported Railways** (229 lines in database):
+- ✅ **JR Lines**: All JR companies (East, Central, West, Hokkaido, Shikoku, Kyushu)
+- ✅ **Third Sector**: IGR Iwate Galaxy, IR Ishikawa, Ainokaze Toyama, Echigo Tokimeki Railway, etc.
+- ❌ **Major Private Railways**: Currently not supported
+  - Tsukuba Express (つくばエクスプレス)  
+  - Odakyu Line (小田急線)
+  - Tokyu Lines (東急線各線)
+  - Keikyu Line (京急線)
+  - Seibu Lines (西武線各線) 
+  - Tobu Lines (東武線各線)
+  - Most metropolitan private railways
+
+**Database**: Based on `jrdbnewest.db` (last updated 2025-08-03, 660KB)
+
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -36,12 +52,15 @@ source setup_env.sh && make node
 # 2. TypeScript CLI compilation
 npm run cli:build
 
-# 3. Fare calculation test
-npm run cli:calc -- -5 "東京" "東海道線" "横浜"
+# 3. Fare calculation test (choose one method)  
+node dist/cli/cli/main.js -5 "東京" "東海道線" "品川" "山手線" "新宿"    # Direct (recommended)
+npm run cli -- -5 "東京" "東海道線" "品川" "山手線" "新宿"             # Via npm (may show warnings)
 
 # 4. Full test suite execution
 npm run cli:exec
 ```
+
+> **Note**: For CLI route calculations, we recommend using direct Node.js execution (`node dist/cli/cli/main.js`) instead of `npm run cli` to avoid npm configuration warnings.
 
 ### Frontend SDK Quick Start
 
@@ -152,7 +171,7 @@ make help          # Show all commands
 npm run build      # Complete build (WASM + TypeScript)
 npm run cli:build  # TypeScript CLI only
 npm run cli:exec   # Execute full test suite
-npm run cli:calc   # Individual fare calculation
+npm run cli   # CLI execution with parameters
 npm run dev        # Development mode
 npm run clean      # Cleanup
 
@@ -172,11 +191,15 @@ npm run build:sdk:types    # TypeScript declaration generation
 # Full test suite (verify identical results with C++ version)
 npm run cli:exec
 
-# Individual route calculation
-npm run cli:calc -- -5 "新宿" "中央線" "立川"
+# Individual route calculation (choose one method)
+# Method 1: Direct execution (recommended, no warnings) 
+node dist/cli/cli/main.js -5 "東京" "東海道線" "品川" "山手線" "新宿"
+
+# Method 2: Via npm (may show harmless warnings)
+npm run cli -- -5 "東京" "東海道線" "品川" "山手線" "新宿"
 
 # Complex route calculation example
-npm run cli:calc -- -5 "茂市" "山田線" "盛岡" "田沢湖線" "大曲" "奥羽線" "新庄" "陸羽西線" "余目" "羽越線" "新津" "信越線(直江津-新潟)" "宮内" "上越線" "越後川口" "飯山線" "豊野" "しなの鉄道(北)" "長野"
+node dist/cli/cli/main.js -5 "茂市" "山田線" "盛岡" "田沢湖線" "大曲" "奥羽線" "新庄" "陸羽西線" "余目" "羽越線" "新津" "信越線(直江津-新潟)" "宮内" "上越線" "越後川口" "飯山線" "豊野" "しなの鉄道(北)" "長野"
 ```
 
 ### Programming Usage Example
@@ -296,9 +319,10 @@ npx tsc --target es2020 --module commonjs --outDir dist/cli src/cli/main.ts
 export CLI_DEBUG=1
 npm run cli:exec
 
-# Show WebAssembly memory statistics
+# Show WebAssembly memory statistics (choose one method)
 export CLI_DEBUG=1
-npm run cli:calc -- -5 "東京" "山手線" "新宿"
+node dist/cli/cli/main.js -5 "東京" "山手線" "新宿"              # Direct (recommended)
+npm run cli -- -5 "東京" "山手線" "新宿"                       # Via npm (with warnings)
 ```
 
 ## 📚 Detailed Documentation

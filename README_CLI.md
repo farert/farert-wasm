@@ -2,7 +2,18 @@
 
 ## 🚀 概要
 
-Farert WebAssembly CLI は、WebAssembly技術を利用した日本の鉄道運賃計算システムです。JRおよび私鉄の複雑な運賃体系を正確にシミュレートし、最適な経路と運賃を提供します。
+Farert WebAssembly CLI は、WebAssembly技術を利用した日本の鉄道運賃計算システムです。
+
+## ⚠️ 対応路線について
+
+**対応済み**（データベース内：229路線）:
+- ✅ **JR各線**: JR東日本、東海、西日本、北海道、四国、九州の全路線
+- ✅ **第三セクター**: IGRいわて銀河、IRいしかわ、あいの風とやま、えちごトキめき鉄道など
+
+**未対応**:
+- ❌ **大手私鉄**: つくばエクスプレス、小田急線、東急線各線、京急線、西武線各線、東武線各線など
+
+JRおよび第三セクター鉄道の複雑な運賃体系を正確にシミュレートし、最適な経路と運賃を提供します。
 
 ## 📋 システム要件
 
@@ -47,13 +58,13 @@ npm run cli:build                   # TypeScript CLIのビルド
 
 ```bash
 # ヘルプメッセージの表示
-node src/cli/main.ts --help
+node dist/cli/cli/main.js --help
 
 # サンプル経路の計算
-node src/cli/main.ts -5 東京 東海道線 品川 山手線 新宿
+node dist/cli/cli/main.js -5 東京 東海道線 品川 山手線 新宿
 
 # 完全テストスイートの実行
-node src/cli/main.ts -exec
+node dist/cli/cli/main.js -exec
 ```
 
 ## 🎯 基本的な使用方法
@@ -61,7 +72,7 @@ node src/cli/main.ts -exec
 ### コマンド構文
 
 ```bash
-node src/cli/main.ts [オプション] [パラメータ]
+node dist/cli/cli/main.js [オプション] [パラメータ]
 ```
 
 ### 主要オプション
@@ -69,36 +80,36 @@ node src/cli/main.ts [オプション] [パラメータ]
 #### `-5` 5パラメータ経路計算
 
 ```bash
-node src/cli/main.ts -5 <駅1> <路線1> <駅2> <路線2> <駅3>
+node dist/cli/cli/main.js -5 <駅1> <路線1> <駅2> <路線2> <駅3>
 
 # 例：
-node src/cli/main.ts -5 東京 東海道線 品川 山手線 新宿
+node dist/cli/cli/main.js -5 東京 東海道線 品川 山手線 新宿
 # → 東京から品川（東海道線）、品川から新宿（山手線）の運賃を計算
 ```
 
 #### `-exec` 完全テストスイート実行
 
 ```bash
-node src/cli/main.ts -exec
+node dist/cli/cli/main.js -exec
 # → test_exec.cppに相当する完全テストスイートを実行
 ```
 
 #### 経路表示オプション（詳細制御）
 
 ```bash
-node src/cli/main.ts -0 東京 山手線 新宿  # 全詳細表示（デフォルト）
-node src/cli/main.ts -1 東京 山手線 新宿  # 復路情報なし
-node src/cli/main.ts -2 東京 山手線 新宿  # 特別規則なし
-node src/cli/main.ts -1r 東京 山手線 新宿 # 復路なし＋逆順
+node dist/cli/cli/main.js -0 東京 山手線 新宿  # 全詳細表示（デフォルト）
+node dist/cli/cli/main.js -1 東京 山手線 新宿  # 復路情報なし
+node dist/cli/cli/main.js -2 東京 山手線 新宿  # 特別規則なし
+node dist/cli/cli/main.js -1r 東京 山手線 新宿 # 復路なし＋逆順
 ```
 
 #### ヘルプとデバッグオプション
 
 ```bash
-node src/cli/main.ts -h          # 基本ヘルプ表示
-node src/cli/main.ts --help      # 詳細ヘルプ表示
-node src/cli/main.ts --env-report   # 環境検証レポート
-node src/cli/main.ts --env-debug    # デバッグモード有効化
+node dist/cli/cli/main.js -h          # 基本ヘルプ表示
+node dist/cli/cli/main.js --help      # 詳細ヘルプ表示
+node dist/cli/cli/main.js --env-report   # 環境検証レポート
+node dist/cli/cli/main.js --env-debug    # デバッグモード有効化
 ```
 
 ## 🚉 日本の鉄道データベース対応状況
@@ -150,11 +161,11 @@ node src/cli/main.ts --env-debug    # デバッグモード有効化
 
 ```bash
 # 首都圏内の移動
-node src/cli/main.ts -5 東京 山手線 新宿 中央線 立川
+node dist/cli/cli/main.js -5 東京 山手線 新宿 中央線 立川
 → 出力: 東京→新宿→立川の運賃と所要時間
 
 # 関西圏内の移動
-node src/cli/main.ts -5 大阪 東海道線 京都 京阪線 祇園四条
+node dist/cli/cli/main.js -5 大阪 東海道線 京都 京阪線 祇園四条
 → 出力: 大阪→京都→祇園四条の運賃詳細
 ```
 
@@ -162,11 +173,11 @@ node src/cli/main.ts -5 大阪 東海道線 京都 京阪線 祇園四条
 
 ```bash
 # 東京-大阪間（東海道新幹線）
-node src/cli/main.ts -5 東京 東海道新幹線 名古屋 東海道新幹線 新大阪
+node dist/cli/cli/main.js -5 東京 東海道新幹線 名古屋 東海道新幹線 新大阪
 → 出力: 新幹線を利用した長距離運賃
 
 # 本州縦断経路
-node src/cli/main.ts -5 東京 東海道線 熱海 東海道線 静岡
+node dist/cli/cli/main.js -5 東京 東海道線 熱海 東海道線 静岡
 → 出力: 在来線を利用した長距離経路
 ```
 
@@ -174,11 +185,11 @@ node src/cli/main.ts -5 東京 東海道線 熱海 東海道線 静岡
 
 ```bash
 # 複数社局にまたがる移動
-node src/cli/main.ts -5 新宿 小田急線 下北沢 京王井の頭線 渋谷
+node dist/cli/cli/main.js -5 新宿 小田急線 下北沢 京王井の頭線 渋谷
 → 出力: 私鉄間の乗り換え運賃計算
 
 # JR-私鉄連絡
-node src/cli/main.ts -5 東京 山手線 新橋 ゆりかもめ 豊洲
+node dist/cli/cli/main.js -5 東京 山手線 新橋 ゆりかもめ 豊洲
 → 出力: JRから第三セクターへの連絡運賃
 ```
 
@@ -197,18 +208,18 @@ cat > routes.txt << 'EOF'
 EOF
 
 # ファイルを使用した一括計算
-node src/cli/main.ts routes.txt
+node dist/cli/cli/main.js routes.txt
 ```
 
 ### テストとベンチマーク
 
 ```bash
 # 完全テストスイートの実行（推奨）
-node src/cli/main.ts -exec
+node dist/cli/cli/main.js -exec
 → 出力: 数十のテストケースを順次実行し、結果を報告
 
 # 特定フォーマットでのテスト
-node src/cli/main.ts -2 東京 山手線 新宿  # 特別規則非表示
+node dist/cli/cli/main.js -2 東京 山手線 新宿  # 特別規則非表示
 → 出力: 基本運賃のみの簡潔な表示
 ```
 
@@ -222,8 +233,8 @@ Station not found: 'tokyo' in context: Route position 1
 
 ✅ 解決方法:
 # 英語表記ではなく、正確な日本語駅名を使用
-❌ 間違い: node src/cli/main.ts -5 tokyo yamanote shinju
-✅ 正解:   node src/cli/main.ts -5 東京 山手線 新宿
+❌ 間違い: node dist/cli/cli/main.js -5 tokyo yamanote shinju
+✅ 正解:   node dist/cli/cli/main.js -5 東京 山手線 新宿
 ```
 
 **追加の駅名例:**
@@ -242,8 +253,8 @@ Line not found: '山手' in context: Connection to station '新宿'
 
 ✅ 解決方法:
 # 路線名は正式名称（「線」付き）を使用
-❌ 間違い: node src/cli/main.ts -5 東京 山手 新宿
-✅ 正解:   node src/cli/main.ts -5 東京 山手線 新宿
+❌ 間違い: node dist/cli/cli/main.js -5 東京 山手 新宿
+✅ 正解:   node dist/cli/cli/main.js -5 東京 山手線 新宿
 ```
 
 **正式路線名の例:**
@@ -354,7 +365,7 @@ source setup_env.sh && make && npm run cli:build
 ```bash
 # Node.jsヒープサイズを増加（大量テスト時）
 export NODE_OPTIONS="--max-old-space-size=4096"
-node src/cli/main.ts -exec
+node dist/cli/cli/main.js -exec
 ```
 
 ### デバッグモードの活用
@@ -362,13 +373,13 @@ node src/cli/main.ts -exec
 ```bash
 # 詳細デバッグ情報の有効化
 export CLI_DEBUG=1
-node src/cli/main.ts -5 東京 山手線 新宿
+node dist/cli/cli/main.js -5 東京 山手線 新宿
 
 # WebAssemblyモジュールのカスタムパス
 export CLI_WASM_PATH="./custom/path/farert.wasm"
 
 # デバッグ付きでテストスイート実行
-node src/cli/main.ts --env-debug -exec
+node dist/cli/cli/main.js --env-debug -exec
 ```
 
 ## 📊 パフォーマンス基準
@@ -452,13 +463,13 @@ A: `NODE_OPTIONS="--max-old-space-size=4096"` でヒープサイズを増加さ�
 
 ```bash
 # JSON形式での結果出力（開発中）
-node src/cli/main.ts -5 東京 山手線 新宿 --format=json
+node dist/cli/cli/main.js -5 東京 山手線 新宿 --format=json
 
 # 複数経路の一括計算
-node src/cli/main.ts --batch-file routes.json
+node dist/cli/cli/main.js --batch-file routes.json
 
 # パフォーマンス測定付きの実行
-node src/cli/main.ts -exec --performance-report
+node dist/cli/cli/main.js -exec --performance-report
 ```
 
 ### CI/CD環境での利用
@@ -473,7 +484,7 @@ export CLI_DEBUG=0
 source setup_env.sh && make
 
 # 最小限のテスト実行
-timeout 60s node src/cli/main.ts -exec
+timeout 60s node dist/cli/cli/main.js -exec
 
 # 結果の検証
 if [ $? -eq 0 ]; then

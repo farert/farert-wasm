@@ -15,7 +15,8 @@ export class TestOutputWriter {
     constructor(filename: string) {
         // this._filename = filename; // Store filename if needed later
         try {
-            // Open file for writing (equivalent to fopen_s in original)
+            // Open file for writing with explicit ASCII/UTF-8 handling
+            // Use 'w' mode and ensure ASCII-compatible output
             this.fileHandle = fs.openSync(filename, 'w');
         } catch (error) {
             console.error(`Failed to open output file: ${filename}`, error);
@@ -29,7 +30,14 @@ export class TestOutputWriter {
     write(text: string): void {
         if (this.fileHandle !== null) {
             try {
-                fs.writeSync(this.fileHandle, text);
+                // Normalize line endings only, keep UTF-8 but write it as binary
+                const normalizedText = text
+                    .replace(/\r\n/g, '\n')            // Normalize line endings
+                    .replace(/\r/g, '\n');             // Convert remaining CR to LF
+                
+                // Write as raw binary data to avoid UTF-8 BOM and Unicode markers
+                const buffer = Buffer.from(normalizedText, 'utf8');
+                fs.writeSync(this.fileHandle, buffer, 0, buffer.length);
             } catch (error) {
                 console.error('Failed to write to output file:', error);
             }
@@ -106,16 +114,16 @@ export class TestOutputWriter {
         const successRate = totalTests > 0 ? (passedTests / totalTests * 100).toFixed(1) : '0.0';
         
         // Exact C++ format: "Test Results: X/Y passed (Z.Z%)"
-        this.write(`Test Results: ${passedTests}/${totalTests} passed (${successRate}%)\\n`);
-        this.write(`Execution Time: ${executionTimeSeconds.toFixed(2)} seconds\\n`);
+        this.write(`Test Results: ${passedTests}/${totalTests} passed (${successRate}%)\n`);
+        this.write(`Execution Time: ${executionTimeSeconds.toFixed(2)} seconds\n`);
     }
     
     /**
      * Write route test header (equivalent to test header output in original)
      */
     writeRouteTestHeader(routeName: string, routeDefinition: string): void {
-        this.write(`\\n--- Route Test: ${routeName} ---\\n`);
-        this.write(`Route: ${routeDefinition}\\n`);
+        this.write(`\n--- Route Test: ${routeName} ---\n`);
+        this.write(`Route: ${routeDefinition}\n`);
     }
     
     /**
@@ -128,16 +136,16 @@ export class TestOutputWriter {
         companies: string[], 
         fareString: string
     ): void {
-        this.write(`Route: ${route}\\n`);
-        this.write(`Fare: \\${fare}\\n`);
-        this.write(`Distance: ${distance}km\\n`);
+        this.write(`Route: ${route}\n`);
+        this.write(`Fare: ¥${fare}\n`);
+        this.write(`Distance: ${distance}km\n`);
         if (companies.length > 0) {
-            this.write(`Companies: ${companies.join(', ')}\\n`);
+            this.write(`Companies: ${companies.join(', ')}\n`);
         }
         if (fareString && fareString.length > 0) {
-            this.write(`Details: ${fareString}\\n`);
+            this.write(`Details: ${fareString}\n`);
         }
-        this.write('---\\n');
+        this.write('---\n');
     }
     
     /**
@@ -150,20 +158,20 @@ export class TestOutputWriter {
         fare: number,
         options: string
     ): void {
-        this.write(`Auto Route: ${fromStation} -> ${toStation}\\n`);
-        this.write(`Selected: ${selectedRoute}\\n`);
-        this.write(`Fare: \\${fare}\\n`);
+        this.write(`Auto Route: ${fromStation} -> ${toStation}\n`);
+        this.write(`Selected: ${selectedRoute}\n`);
+        this.write(`Fare: ¥${fare}\n`);
         if (options && options.length > 0) {
-            this.write(`Options: ${options}\\n`);
+            this.write(`Options: ${options}\n`);
         }
-        this.write('---\\n');
+        this.write('---\n');
     }
     
     /**
      * Write test error (equivalent to error output in original)
      */
     writeError(testName: string, errorMessage: string): void {
-        this.write(`ERROR in ${testName}: ${errorMessage}\\n`);
+        this.write(`ERROR in ${testName}: ${errorMessage}\n`);
     }
     
     /**
@@ -171,9 +179,9 @@ export class TestOutputWriter {
      */
     writeSectionHeader(sectionName: string): void {
         const separator = '-'.repeat(50);
-        this.write(`\\n${separator}\\n`);
-        this.write(`${sectionName}\\n`);
-        this.write(`${separator}\\n`);
+        this.write(`\n${separator}\n`);
+        this.write(`${sectionName}\n`);
+        this.write(`${separator}\n`);
     }
     
     /**
@@ -189,14 +197,14 @@ export class TestOutputWriter {
         const difference = Math.abs(expectedFare - actualFare);
         const passed = difference <= tolerance;
         
-        this.write(`\\nValidation: ${testName}\\n`);
-        this.write(`Route: ${routeDefinition}\\n`);
-        this.write(`Expected Fare: ${expectedFare} yen\\n`);
-        this.write(`Actual Fare: ${actualFare} yen\\n`);
-        this.write(`Difference: ${difference} yen\\n`);
-        this.write(`Tolerance: ${tolerance} yen\\n`);
-        this.write(`Result: ${passed ? 'PASS' : 'FAIL'}\\n`);
-        this.write('---\\n');
+        this.write(`\nValidation: ${testName}\n`);
+        this.write(`Route: ${routeDefinition}\n`);
+        this.write(`Expected Fare: ${expectedFare} yen\n`);
+        this.write(`Actual Fare: ${actualFare} yen\n`);
+        this.write(`Difference: ${difference} yen\n`);
+        this.write(`Tolerance: ${tolerance} yen\n`);
+        this.write(`Result: ${passed ? 'PASS' : 'FAIL'}\n`);
+        this.write('---\n');
     }
     
     /**
@@ -212,11 +220,11 @@ export class TestOutputWriter {
         const successRate = totalTests > 0 ? (passedTests / totalTests * 100).toFixed(1) : '0.0';
         
         // Write in exact C++ format matching original test_exec.cpp
-        this.write(`\\nTest Results: ${passedTests}/${totalTests} passed (${successRate}%)\\n`);
-        this.write(`Execution Time: ${executionTime.toFixed(2)} seconds\\n`);
+        this.write(`\nTest Results: ${passedTests}/${totalTests} passed (${successRate}%)\n`);
+        this.write(`Execution Time: ${executionTime.toFixed(2)} seconds\n`);
         
         if (failedTests > 0) {
-            this.write(`Failed Tests: ${failedTests}\\n`);
+            this.write(`Failed Tests: ${failedTests}\n`);
         }
     }
     
@@ -233,28 +241,28 @@ export class TestOutputWriter {
         tolerance: number = 0,
         timestamp?: number
     ): void {
-        this.write(`\\n=== FAILURE DETAILS ===\\n`);
-        this.write(`Test: ${testName}\\n`);
-        this.write(`Route: ${routeDefinition}\\n`);
-        this.write(`Error: ${errorMessage}\\n`);
+        this.write(`\n=== FAILURE DETAILS ===\n`);
+        this.write(`Test: ${testName}\n`);
+        this.write(`Route: ${routeDefinition}\n`);
+        this.write(`Error: ${errorMessage}\n`);
         
         // REQ-CLI-002.5: Show expected, actual, and tolerance information
         if (expectedValue !== undefined && actualValue !== undefined) {
             const difference = Math.abs(expectedValue - actualValue);
             const toleranceCheck = difference <= tolerance;
             
-            this.write(`Expected Value: ${expectedValue} yen\\n`);
-            this.write(`Actual Value: ${actualValue} yen\\n`);
-            this.write(`Difference: ${difference} yen\\n`);
-            this.write(`Tolerance: ${tolerance} yen\\n`);
-            this.write(`Tolerance Check: ${toleranceCheck ? 'PASSED' : 'FAILED'}\\n`);
+            this.write(`Expected Value: ${expectedValue} yen\n`);
+            this.write(`Actual Value: ${actualValue} yen\n`);
+            this.write(`Difference: ${difference} yen\n`);
+            this.write(`Tolerance: ${tolerance} yen\n`);
+            this.write(`Tolerance Check: ${toleranceCheck ? 'PASSED' : 'FAILED'}\n`);
         }
         
         if (timestamp) {
-            this.write(`Timestamp: ${this.formatCppTimestamp(timestamp)}\\n`);
+            this.write(`Timestamp: ${this.formatCppTimestamp(timestamp)}\n`);
         }
         
-        this.write('======================\\n');
+        this.write('======================\n');
     }
     
     /**
@@ -269,23 +277,23 @@ export class TestOutputWriter {
         actualValue?: number,
         tolerance: number = 0
     ): void {
-        this.write(`\\n!!! TEST FAILURE !!!\\n`);
-        this.write(`Test Name: ${testName}\\n`);
-        this.write(`Route Definition: ${routeDefinition}\\n`);
-        this.write(`Error Message: ${errorMessage}\\n`);
+        this.write(`\n!!! TEST FAILURE !!!\n`);
+        this.write(`Test Name: ${testName}\n`);
+        this.write(`Route Definition: ${routeDefinition}\n`);
+        this.write(`Error Message: ${errorMessage}\n`);
         
         if (expectedValue !== undefined && actualValue !== undefined) {
             const difference = Math.abs(expectedValue - actualValue);
             const toleranceCheck = difference <= tolerance;
             
-            this.write(`Expected Value: ${expectedValue} yen\\n`);
-            this.write(`Actual Value: ${actualValue} yen\\n`);
-            this.write(`Difference: ${difference} yen\\n`);
-            this.write(`Tolerance: ${tolerance} yen\\n`);
-            this.write(`Tolerance Check: ${toleranceCheck ? 'PASSED' : 'FAILED'}\\n`);
+            this.write(`Expected Value: ${expectedValue} yen\n`);
+            this.write(`Actual Value: ${actualValue} yen\n`);
+            this.write(`Difference: ${difference} yen\n`);
+            this.write(`Tolerance: ${tolerance} yen\n`);
+            this.write(`Tolerance Check: ${toleranceCheck ? 'PASSED' : 'FAILED'}\n`);
         }
         
-        this.write(`Timestamp: ${this.formatCppTimestamp(Date.now() / 1000)}\\n`);
-        this.write('!!!!!!!!!!!!!!!!!!!\\n');
+        this.write(`Timestamp: ${this.formatCppTimestamp(Date.now() / 1000)}\n`);
+        this.write('!!!!!!!!!!!!!!!!!!!\n');
     }
 }
