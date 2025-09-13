@@ -1,0 +1,71 @@
+{
+  // === Development Configuration ===
+  "extends": "./tsconfig.json",
+
+  "compilerOptions": {
+    // === Development Optimizations ===
+    "sourceMap": true,                           // Enable source maps for debugging
+    "inlineSourceMap": false,                    // External source maps for better debugging
+    "inlineSources": true,                       // Include sources in source maps
+    "declaration": false,                        // Skip declarations in development
+    "declarationMap": false,                     // Skip declaration maps in development
+    "removeComments": false,                     // Keep comments for development
+
+    // === Relaxed Development Settings ===
+    "noUnusedLocals": false,                     // Allow unused locals during development
+    "noUnusedParameters": false,                 // Allow unused parameters during development
+    "noImplicitReturns": false,                  // Relax return checking during development
+    "exactOptionalPropertyTypes": false,        // Relax optional types during development
+
+    // === Fast Compilation ===
+    "incremental": true,                         // Enable incremental compilation
+    "tsBuildInfoFile": "./dist/dev/.tsbuildinfo", // Development build info
+    "preserveWatchOutput": true,                 // Preserve watch output
+    "assumeChangesOnlyAffectDirectDependencies": true, // Faster incremental builds
+
+    // === Development Output ===
+    "outDir": "./dist/dev",                      // Development output directory
+
+    // === Emit Settings ===
+    "noEmitOnError": false,                      // Continue emitting on errors during development
+    "preserveConstEnums": true,                  // Preserve const enums for debugging
+    "isolatedModules": false,                    // Allow non-isolated modules during development
+
+    // === Watch Mode Optimizations ===
+    "preserveWatchOutput": true,                 // Clear console on watch mode
+    "pretty": true                               // Pretty error messages
+  },
+
+  // === Development File Inclusion ===
+  "include": [
+    "types/**/*",
+    "examples/**/*",
+    "typescript-integration.ts",
+    "**/*.d.ts"
+  ],
+
+  // === Development Exclusions (Minimal) ===
+  "exclude": [
+    "node_modules",
+    "dist/build",
+    "dist/production",
+    "**/node_modules/**"
+  ],
+
+  // === Watch Options for Development ===
+  "watchOptions": {
+    "watchFile": "useFsEvents",
+    "watchDirectory": "useFsEvents",
+    "fallbackPolling": "dynamicPriority",
+    "synchronousWatchDirectory": true,
+    "excludeDirectories": [
+      "**/node_modules",
+      "**/dist/build",
+      "**/dist/production"
+    ],
+    "excludeFiles": [
+      "**/dist/build/**/*",
+      "**/dist/production/**/*"
+    ]
+  }
+}

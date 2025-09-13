@@ -8,7 +8,7 @@ Transform complex Japanese railway fare calculation logic from native C++ into m
 
 ### Primary Objectives
 1. **Complete Migration**: 100% functional parity with original C++ implementation (`testmain.cpp` → TypeScript CLI)
-2. **Identical Results**: All CLI tests must produce identical results to C++ version (±1 yen tolerance)
+2. **Identical Results**: All CLI tests must produce identical results to C++ version (±0 yen tolerance)
 3. **Developer Experience**: Modern TypeScript interfaces with full type safety
 4. **Cross-Platform**: Browser, Node.js, future React Native/Flutter support
 

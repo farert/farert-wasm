@@ -1,0 +1,54 @@
+{
+  // === Production Build Configuration ===
+  "extends": "./tsconfig.json",
+
+  "compilerOptions": {
+    // === Production Optimizations ===
+    "sourceMap": false,                          // Disable source maps for production
+    "removeComments": true,                      // Remove comments to reduce size
+    "declaration": true,                         // Generate type declarations
+    "declarationMap": false,                     // Disable declaration maps for production
+    "importHelpers": true,                       // Use tslib helpers to reduce bundle size
+
+    // === Stricter Production Settings ===
+    "noUnusedLocals": true,                      // Error on unused locals in production
+    "noUnusedParameters": true,                  // Error on unused parameters in production
+    "noImplicitReturns": true,                   // Ensure all code paths return
+    "noFallthroughCasesInSwitch": true,         // No fallthrough cases in switch
+    "exactOptionalPropertyTypes": true,          // Exact optional types in production
+
+    // === Build Output ===
+    "outDir": "./dist/build",                    // Production build output
+    "tsBuildInfoFile": "./dist/build/.tsbuildinfo", // Build info location
+
+    // === Emit Optimizations ===
+    "inlineSourceMap": false,                    // No inline source maps
+    "inlineSources": false,                      // No inline sources
+    "noEmitOnError": true,                       // Don't emit files on compilation error
+    "preserveConstEnums": false                  // Inline const enums for optimization
+  },
+
+  // === Production File Inclusion ===
+  "include": [
+    "types/**/*",
+    "examples/**/*",
+    "typescript-integration.ts"
+  ],
+
+  // === Production Exclusions ===
+  "exclude": [
+    "node_modules",
+    "dist",
+    "coverage",
+    "docs",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "**/*.js",
+    "**/node_modules/**",
+    "temp/**",
+    "examples/**/*.test.ts",
+    "examples/**/*.spec.ts",
+    "**/debug/**",
+    "**/development/**"
+  ]
+}

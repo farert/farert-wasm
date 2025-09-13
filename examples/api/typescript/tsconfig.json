@@ -1,0 +1,113 @@
+{
+  // === Extends Base Configuration ===
+  "extends": "../../../tsconfig.json",
+
+  "compilerOptions": {
+    // === Target and Module Configuration ===
+    "target": "ES2020",                          // Modern JavaScript target for Node.js 14+
+    "module": "CommonJS",                        // Node.js module system
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],    // Standard libraries + DOM for browser compatibility
+    "moduleResolution": "node",                  // Node.js module resolution
+
+    // === Type Checking (Strict Mode) ===
+    "strict": true,                              // Enable all strict type checking
+    "noImplicitAny": true,                       // Error on implicit 'any' types
+    "strictNullChecks": true,                    // Strict null and undefined checking
+    "strictFunctionTypes": true,                 // Strict function type checking
+    "strictBindCallApply": true,                 // Strict bind/call/apply checking
+    "strictPropertyInitialization": true,       // Strict property initialization
+    "noImplicitReturns": true,                   // Error when not all paths return a value
+    "noFallthroughCasesInSwitch": true,         // Error on fallthrough cases in switch
+    "noUncheckedIndexedAccess": false,          // Allow unchecked indexed access for flexibility
+    "noImplicitOverride": false,                 // Don't require explicit override keyword for compatibility
+    "exactOptionalPropertyTypes": false,        // Relax exact optional property types for WebAssembly
+
+    // === Additional Type Checking (Relaxed for Examples) ===
+    "noUnusedLocals": false,                     // Allow unused locals in examples
+    "noUnusedParameters": false,                 // Allow unused parameters in examples
+    "noImplicitThis": true,                      // Error on implicit 'this'
+    "alwaysStrict": true,                        // Parse in strict mode and emit "use strict"
+
+    // === Emit Configuration ===
+    "outDir": "./dist",                          // Output directory for compiled files
+    "rootDir": "./",                             // Root directory of input files
+    "declaration": true,                         // Generate .d.ts declaration files
+    "declarationMap": true,                      // Generate declaration map files
+    "sourceMap": true,                           // Generate source map files
+    "removeComments": false,                     // Keep comments for documentation
+    "importHelpers": true,                       // Import emit helpers from tslib
+    "downlevelIteration": true,                  // Emit more compliant ES5/ES3 iteration
+    "experimentalDecorators": true,              // Enable decorator support
+    "emitDecoratorMetadata": true,               // Emit decorator metadata
+
+    // === Interop Configuration ===
+    "esModuleInterop": true,                     // Enable ES module interop
+    "allowSyntheticDefaultImports": true,        // Allow synthetic default imports
+    "forceConsistentCasingInFileNames": true,    // Force consistent file name casing
+    "resolveJsonModule": true,                   // Allow importing JSON files
+
+    // === Advanced Options ===
+    "skipLibCheck": true,                        // Skip type checking of declaration files
+    "incremental": true,                         // Enable incremental compilation
+    "tsBuildInfoFile": "./dist/.tsbuildinfo",    // Build info file location
+
+    // === Path Mapping ===
+    "baseUrl": "./",
+    "paths": {
+      "@types/*": ["./types/*"],
+      "@examples/*": ["./examples/*"],
+      "@farert/*": ["../../../src/*"],
+      "@cli/*": ["../../../src/cli/*"],
+      "@sdk/*": ["../../../src/sdk/*"],
+      "@/*": ["./*"]
+    },
+
+    // === Type Roots ===
+    "typeRoots": [
+      "./node_modules/@types",
+      "./types",
+      "../../../src/types",
+      "../../../node_modules/@types"
+    ]
+  },
+
+  // === File Inclusion/Exclusion ===
+  "include": [
+    "types/**/*",
+    "examples/**/*",
+    "*.ts"
+  ],
+
+  "exclude": [
+    "node_modules",
+    "dist",
+    "coverage",
+    "docs",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "**/*.js",
+    "**/node_modules/**",
+    "temp/**"
+  ],
+
+  // === TypeScript References ===
+  "references": [],
+
+  // === Compiler Extensions ===
+  "ts-node": {
+    "esm": false,
+    "compilerOptions": {
+      "module": "CommonJS",
+      "target": "ES2020"
+    }
+  },
+
+  // === Watch Options ===
+  "watchOptions": {
+    "watchFile": "useFsEvents",
+    "watchDirectory": "useFsEvents",
+    "fallbackPolling": "dynamicPriority",
+    "synchronousWatchDirectory": true,
+    "excludeDirectories": ["**/node_modules", "**/dist"]
+  }
+}

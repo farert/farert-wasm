@@ -1,10 +1,26 @@
-# Railway Query Examples
+# Railway API Examples
 
-鉄道情報クエリの使用例とサンプルコード
+鉄道API使用例とサンプルコード集
 
 ## 📋 概要
 
-このディレクトリには、Farert WebAssemblyモジュールを使用して特定の鉄道情報を取得する方法を示すサンプルコードが含まれています。
+このディレクトリには、Farert WebAssemblyモジュールを使用した鉄道情報取得の包括的なサンプルコードが含まれています。基本的なAPI使用方法から高度な統合パターンまで、段階的に学習できる構成になっています。
+
+## 🗂️ ディレクトリ構成
+
+### 🔰 Basic Examples (`basic/`)
+基本的なAPI機能の個別デモンストレーション：
+
+| ファイル | 説明 | 主要API |
+|---------|------|---------|
+| [`station-lookup.js`](basic/station-lookup.js) | 駅名⇔ID変換、ひらがな読み、都道府県情報 | `getStationId`, `getStationName`, `getKanaFromStationId` |
+| [`line-operations.js`](basic/line-operations.js) | 路線操作、駅リスト、分岐駅検出 | `getLineId`, `getLineName`, `getStationIdsOfLine`, `getJunctionIdsOfLine` |
+| [`route-building.js`](basic/route-building.js) | 経路構築、運賃計算、経路検証 | `addRouteBegin`, `addRoute`, `calculateFare`, `routeScript` |
+
+### 📄 Comprehensive Example
+| ファイル | 説明 |
+|---------|------|
+| [`railway_query_examples.js`](railway_query_examples.js) | 実際の使用例を含む包括的なデモンストレーション |
 
 ## 🚀 実行方法
 
@@ -15,28 +31,47 @@
 npm run build
 ```
 
-### 2. サンプルスクリプトの実行
+### 2. Basic Examples の実行
 
 ```bash
-# 全ての機能を実行
-node examples/railway_query_examples.js
+# 駅検索API の基本機能
+node examples/api/basic/station-lookup.js
+
+# 路線操作API の基本機能
+node examples/api/basic/line-operations.js
+
+# 経路構築API の基本機能
+node examples/api/basic/route-building.js
 ```
 
-### 3. 個別機能のテスト
+### 3. Comprehensive Example の実行
 
 ```bash
-# 山手線の駅一覧
+# 包括的なデモンストレーション（従来版）
+node examples/api/railway_query_examples.js
+```
+
+### 4. 個別機能のテスト
+
+```bash
+# Basic Examples から個別機能を実行
 node -e "
-const { queryYamanoteStations } = require('./examples/railway_query_examples.js');
+const { demonstrateStationNameToId } = require('./examples/api/basic/station-lookup.js');
 const { wasmLoader } = require('./dist/cli/cli/wasm_loader.js');
-wasmLoader.loadModule().then(queryYamanoteStations);
+wasmLoader.loadModule().then(module => {
+  module.openDatabase();
+  demonstrateStationNameToId(module);
+});
 "
 
-# 大宮の接続路線
+# 路線操作の個別テスト
 node -e "
-const { queryOmiyaConnections } = require('./examples/railway_query_examples.js');
+const { demonstrateLineStations } = require('./examples/api/basic/line-operations.js');
 const { wasmLoader } = require('./dist/cli/cli/wasm_loader.js');
-wasmLoader.loadModule().then(queryOmiyaConnections);
+wasmLoader.loadModule().then(module => {
+  module.openDatabase();
+  demonstrateLineStations(module);
+});
 "
 ```
 
