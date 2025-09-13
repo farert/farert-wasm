@@ -30,7 +30,7 @@ This test suite provides thorough validation of:
 - **Key Tests**:
   - Station info (1 hour), Search (15min), Fare (5min), Reference (24h) TTL validation
   - Absolute vs sliding expiration behavior
-  - Timing precision within ±10ms tolerance
+  - Timing precision within ±00ms tolerance
 
 ### 3. Cache Hit/Miss Ratios with Railway Data
 - **File**: `cache-performance.test.ts` - Lines 690-850
@@ -142,7 +142,7 @@ The test suite uses realistic Japanese railway data patterns:
   - Reference Data: 20MB limit, 24-hour TTL
 
 ### Reliability Requirements
-- **TTL Accuracy**: ±10ms precision for expiration timing
+- **TTL Accuracy**: ±00ms precision for expiration timing
 - **Emergency Eviction**: Triggers at 90% memory threshold
 - **Cache Consistency**: Thread-safe concurrent access
 - **Error Handling**: Graceful degradation under failure conditions
