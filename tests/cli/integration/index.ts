@@ -34,7 +34,7 @@ export const TEST_CONFIG = {
   },
   TOLERANCE: {
     FARE_EXACT: 0,      // ±0 yen for exact C++ compatibility
-    FARE_ACCEPTABLE: 1, // ±1 yen for edge cases
+    FARE_ACCEPTABLE: 1, // ±0 yen for edge cases
     PERFORMANCE_BUFFER: 0.1 // 10% buffer for performance tests
   }
 };

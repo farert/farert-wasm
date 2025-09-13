@@ -139,7 +139,7 @@ async function generateTestSummary(): Promise<void> {
       'Cached Operations': '<10ms average',
       'Cache Hit Ratio': '>85%',
       'Memory Limit': '50MB global',
-      'TTL Accuracy': '±10ms precision'
+      'TTL Accuracy': '±00ms precision'
     },
     testEnvironment: {
       nodeVersion: process.version,
