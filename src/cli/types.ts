@@ -3987,7 +3987,7 @@ export const ErrorMessages: Partial<Record<CLIErrorCode, {
     ja: 'パラメータ数が正しくありません',
     en: 'Parameter count mismatch',
     suggestions: [
-      '-5 コマンド: 正確に5個のパラメータが必要です',
+      '数字オプション: -0から-5で特例ルール制御と往復表示制御',
       '直接ルート: 奇数個のパラメータ（3, 5, 7個など）',
       '自動ルート: 偶数個のパラメータ（2, 4, 6個など）'
     ]

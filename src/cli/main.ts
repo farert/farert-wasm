@@ -48,18 +48,25 @@ function printUsage(programName: string): void {
     console.error('OPTIONS:');
     console.error('      -exec     : Execute the complete test suite.');
     console.error('      -test-error : Execute comprehensive error handling system tests (ROUTE_ERR_001-099)');
-    console.error('      -5        : Calculate 5-parameter route (station1 line1 station2 line2 station3)');
+    console.error('      -5        : Rule control: special rules only + no return trip');
     console.error('      -h        : Show help message');
     console.error('      --help    : Show help message');
     console.error('      -help     : Show help message');
-    console.error('      -<num>[r] : Route test with options:');
-    console.error('                  0: all details (default)');
-    console.error('                  1: no return trip');
-    console.error('                  2: no special rules');
-    console.error('                  3: no rules + no return');
-    console.error('                  4: only special rules');
-    console.error('                  5: only special rules + no return');
-    console.error('                  r: reverse route order');
+    console.error('      -<num>[r] : Route options (meaning differs by route type):');
+    console.error('                  Manual routes (odd parameters):');
+    console.error('                    0: all details (default)');
+    console.error('                    1: no return trip');
+    console.error('                    2: no special rules (disable rule86/87/69/70)');
+    console.error('                    3: no special rules + no return');
+    console.error('                    4: special rules only');
+    console.error('                    5: special rules only + no return');
+    console.error('                  Auto routes (even parameters):');
+    console.error('                    0: all route options (default)');
+    console.error('                    1: conventional lines only (zairaisen)');
+    console.error('                    2: with shinkansen');
+    console.error('                    3: with company lines');
+    console.error('                    4: with company lines and shinkansen');
+    console.error('                  r: reverse route (manual routes only)');
     console.error('      --env-report: Show environment validation report');
     console.error('      --env-debug : Enable debug mode for this session');
     console.error('');
@@ -70,7 +77,7 @@ function printUsage(programName: string): void {
     console.error('EXAMPLES:');
     console.error('      node main.js -exec');
     console.error('      node main.js -test-error');
-    console.error('      node main.js -5 東京 東海道線 品川 東海道線 新大阪');
+    console.error('      node main.js -5 東京 東海道線 品川');
     console.error('      node main.js 東京 東海道線 品川');
     console.error('      node main.js routes.txt');
     console.error('');
@@ -123,7 +130,7 @@ function printHelp(): void {
     console.log('');
     console.log('⚡ QUICK START:');
     console.log('  1. Ensure WebAssembly module is built: npm run build');
-    console.log('  2. For single route: node main.js -5 東京 山手線 新宿 中央線 立川');
+    console.log('  2. For single route: node main.js -5 東京 山手線 新宿');
     console.log('  3. For test suite: node main.js -exec');
     console.log('');
     console.log('📋 COMMAND SYNTAX:');
@@ -140,27 +147,33 @@ function printHelp(): void {
     console.log('    Tests all error codes ROUTE_ERR_001-099, fuzzy matching suggestions,');
     console.log('    error recovery scenarios, and object state consistency validation');
     console.log('');
-    console.log('  -5 <station1> <line1> <station2> <line2> <station3>');
-    console.log('    Calculate fare for specific 5-parameter route');
-    console.log('    Parameters:');
-    console.log('      station1: Starting station (Japanese name)');
-    console.log('      line1:    First railway line name');
-    console.log('      station2: Transfer station (intermediate)');
-    console.log('      line2:    Second railway line name');  
-    console.log('      station3: Destination station');
+    console.log('  -5 [route_arguments...]');
+    console.log('    Rule control mode 5: special rules only + no return trip');
+    console.log('    Shows only results with special fare rules (rule86/87/69/70) applied');
+    console.log('    Route arguments: station1 line1 station2 [line2 station3...]');
     console.log('');
     console.log('  -h, --help, -help');
     console.log('    Show this comprehensive help message');
     console.log('');
     console.log('  -<number>[r]');
-    console.log('    Route test with output format options:');
+    console.log('    Route options with different meanings based on route type:');
+    console.log('');
+    console.log('    📋 Manual Routes (odd parameter count):');
     console.log('      0: Show all details (default - complete fare breakdown)');
     console.log('      1: No return trip information');
-    console.log('      2: No special rules display');
-    console.log('      3: No rules + no return trip');
-    console.log('      4: Only special rules (hide basic fare)');
-    console.log('      5: Only special rules + no return trip');
-    console.log('      r: Reverse route calculation order');
+    console.log('      2: Disable special rules (rule86/87/69/70 not applied)');
+    console.log('      3: No special rules + no return trip');
+    console.log('      4: Special rules only (show only rule-applied results)');
+    console.log('      5: Special rules only + no return trip');
+    console.log('      r: Reverse specified route (execute with stations in reverse order)');
+    console.log('');
+    console.log('    🤖 Auto Routes (even parameter count):');
+    console.log('      0: All route options (default - comprehensive search)');
+    console.log('      1: Conventional lines only (zairaisen, no shinkansen/company lines)');
+    console.log('      2: With shinkansen (include bullet trains)');
+    console.log('      3: With company lines (include private railways)');
+    console.log('      4: With company lines and shinkansen (all transportation)');
+    console.log('      r: Not applicable (auto routes determine optimal direction)');
     console.log('');
     console.log('📍 JAPANESE STATION EXAMPLES (REQ-CLI-006.1):');
     console.log('');
@@ -181,20 +194,20 @@ function printHelp(): void {
     console.log('💡 DETAILED EXAMPLES (REQ-CLI-006.4):');
     console.log('');
     console.log('  🌟 Basic Route Calculation:');
-    console.log('    node main.js -5 東京 東海道線 品川 山手線 新宿');
-    console.log('    → Calculates: Tokyo → Shinagawa (Tokaido) → Shinjuku (Yamanote)');
+    console.log('    node main.js -5 東京 東海道線 品川');
+    console.log('    → Calculates: Tokyo → Shinagawa (special rules only, no return trip)');
     console.log('');
     console.log('  🌟 Long Distance Route:');
     console.log('    node main.js -5 東京 東海道線 名古屋 東海道線 大阪');
-    console.log('    → Calculates: Tokyo → Nagoya → Osaka via Tokaido Line');
+    console.log('    → Calculates: Tokyo → Nagoya → Osaka (special rules only, no return)');
     console.log('');
     console.log('  🌟 Complex Transfer Route:');
     console.log('    node main.js -5 新宿 中央線 立川 青梅線 青梅');
-    console.log('    → Calculates: Shinjuku → Tachikawa (Chuo) → Ome (Ome Line)');
+    console.log('    → Calculates: Shinjuku → Tachikawa → Ome (special rules only, no return)');
     console.log('');
     console.log('  🌟 Metropolitan Area:');
     console.log('    node main.js -5 渋谷 山手線 新橋 東海道線 川崎');
-    console.log('    → Calculates: Shibuya → Shimbashi (Yamanote) → Kawasaki (Tokaido)');
+    console.log('    → Calculates: Shibuya → Shimbashi → Kawasaki (special rules only, no return)');
     console.log('');
     console.log('  🌟 Direct Route (3 parameters):');
     console.log('    node main.js 上野 山手線 東京');
@@ -216,9 +229,16 @@ function printHelp(): void {
     console.log('    → Run error handling system tests (all ROUTE_ERR_001-099 codes)');
     console.log('    → Validate fuzzy matching suggestions and error recovery');
     console.log('');
-    console.log('  🌟 Format Options:');
-    console.log('    node main.js -2 東京 東海道線 大阪  # No special rules');
-    console.log('    node main.js -1r 新宿 山手線 品川   # No return, reversed');
+    console.log('  🌟 Manual Route Options (odd parameter count):');
+    console.log('    node main.js -2 東京 東海道線 大阪  # Disable special rules (rule86/87/69/70)');
+    console.log('    node main.js -4 東京 東海道線 品川   # Special rules only');
+    console.log('    node main.js -1r 新宿 山手線 品川   # No return trip, reversed route (品川→新宿)');
+    console.log('');
+    console.log('  🌟 Auto Route Options (even parameter count):');
+    console.log('    node main.js -1 東京 大阪           # Conventional lines only (no shinkansen)');
+    console.log('    node main.js -2 東京 大阪           # With shinkansen (bullet trains allowed)');
+    console.log('    node main.js -3 東京 大阪           # With company lines (private railways)');
+    console.log('    node main.js -4 東京 大阪           # All transportation (shinkansen + company lines)');
     console.log('');
     console.log('📂 FILE FORMAT:');
     console.log('  Routes can be specified in text files, one route per line:');
@@ -242,7 +262,7 @@ function printHelp(): void {
     console.log('');
     console.log('  ❌ Problem: "Parameter count mismatch" error');
     console.log('  ✅ Solution: Check parameter count for command type');
-    console.log('     • -5 command: exactly 5 parameters required');
+    console.log('     • Numeric options: -0 to -5 for rule control (rule86/87/69/70) and return trip');
     console.log('     • Direct route: odd number (3, 5, 7, ...)');
     console.log('     • Auto route: even number (2, 4, 6, ...)');
     console.log('');
@@ -302,103 +322,6 @@ function printHelp(): void {
     console.log('═══════════════════════════════════════════════════════════════');
 }
 
-/**
- * Handle 5-parameter route calculation (-5 command)
- * Enhanced with comprehensive Japanese text validation and fuzzy matching
- * Requirements: REQ-CLI-003.3, REQ-CLI-006.3
- */
-async function handle5ParameterRoute(args: string[], module: FarertModule): Promise<number> {
-    if (args.length !== 5) {
-        const error = new CLIError(
-            '-5 command requires exactly 5 parameters',
-            CLIErrorCode.PARAMETER_COUNT_MISMATCH,
-            {
-                providedCount: args.length,
-                expectedCount: 5,
-                providedArgs: args,
-                usage: '-5 <station1> <line1> <station2> <line2> <station3>',
-                example: '-5 東京 東海道線 品川 東海道線 新大阪'
-            }
-        );
-        console.error(error.getFormattedMessage());
-        return error.code;
-    }
-    
-    const [station1, line1, station2, line2, station3] = args;
-    
-    // Enhanced validation for each parameter with fuzzy matching suggestions
-    const validationResults = [
-        { value: station1, type: 'station' as const, name: 'Station 1' },
-        { value: line1, type: 'line' as const, name: 'Line 1' },
-        { value: station2, type: 'station' as const, name: 'Station 2' },
-        { value: line2, type: 'line' as const, name: 'Line 2' },
-        { value: station3, type: 'station' as const, name: 'Station 3' }
-    ];
-    
-    let hasValidationErrors = false;
-    
-    for (const param of validationResults) {
-        const validation = validateWithSuggestions(param.value, param.type, module);
-        
-        if (!validation.isValid) {
-            hasValidationErrors = true;
-            
-            // Security: Sanitize error message to prevent exposure of sensitive data
-            const sanitizedError = sanitizeErrorMessage(validation.errorMessage || 'Invalid input');
-            console.error(`❌ ${param.name}: ${sanitizedError}`);
-            
-            // Log security status if suspicious or dangerous
-            if (validation.securityStatus === 'dangerous') {
-                logSecurityEvent('input_validation', `Dangerous input detected in ${param.type}`, 'high');
-            } else if (validation.securityStatus === 'suspicious') {
-                logSecurityEvent('input_validation', `Suspicious input pattern in ${param.type}`, 'medium');
-            }
-            
-            if (validation.suggestions.length > 0) {
-                console.error(`   Similar ${param.type} names:`);
-                validation.suggestions.forEach((suggestion, index) => {
-                    // Security: Validate suggestions before displaying
-                    const safeSuggestion = sanitizeInput(suggestion);
-                    if (safeSuggestion && validateJapaneseInput(safeSuggestion)) {
-                        console.error(`     ${index + 1}. ${safeSuggestion}`);
-                    }
-                });
-            }
-            
-            // Show database check status for transparency
-            if (validation.databaseChecked !== undefined) {
-                console.error(`   Database validation: ${validation.databaseChecked ? 'performed' : 'skipped'}`);
-            }
-            
-            console.error('');
-        }
-    }
-    
-    if (hasValidationErrors) {
-        console.error('Please check the parameter names and try again.');
-        console.error('Use valid Japanese station and line names as shown in the examples.');
-        console.error('');
-        console.error('📚 For troubleshooting help, see: README_CLI.md section "一般的な問題と解決方法"');
-        return -1;
-    }
-    
-    // Use sanitized values for route calculation
-    const sanitizedArgs = validationResults.map(param => 
-        validateWithSuggestions(param.value, param.type, module).sanitized
-    );
-    
-    const routeString = sanitizedArgs.join(' ');
-    console.log(`🚂 Calculating fare for route: ${routeString}`);
-    
-    try {
-        // Execute route test with all details (option 0)
-        await executeRouteTest([routeString, ''], 0, module);
-        return 0;
-    } catch (error) {
-        console.error('❌ Error calculating 5-parameter route:', error);
-        return -1;
-    }
-}
 
 /**
  * Enhanced Japanese input validation with comprehensive security and encoding verification
@@ -1068,7 +991,20 @@ async function fromStream(filename: string, optionNum: number, module: FarertMod
                 const tokens = line.split(/\s+/).filter(t => t.length > 0);
                 for (let i = 0; i < tokens.length; i++) {
                     const token = tokens[i];
-                    const type = (i % 2 === 0) ? 'station' : 'line';
+
+                    // Determine type based on position and context (same logic as command line)
+                    const isAutoRoute = (tokens.length % 2 === 0);
+                    const isLastToken = (i === tokens.length - 1);
+
+                    let type: 'station' | 'line';
+                    if (isAutoRoute && isLastToken) {
+                        // Auto route: last token is destination station
+                        type = 'station';
+                    } else {
+                        // Normal route: alternate station/line pattern
+                        type = (i % 2 === 0) ? 'station' : 'line';
+                    }
+
                     const validation = validateWithSuggestions(token, type, module);
                     
                     if (!validation.isValid && validation.suggestions.length > 0) {
@@ -1351,26 +1287,6 @@ async function main(): Promise<number> {
                 console.error('❌ Error handling test execution failed:', error);
                 return -1;
             }
-        } else if (option === '-5') {
-            // Handle 5-parameter route calculation with performance monitoring
-            const routeArgs = argv.slice(argIndex + 1);
-            
-            // Monitor route calculation performance (Task 12 - REQ-CLI-002.5)
-            const routeDesc = routeArgs.join(' ');
-            const routeMonitor = performanceMonitor.monitorRouteCalculation(routeDesc);
-            
-            routeMonitor.start();
-            const result = await handle5ParameterRoute(routeArgs, module);
-            const measurement = routeMonitor.end();
-            
-            // Report route calculation performance if debug mode is enabled
-            if (configManager.getConfiguration().debug && measurement) {
-                const status = measurement.passed ? '✅' : '❌';
-                const duration = (measurement.duration / 1000).toFixed(3);
-                console.log(`[PERF] ${status} Route calculation: ${duration}s (requirement: <1s)`);
-            }
-            
-            return result;
         } else {
             // Parse numeric options with optional 'r' suffix
             let numStr = option.substring(1);
@@ -1419,8 +1335,20 @@ async function main(): Promise<number> {
                 continue;
             }
             
-            // Determine if this is likely a station or line based on position
-            const type = (i % 2 === 0) ? 'station' : 'line';
+            // Determine if this is likely a station or line based on position and context
+            // For auto routes (even parameter count), last parameter is always a station
+            const isAutoRoute = (remainingArgs.length % 2 === 0);
+            const isLastParameter = (i === remainingArgs.length - 1);
+
+            let type: 'station' | 'line';
+            if (isAutoRoute && isLastParameter) {
+                // Auto route: last parameter is destination station
+                type = 'station';
+            } else {
+                // Normal route: alternate station/line pattern
+                type = (i % 2 === 0) ? 'station' : 'line';
+            }
+
             const validation = validateWithSuggestions(arg, type, module);
             
             if (!validation.isValid) {
