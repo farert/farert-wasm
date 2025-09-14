@@ -25,6 +25,7 @@ Complete WebAssembly implementation of C++ railway fare calculation engine with 
 ### Method 1: DevContainer (Recommended) 🐳
 
 最も簡単で確実な方法です。必要な全てのツールが自動的にセットアップされます：
+Windows なかたはWSL経由以外でしたらこれしか選択肢はないでしょう。
 
 **前提条件:**
 - [Visual Studio Code](https://code.visualstudio.com/)

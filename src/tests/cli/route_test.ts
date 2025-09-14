@@ -394,9 +394,16 @@ export async function executeRouteTest(
     }
     
     // Apply round options (result format filtering)
+    // For round = 0 (default), show multiple results like C++ version
+    if (round === 0) {
+        // Show multiple results as in C++ version
+        await showMultipleResults(cleanRoute, module, output);
+        return;
+    }
+
     let shouldShowResult = true;
     let resultString = result.fareString;
-    
+
     switch (round) {
         case 1: // no return
             // Filter out return trip information
@@ -436,4 +443,109 @@ export async function executeRouteTest(
             console.log('---');
         }
     }
+}
+
+/**
+ * Show multiple results for default mode (round = 0)
+ * Recreates C++ behavior: rule applied, rule non-applied, and reversed routes
+ */
+async function showMultipleResults(cleanRoute: string, module: FarertModule, output?: TestOutputWriter): Promise<void> {
+    console.log(`!****<01>: ******************* 結果 **********************`);
+    console.log(`<${cleanRoute} >`);
+    console.log('');
+
+    // First: Rule applied version (既定)
+    console.log('///既定');
+    const success1 = setupRouteFromString(cleanRoute, module);
+    if (success1) {
+        const result1 = calculateAndGetResults(module);
+        if (result1.success) {
+            console.log(result1.fareString);
+        }
+    }
+    console.log('');
+
+    // Second: Rule non-applied version (非適用)
+    console.log('///非適用');
+
+    // Create separate route object for no-rule calculation
+    try {
+        const baseRoute = new module.cRoute();
+        baseRoute.setupRoute(cleanRoute);
+        baseRoute.setNoRule(true); // Set no-rule flag before creating CalcRoute
+
+        if (true) { // Always proceed after setupRoute
+            const noRuleCalcRoute = new module.cCalcRoute(baseRoute);
+
+            const noRuleFare = noRuleCalcRoute.calcFare();
+            if (noRuleFare && noRuleFare.fare > 0) {
+                console.log(noRuleCalcRoute.showFare());
+                console.log('');
+                console.log('旅客営業規則第86条を適用していません');
+            }
+        }
+    } catch (error) {
+        console.error('Failed to calculate no-rule version:', error);
+    }
+    console.log('');
+
+    // Third: Reversed route section
+    console.log('------ 反転 ------');
+    console.log('');
+
+    // Parse route and reverse it
+    const reversedRoute = reverseRouteString(cleanRoute);
+
+    // Reversed rule applied version (既定)
+    console.log('///既定');
+    const success3 = setupRouteFromString(reversedRoute, module);
+    if (success3) {
+        const result3 = calculateAndGetResults(module);
+        if (result3.success) {
+            console.log(result3.fareString);
+        }
+    }
+    console.log('');
+
+    // Reversed rule non-applied version (非適用)
+    console.log('///非適用');
+    try {
+        const baseRouteReversed = new module.cRoute();
+        baseRouteReversed.setupRoute(reversedRoute);
+        baseRouteReversed.setNoRule(true); // Set no-rule flag before creating CalcRoute
+
+        if (true) { // Always proceed after setupRoute
+            const noRuleCalcRouteReversed = new module.cCalcRoute(baseRouteReversed);
+
+            const noRuleFareReversed = noRuleCalcRouteReversed.calcFare();
+            if (noRuleFareReversed && noRuleFareReversed.fare > 0) {
+                console.log(noRuleCalcRouteReversed.showFare());
+                console.log('');
+                console.log('旅客営業規則第86条を適用していません');
+            }
+        }
+    } catch (error) {
+        console.error('Failed to calculate reversed no-rule version:', error);
+    }
+}
+
+/**
+ * Reverse a route string for reverse direction calculation
+ * Example: "A line1 B line2 C" -> "C line2 B line1 A"
+ */
+function reverseRouteString(route: string): string {
+    const tokens = route.trim().split(/\s+/).filter(t => t.length > 0);
+    if (tokens.length < 3) return route;
+
+    const reversed: string[] = [];
+
+    // Reverse the tokens and swap stations/lines appropriately
+    for (let i = tokens.length - 1; i >= 0; i -= 2) {
+        reversed.push(tokens[i]); // station
+        if (i > 0) {
+            reversed.push(tokens[i - 1]); // line
+        }
+    }
+
+    return reversed.join(' ');
 }
