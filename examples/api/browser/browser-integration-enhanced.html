@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farert Railway API Browser Integration - Enhanced SDK Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .header p {
+            color: #7f8c8d;
+            font-size: 1.1em;
+        }
+
+        .sdk-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #3498db, #9b59b6);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        .status-panel {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        .status-loading {
+            background: #f39c12;
+            animation: pulse 1.5s infinite;
+        }
+
+        .status-success {
+            background: #27ae60;
+        }
+
+        .status-error {
+            background: #e74c3c;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .demo-section {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .demo-section h2 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .input-group input, .input-group select {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus, .input-group select:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+            min-width: 120px;
+        }
+
+        .btn:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-success {
+            background: #27ae60;
+        }
+
+        .btn-success:hover {
+            background: #229954;
+        }
+
+        .btn-warning {
+            background: #f39c12;
+        }
+
+        .btn-warning:hover {
+            background: #e67e22;
+        }
+
+        .result-panel {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .result-panel h3 {
+            color: #495057;
+            margin-bottom: 10px;
+        }
+
+        .station-item, .line-item {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .station-name, .line-name {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .station-id, .line-id {
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+
+        .validation-badge {
+            background: #27ae60;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            margin-left: 10px;
+        }
+
+        .validation-error {
+            background: #e74c3c;
+        }
+
+        .junction-badge {
+            background: #e74c3c;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            margin-left: 10px;
+        }
+
+        .route-builder {
+            border: 2px dashed #3498db;
+            border-radius: 10px;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+
+        .route-step {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .route-step-content {
+            flex: 1;
+        }
+
+        .route-step-number {
+            background: #3498db;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+
+        .fare-result {
+            background: linear-gradient(135deg, #00b894 0%, #00cec9 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .fare-amount {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .input-group {
+                flex-direction: column;
+            }
+
+            .input-group input {
+                min-width: auto;
+            }
+        }
+
+        .performance-metrics {
+            font-size: 0.9em;
+            color: #6c757d;
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        .api-status {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .api-function {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .api-available {
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        .api-unavailable {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        .framework-detection {
+            background: linear-gradient(135deg, #74b9ff, #0984e3);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .lazy-loading-status {
+            background: #e8f5e8;
+            border: 1px solid #d4edda;
+            border-radius: 5px;
+            padding: 10px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚆 Farert Railway API</h1>
+            <p>Enhanced Browser Integration with SDK Utilities</p>
+            <div class="sdk-badge">Using SDK Browser Utilities + Lazy Loader</div>
+        </div>
+
+        <div class="framework-detection">
+            <h3>🔍 Framework Detection & Browser Environment</h3>
+            <div id="framework-info">Detecting framework and browser capabilities...</div>
+        </div>
+
+        <div class="status-panel">
+            <h2>📊 System Status & Performance</h2>
+            <div id="wasm-status">
+                <span class="status-indicator status-loading"></span>
+                <span>WebAssembly Module: Loading...</span>
+            </div>
+            <div id="sdk-status">
+                <span class="status-indicator status-loading"></span>
+                <span>SDK Utilities: Loading...</span>
+            </div>
+            <div id="lazy-loader-status">
+                <span class="status-indicator status-loading"></span>
+                <span>Lazy Loader: Initializing...</span>
+            </div>
+            <div id="performance-info" class="performance-metrics"></div>
+            <div id="lazy-loading-info" class="lazy-loading-status" style="display: none;"></div>
+        </div>
+
+        <div class="grid">
+            <div class="demo-section">
+                <h2>🔍 Enhanced Station Search</h2>
+                <p><small>Using SDK validation and formatting utilities</small></p>
+                <div class="input-group">
+                    <input type="text" id="station-search" placeholder="駅名を入力 (例: 東京, 新宿, 横浜)" value="東京">
+                    <button class="btn" onclick="enhancedStationSearch()" id="station-search-btn">Search Station</button>
+                </div>
+                <div id="station-results" class="result-panel" style="display: none;"></div>
+            </div>
+
+            <div class="demo-section">
+                <h2>🚈 Enhanced Line Operations</h2>
+                <p><small>Using SDK line utilities and validation</small></p>
+                <div class="input-group">
+                    <input type="text" id="line-search" placeholder="路線名を入力 (例: 山手線, 東海道線)" value="山手線">
+                    <button class="btn" onclick="enhancedLineSearch()" id="line-search-btn">Search Line</button>
+                </div>
+                <div id="line-results" class="result-panel" style="display: none;"></div>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>🗺️ Advanced Route Builder</h2>
+            <p><small>Using SDK route utilities with intelligent validation</small></p>
+            <div class="route-builder">
+                <div class="input-group">
+                    <input type="text" id="start-station" placeholder="出発駅 (例: 東京)" value="東京">
+                    <input type="text" id="via-line" placeholder="経由路線 (例: 東海道線)" value="東海道線">
+                    <input type="text" id="end-station" placeholder="到着駅 (例: 横浜)" value="横浜">
+                    <button class="btn btn-success" onclick="buildEnhancedRoute()" id="route-build-btn">Build Route</button>
+                </div>
+                <div id="route-validation"></div>
+                <div id="route-steps"></div>
+                <div id="fare-calculation"></div>
+            </div>
+        </div>
+
+        <div class="grid">
+            <div class="demo-section">
+                <h2>🧪 SDK Utilities Demo</h2>
+                <div class="input-group">
+                    <button class="btn btn-warning" onclick="demonstrateSDKUtilities()">Test SDK Functions</button>
+                    <button class="btn btn-warning" onclick="demonstrateValidation()">Test Validation</button>
+                </div>
+                <div id="sdk-demo-results" class="result-panel" style="display: none;"></div>
+            </div>
+
+            <div class="demo-section">
+                <h2>⚡ Lazy Loading Demo</h2>
+                <div class="input-group">
+                    <select id="module-select">
+                        <option value="">選択してください...</option>
+                        <option value="svelte">Svelte Module</option>
+                        <option value="react">React Module</option>
+                        <option value="vue">Vue Module</option>
+                        <option value="webassembly">WebAssembly Module</option>
+                    </select>
+                    <button class="btn btn-warning" onclick="demonstrateLazyLoading()">Load Module</button>
+                </div>
+                <div id="lazy-demo-results" class="result-panel" style="display: none;"></div>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>🔧 Enhanced API Status</h2>
+            <div id="api-status" class="api-status"></div>
+        </div>
+    </div>
+
+    <!-- ES6 Module Script with SDK Integration -->
+    <script type="module">
+        // Import SDK utilities using ES6 modules
+        import {
+            formatStationName,
+            parseStationName,
+            validateStationId,
+            createStationValidator,
+            formatRoute,
+            parseRoute,
+            validateRoute,
+            createRouteValidator,
+            RouteBuilder,
+            createRouteBuilder,
+            formatFare,
+            formatLineName,
+            parseLineName,
+            validateLineId,
+            createLineValidator,
+            detectFramework,
+            getFrameworkInfo,
+            isFrameworkAvailable
+        } from '../../../src/sdk/utils/browser.js';
+
+        import {
+            LazyLoader,
+            createFrameworkLazyLoader,
+            getGlobalLazyLoader,
+            loadModule
+        } from '../../../src/sdk/core/lazy-loader.js';
+
+        // Global variables
+        let wasmModule = null;
+        let isInitialized = false;
+        let sdkLoader = null;
+        let stationValidator = null;
+        let routeValidator = null;
+        let lineValidator = null;
+        let routeBuilder = null;
+
+        // Enhanced Browser WebAssembly Loader with SDK Integration
+        class EnhancedBrowserLoader {
+            constructor() {
+                this.module = null;
+                this.initialized = false;
+                this.lazyLoader = createFrameworkLazyLoader('vanilla');
+            }
+
+            async loadModule() {
+                if (this.module && this.initialized) {
+                    return this.module;
+                }
+
+                try {
+                    updateStatus('wasm-status', 'loading', 'WebAssembly Module: Loading...');
+                    updateStatus('sdk-status', 'loading', 'SDK Utilities: Loading...');
+                    updateStatus('lazy-loader-status', 'loading', 'Lazy Loader: Initializing...');
+
+                    // Load WebAssembly using lazy loader
+                    const wasmResult = await this.lazyLoader.loadWebAssemblyModule('farert');
+
+                    // For now, fall back to traditional loading as the full SDK integration
+                    // would require the complete WebAssembly build to be available
+                    const response = await fetch('../../dist/farert.js');
+                    if (!response.ok) {
+                        throw new Error(`Failed to fetch farert.js: ${response.status} ${response.statusText}`);
+                    }
+
+                    const jsContent = await response.text();
+                    const script = document.createElement('script');
+                    script.textContent = jsContent;
+                    document.head.appendChild(script);
+
+                    let attempts = 0;
+                    while (typeof Module === 'undefined' && attempts < 50) {
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                        attempts++;
+                    }
+
+                    if (typeof Module === 'undefined') {
+                        throw new Error('Emscripten Module not available after loading');
+                    }
+
+                    this.module = await new Promise((resolve, reject) => {
+                        Module({
+                            locateFile: (path, prefix) => {
+                                if (path.endsWith('.wasm')) {
+                                    return '../../dist/farert.wasm';
+                                }
+                                return prefix + path;
+                            },
+                            onRuntimeInitialized: () => {
+                                resolve(Module);
+                            },
+                            onAbort: (error) => {
+                                reject(new Error(`WebAssembly module aborted: ${error}`));
+                            },
+                            print: (text) => {
+                                console.log('[WASM]', text);
+                            },
+                            printErr: (text) => {
+                                console.error('[WASM ERROR]', text);
+                            }
+                        });
+                    });
+
+                    updateStatus('wasm-status', 'success', 'WebAssembly Module: Loaded ✅');
+                    updateStatus('sdk-status', 'success', 'SDK Utilities: Ready ✅');
+                    updateStatus('lazy-loader-status', 'success', 'Lazy Loader: Initialized ✅');
+
+                    this.initialized = true;
+                    updatePerformanceInfo();
+                    updateLazyLoadingInfo();
+
+                    return this.module;
+
+                } catch (error) {
+                    updateStatus('wasm-status', 'error', `WebAssembly Module: Error - ${error.message}`);
+                    updateStatus('sdk-status', 'error', `SDK Utilities: Error - ${error.message}`);
+                    updateStatus('lazy-loader-status', 'error', `Lazy Loader: Error - ${error.message}`);
+                    throw error;
+                }
+            }
+
+            async initializeDatabase() {
+                if (!this.module) {
+                    throw new Error('Module not loaded');
+                }
+
+                try {
+                    const result = this.module.openDatabase();
+                    if (result) {
+                        return true;
+                    } else {
+                        throw new Error('Database connection returned false');
+                    }
+                } catch (error) {
+                    throw error;
+                }
+            }
+
+            getModule() {
+                if (!this.module || !this.initialized) {
+                    throw new Error('WebAssembly module not loaded');
+                }
+                return this.module;
+            }
+
+            getLazyLoader() {
+                return this.lazyLoader;
+            }
+        }
+
+        // Initialize the enhanced application
+        const enhancedLoader = new EnhancedBrowserLoader();
+
+        async function initializeEnhancedApp() {
+            try {
+                // Detect framework and browser capabilities
+                const frameworkInfo = getFrameworkInfo();
+                document.getElementById('framework-info').innerHTML = `
+                    <strong>Detected Framework:</strong> ${frameworkInfo.name} (${frameworkInfo.version || 'Unknown'})<br>
+                    <strong>Browser:</strong> ${navigator.userAgent.split(' ')[0]} <br>
+                    <strong>WebAssembly Support:</strong> ${typeof WebAssembly !== 'undefined' ? '✅' : '❌'}<br>
+                    <strong>ES6 Module Support:</strong> ${typeof import !== 'undefined' ? '✅' : '❌'}
+                `;
+
+                // Initialize SDK components
+                stationValidator = createStationValidator();
+                routeValidator = createRouteValidator();
+                lineValidator = createLineValidator();
+                routeBuilder = createRouteBuilder();
+
+                // Load WebAssembly module
+                wasmModule = await enhancedLoader.loadModule();
+                await enhancedLoader.initializeDatabase();
+                isInitialized = true;
+
+                // Get lazy loader reference
+                sdkLoader = enhancedLoader.getLazyLoader();
+
+                // Check API function availability
+                checkEnhancedAPIAvailability();
+
+                console.log('✅ Enhanced application initialized successfully');
+
+            } catch (error) {
+                console.error('❌ Failed to initialize enhanced application:', error);
+                showError('initialization-error', `Failed to initialize: ${error.message}`);
+            }
+        }
+
+        // Enhanced utility functions
+        function updateStatus(elementId, status, message) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                const indicator = element.querySelector('.status-indicator');
+                indicator.className = `status-indicator status-${status}`;
+                element.querySelector('span:last-child').textContent = message;
+            }
+        }
+
+        function updatePerformanceInfo() {
+            const perfElement = document.getElementById('performance-info');
+            if (perfElement && wasmModule && wasmModule.HEAP8) {
+                const used = wasmModule.HEAP8.length;
+                const metrics = sdkLoader ? sdkLoader.getMetrics() : null;
+
+                perfElement.innerHTML = `
+                    <strong>Performance Metrics:</strong><br>
+                    WASM Heap: ${(used / 1024 / 1024).toFixed(2)} MB<br>
+                    ${metrics ? `
+                        Loaded Modules: ${metrics.loadedModules}/${metrics.totalModules}<br>
+                        Cache Hit Ratio: ${(metrics.cacheHitRatio * 100).toFixed(1)}%<br>
+                        Average Load Time: ${metrics.averageLoadTime.toFixed(2)}ms
+                    ` : ''}
+                `;
+            }
+        }
+
+        function updateLazyLoadingInfo() {
+            const lazyElement = document.getElementById('lazy-loading-info');
+            if (lazyElement && sdkLoader) {
+                const metrics = sdkLoader.getMetrics();
+                lazyElement.style.display = 'block';
+                lazyElement.innerHTML = `
+                    <strong>Lazy Loading Status:</strong>
+                    Memory Usage: ${(metrics.memoryUsage / 1024).toFixed(2)} KB |
+                    Failed Modules: ${metrics.failedModules}
+                `;
+            }
+        }
+
+        function showError(containerId, message) {
+            const container = document.getElementById(containerId) || document.body;
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.innerHTML = `<strong>Error:</strong> ${message}`;
+            container.appendChild(errorDiv);
+        }
+
+        function showLoading(buttonId) {
+            const button = document.getElementById(buttonId);
+            if (button) {
+                button.disabled = true;
+                button.innerHTML = '<span class="loading-spinner"></span>Loading...';
+            }
+        }
+
+        function hideLoading(buttonId, originalText) {
+            const button = document.getElementById(buttonId);
+            if (button) {
+                button.disabled = false;
+                button.innerHTML = originalText;
+            }
+        }
+
+        // Enhanced API Functions using SDK utilities
+        function checkEnhancedAPIAvailability() {
+            const apiStatus = document.getElementById('api-status');
+            const functions = [
+                'getStationId', 'getStationName', 'getLineId', 'getLineName',
+                'isJunction', 'getStationIdsOfLine', 'getLineIdsFromStation',
+                'getPrefects', 'companyOrPrefectName', 'linesCompanyOrPrefectId',
+                'addRouteBegin', 'addRoute', 'calculateFare', 'routeScript'
+            ];
+
+            const sdkFunctions = [
+                'formatStationName', 'validateStationId', 'formatRoute',
+                'validateRoute', 'formatFare', 'detectFramework'
+            ];
+
+            apiStatus.innerHTML = '';
+
+            // WebAssembly functions
+            functions.forEach(funcName => {
+                const div = document.createElement('div');
+                div.className = 'api-function';
+                const available = typeof wasmModule[funcName] === 'function';
+                div.innerHTML = `
+                    <span>WASM: ${funcName}</span>
+                    <span class="${available ? 'api-available' : 'api-unavailable'}">
+                        ${available ? '✅' : '❌'}
+                    </span>
+                `;
+                apiStatus.appendChild(div);
+            });
+
+            // SDK utility functions
+            sdkFunctions.forEach(funcName => {
+                const div = document.createElement('div');
+                div.className = 'api-function';
+                const available = eval(`typeof ${funcName} === 'function'`);
+                div.innerHTML = `
+                    <span>SDK: ${funcName}</span>
+                    <span class="${available ? 'api-available' : 'api-unavailable'}">
+                        ${available ? '✅' : '❌'}
+                    </span>
+                `;
+                apiStatus.appendChild(div);
+            });
+        }
+
+        // Enhanced Station Search with SDK utilities
+        window.enhancedStationSearch = async function() {
+            if (!isInitialized) {
+                alert('System not initialized. Please wait...');
+                return;
+            }
+
+            const stationName = document.getElementById('station-search').value.trim();
+            if (!stationName) {
+                alert('Please enter a station name');
+                return;
+            }
+
+            showLoading('station-search-btn');
+
+            try {
+                // Use SDK utilities for formatting and validation
+                const formattedName = formatStationName(stationName);
+                const parsedName = parseStationName(formattedName);
+
+                const stationId = wasmModule.getStationId(formattedName);
+                const resultsDiv = document.getElementById('station-results');
+                resultsDiv.style.display = 'block';
+
+                if (stationId > 0) {
+                    // Validate station ID using SDK
+                    const isValidId = validateStationId(stationId);
+                    const stationNameFromId = wasmModule.getStationName(stationId);
+                    const isJunctionResult = wasmModule.isJunction ? wasmModule.isJunction(stationId) : false;
+
+                    let kanaName = '';
+                    if (wasmModule.getKanaFromStationId) {
+                        kanaName = wasmModule.getKanaFromStationId(stationId);
+                    }
+
+                    let connectingLines = [];
+                    if (wasmModule.getLineIdsFromStation) {
+                        try {
+                            const linesResult = wasmModule.getLineIdsFromStation(stationId);
+                            if (typeof linesResult === 'string') {
+                                connectingLines = JSON.parse(linesResult);
+                            } else if (Array.isArray(linesResult)) {
+                                connectingLines = linesResult;
+                            }
+                        } catch (e) {
+                            console.warn('Failed to get connecting lines:', e);
+                        }
+                    }
+
+                    resultsDiv.innerHTML = `
+                        <h3>Enhanced Station Information</h3>
+                        <div class="station-item">
+                            <div>
+                                <div class="station-name">${stationNameFromId}</div>
+                                <div><small>Formatted: ${formattedName}</small></div>
+                                <div><small>Parsed: ${JSON.stringify(parsedName)}</small></div>
+                                ${kanaName ? `<div>Reading: ${kanaName}</div>` : ''}
+                                ${isJunctionResult ? '<span class="junction-badge">Junction</span>' : ''}
+                                <span class="validation-badge ${isValidId ? '' : 'validation-error'}">
+                                    ${isValidId ? 'Valid ID' : 'Invalid ID'}
+                                </span>
+                            </div>
+                            <div class="station-id">ID: ${stationId}</div>
+                        </div>
+                        ${connectingLines.length > 0 ? `
+                            <h4>Connecting Lines (${connectingLines.length})</h4>
+                            ${connectingLines.filter(id => id > 0).map(lineId => {
+                                const lineName = wasmModule.getLineName(lineId);
+                                const formattedLineName = formatLineName(lineName);
+                                return `<div class="line-item">
+                                    <span class="line-name">${formattedLineName}</span>
+                                    <span class="line-id">ID: ${lineId}</span>
+                                </div>`;
+                            }).join('')}
+                        ` : ''}
+                    `;
+                } else {
+                    resultsDiv.innerHTML = `
+                        <div class="error-message">
+                            Station "${stationName}" not found. Please check the spelling or try a different name.
+                            <br><small>Formatted input: ${formattedName}</small>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Enhanced station search error:', error);
+                document.getElementById('station-results').innerHTML = `
+                    <div class="error-message">Error in enhanced station search: ${error.message}</div>
+                `;
+            } finally {
+                hideLoading('station-search-btn', 'Search Station');
+            }
+        };
+
+        // Enhanced Line Search with SDK utilities
+        window.enhancedLineSearch = async function() {
+            if (!isInitialized) {
+                alert('System not initialized. Please wait...');
+                return;
+            }
+
+            const lineName = document.getElementById('line-search').value.trim();
+            if (!lineName) {
+                alert('Please enter a line name');
+                return;
+            }
+
+            showLoading('line-search-btn');
+
+            try {
+                // Use SDK utilities for formatting and validation
+                const formattedName = formatLineName(lineName);
+                const parsedName = parseLineName(formattedName);
+
+                const lineId = wasmModule.getLineId(formattedName);
+                const resultsDiv = document.getElementById('line-results');
+                resultsDiv.style.display = 'block';
+
+                if (lineId > 0) {
+                    // Validate line ID using SDK
+                    const isValidId = validateLineId(lineId);
+                    const lineNameFromId = wasmModule.getLineName(lineId);
+
+                    let stations = [];
+                    if (wasmModule.getStationIdsOfLine) {
+                        try {
+                            const stationsResult = wasmModule.getStationIdsOfLine(lineId);
+                            if (typeof stationsResult === 'string') {
+                                stations = JSON.parse(stationsResult);
+                            } else if (Array.isArray(stationsResult)) {
+                                stations = stationsResult;
+                            }
+                        } catch (e) {
+                            console.warn('Failed to get line stations:', e);
+                        }
+                    }
+
+                    resultsDiv.innerHTML = `
+                        <h3>Enhanced Line Information</h3>
+                        <div class="line-item">
+                            <div>
+                                <span class="line-name">${lineNameFromId}</span>
+                                <div><small>Formatted: ${formattedName}</small></div>
+                                <div><small>Parsed: ${JSON.stringify(parsedName)}</small></div>
+                                <span class="validation-badge ${isValidId ? '' : 'validation-error'}">
+                                    ${isValidId ? 'Valid ID' : 'Invalid ID'}
+                                </span>
+                            </div>
+                            <span class="line-id">ID: ${lineId}</span>
+                        </div>
+                        ${stations.length > 0 ? `
+                            <h4>Stations on Line (${stations.length})</h4>
+                            <div style="max-height: 200px; overflow-y: auto;">
+                                ${stations.filter(id => id > 0).slice(0, 20).map((stationId, index) => {
+                                    const stationName = wasmModule.getStationName(stationId);
+                                    const formattedStationName = formatStationName(stationName);
+                                    const isJunctionResult = wasmModule.isJunction ? wasmModule.isJunction(stationId) : false;
+                                    return `<div class="station-item">
+                                        <div>
+                                            <span class="station-name">${index + 1}. ${formattedStationName}</span>
+                                            ${isJunctionResult ? '<span class="junction-badge">Junction</span>' : ''}
+                                        </div>
+                                        <span class="station-id">ID: ${stationId}</span>
+                                    </div>`;
+                                }).join('')}
+                                ${stations.length > 20 ? `<div style="text-align: center; margin-top: 10px; color: #7f8c8d;">... and ${stations.length - 20} more stations</div>` : ''}
+                            </div>
+                        ` : ''}
+                    `;
+                } else {
+                    resultsDiv.innerHTML = `
+                        <div class="error-message">
+                            Line "${lineName}" not found. Please check the spelling or try a different name.
+                            <br><small>Formatted input: ${formattedName}</small>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Enhanced line search error:', error);
+                document.getElementById('line-results').innerHTML = `
+                    <div class="error-message">Error in enhanced line search: ${error.message}</div>
+                `;
+            } finally {
+                hideLoading('line-search-btn', 'Search Line');
+            }
+        };
+
+        // Enhanced Route Building with SDK utilities
+        window.buildEnhancedRoute = async function() {
+            if (!isInitialized) {
+                alert('System not initialized. Please wait...');
+                return;
+            }
+
+            const startStation = document.getElementById('start-station').value.trim();
+            const viaLine = document.getElementById('via-line').value.trim();
+            const endStation = document.getElementById('end-station').value.trim();
+
+            if (!startStation || !viaLine || !endStation) {
+                alert('Please fill in all route fields');
+                return;
+            }
+
+            showLoading('route-build-btn');
+
+            try {
+                // Use SDK RouteBuilder for enhanced route construction
+                const route = {
+                    start: startStation,
+                    via: viaLine,
+                    end: endStation
+                };
+
+                // Validate route using SDK
+                const routeValidation = validateRoute(route);
+                const validationDiv = document.getElementById('route-validation');
+
+                validationDiv.innerHTML = `
+                    <div class="validation-badge ${routeValidation.isValid ? '' : 'validation-error'}">
+                        Route Validation: ${routeValidation.isValid ? 'Valid ✅' : 'Invalid ❌'}
+                    </div>
+                    ${!routeValidation.isValid ? `<div class="error-message">Validation errors: ${routeValidation.errors.join(', ')}</div>` : ''}
+                `;
+
+                // Format route using SDK utilities
+                const formattedRoute = formatRoute(route);
+
+                // Get IDs with formatted names
+                const startStationId = wasmModule.getStationId(formatStationName(startStation));
+                const lineId = wasmModule.getLineId(formatLineName(viaLine));
+                const endStationId = wasmModule.getStationId(formatStationName(endStation));
+
+                const stepsDiv = document.getElementById('route-steps');
+                const fareDiv = document.getElementById('fare-calculation');
+
+                if (startStationId <= 0) {
+                    throw new Error(`Start station "${startStation}" not found`);
+                }
+                if (lineId <= 0) {
+                    throw new Error(`Line "${viaLine}" not found`);
+                }
+                if (endStationId <= 0) {
+                    throw new Error(`End station "${endStation}" not found`);
+                }
+
+                // Build route using RouteBuilder
+                routeBuilder.reset();
+                routeBuilder.setStart(startStationId);
+                routeBuilder.addSegment(lineId, endStationId);
+
+                // Execute route building with WebAssembly
+                let routeResult = wasmModule.addRouteBegin(startStationId);
+                if (!routeResult) {
+                    throw new Error('Failed to start route');
+                }
+
+                routeResult = wasmModule.addRoute(lineId, endStationId);
+                if (!routeResult) {
+                    throw new Error('Failed to add route segment');
+                }
+
+                // Calculate fare
+                const fare = wasmModule.calculateFare();
+                const formattedFare = formatFare(fare);
+
+                // Get route description if available
+                let routeDescription = '';
+                if (wasmModule.routeScript) {
+                    routeDescription = wasmModule.routeScript();
+                }
+
+                // Display enhanced route steps
+                stepsDiv.innerHTML = `
+                    <h3>Enhanced Route Steps</h3>
+                    <div class="route-step">
+                        <div class="route-step-number">1</div>
+                        <div class="route-step-content">
+                            <strong>Start:</strong> ${formatStationName(startStation)} (ID: ${startStationId})
+                        </div>
+                    </div>
+                    <div class="route-step">
+                        <div class="route-step-number">2</div>
+                        <div class="route-step-content">
+                            <strong>Via:</strong> ${formatLineName(viaLine)} (ID: ${lineId})
+                        </div>
+                    </div>
+                    <div class="route-step">
+                        <div class="route-step-number">3</div>
+                        <div class="route-step-content">
+                            <strong>End:</strong> ${formatStationName(endStation)} (ID: ${endStationId})
+                        </div>
+                    </div>
+                    <div style="margin-top: 15px; padding: 10px; background: #e8f5e8; border-radius: 5px;">
+                        <strong>SDK Formatted Route:</strong> ${formattedRoute}
+                    </div>
+                    ${routeDescription ? `
+                        <div style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
+                            <strong>Route Description:</strong><br>
+                            ${routeDescription}
+                        </div>
+                    ` : ''}
+                `;
+
+                // Display enhanced fare with SDK formatting
+                fareDiv.innerHTML = `
+                    <div class="fare-result">
+                        <div class="fare-amount">${formattedFare}</div>
+                        <div>Route: ${formatStationName(startStation)} → ${formatStationName(endStation)}</div>
+                        <div>Via: ${formatLineName(viaLine)}</div>
+                        <div><small>SDK Enhanced Formatting</small></div>
+                    </div>
+                `;
+
+            } catch (error) {
+                console.error('Enhanced route building error:', error);
+                document.getElementById('route-steps').innerHTML = `
+                    <div class="error-message">Error building enhanced route: ${error.message}</div>
+                `;
+                document.getElementById('fare-calculation').innerHTML = '';
+            } finally {
+                hideLoading('route-build-btn', 'Build Route');
+            }
+        };
+
+        // SDK Utilities Demonstration
+        window.demonstrateSDKUtilities = async function() {
+            try {
+                const resultsDiv = document.getElementById('sdk-demo-results');
+                resultsDiv.style.display = 'block';
+                resultsDiv.innerHTML = '<div class="loading-spinner"></div> Testing SDK utilities...';
+
+                // Test various SDK utilities
+                const testStation = "東京";
+                const testLine = "山手線";
+                const testFare = 150;
+
+                const tests = [
+                    {
+                        name: 'formatStationName',
+                        input: testStation,
+                        result: formatStationName(testStation)
+                    },
+                    {
+                        name: 'parseStationName',
+                        input: testStation,
+                        result: JSON.stringify(parseStationName(testStation))
+                    },
+                    {
+                        name: 'formatLineName',
+                        input: testLine,
+                        result: formatLineName(testLine)
+                    },
+                    {
+                        name: 'parseLineName',
+                        input: testLine,
+                        result: JSON.stringify(parseLineName(testLine))
+                    },
+                    {
+                        name: 'formatFare',
+                        input: testFare,
+                        result: formatFare(testFare)
+                    },
+                    {
+                        name: 'detectFramework',
+                        input: 'current environment',
+                        result: detectFramework()
+                    }
+                ];
+
+                let html = '<h3>SDK Utilities Test Results</h3>';
+                tests.forEach(test => {
+                    html += `
+                        <div class="api-function">
+                            <div>
+                                <strong>${test.name}(${test.input})</strong><br>
+                                <small>Result: ${test.result}</small>
+                            </div>
+                            <span class="api-available">✅</span>
+                        </div>
+                    `;
+                });
+
+                resultsDiv.innerHTML = html;
+
+            } catch (error) {
+                console.error('SDK utilities demo error:', error);
+                document.getElementById('sdk-demo-results').innerHTML = `
+                    <div class="error-message">Error in SDK utilities demo: ${error.message}</div>
+                `;
+            }
+        };
+
+        // Validation Demonstration
+        window.demonstrateValidation = async function() {
+            try {
+                const resultsDiv = document.getElementById('sdk-demo-results');
+                resultsDiv.style.display = 'block';
+                resultsDiv.innerHTML = '<div class="loading-spinner"></div> Testing validation utilities...';
+
+                // Test validation utilities
+                const validationTests = [
+                    {
+                        name: 'validateStationId',
+                        test: () => validateStationId(1130101), // Tokyo Station ID
+                        expected: true
+                    },
+                    {
+                        name: 'validateStationId (invalid)',
+                        test: () => validateStationId(-1),
+                        expected: false
+                    },
+                    {
+                        name: 'validateLineId',
+                        test: () => validateLineId(11301), // Yamanote Line ID
+                        expected: true
+                    },
+                    {
+                        name: 'validateRoute',
+                        test: () => validateRoute({start: '東京', via: '山手線', end: '新宿'}),
+                        expected: 'object with isValid property'
+                    }
+                ];
+
+                let html = '<h3>Validation Test Results</h3>';
+                validationTests.forEach(test => {
+                    try {
+                        const result = test.test();
+                        const success = typeof test.expected === 'boolean' ?
+                            result === test.expected :
+                            typeof result === 'object' && result.hasOwnProperty('isValid');
+
+                        html += `
+                            <div class="api-function">
+                                <div>
+                                    <strong>${test.name}</strong><br>
+                                    <small>Result: ${JSON.stringify(result)}</small><br>
+                                    <small>Expected: ${test.expected}</small>
+                                </div>
+                                <span class="${success ? 'api-available' : 'api-unavailable'}">
+                                    ${success ? '✅' : '❌'}
+                                </span>
+                            </div>
+                        `;
+                    } catch (error) {
+                        html += `
+                            <div class="api-function">
+                                <div>
+                                    <strong>${test.name}</strong><br>
+                                    <small>Error: ${error.message}</small>
+                                </div>
+                                <span class="api-unavailable">❌</span>
+                            </div>
+                        `;
+                    }
+                });
+
+                resultsDiv.innerHTML = html;
+
+            } catch (error) {
+                console.error('Validation demo error:', error);
+                document.getElementById('sdk-demo-results').innerHTML = `
+                    <div class="error-message">Error in validation demo: ${error.message}</div>
+                `;
+            }
+        };
+
+        // Lazy Loading Demonstration
+        window.demonstrateLazyLoading = async function() {
+            const moduleType = document.getElementById('module-select').value;
+            if (!moduleType) {
+                alert('Please select a module to load');
+                return;
+            }
+
+            try {
+                const resultsDiv = document.getElementById('lazy-demo-results');
+                resultsDiv.style.display = 'block';
+                resultsDiv.innerHTML = '<div class="loading-spinner"></div> Loading module with lazy loader...';
+
+                const startTime = performance.now();
+
+                let result;
+                switch (moduleType) {
+                    case 'svelte':
+                        result = await sdkLoader.loadSvelteModule('stores');
+                        break;
+                    case 'react':
+                        result = await sdkLoader.loadReactModule('hooks');
+                        break;
+                    case 'vue':
+                        result = await sdkLoader.loadVueModule('composables');
+                        break;
+                    case 'webassembly':
+                        result = await sdkLoader.loadWebAssemblyModule('wrapper');
+                        break;
+                    default:
+                        throw new Error('Unknown module type');
+                }
+
+                const loadTime = performance.now() - startTime;
+                const metrics = sdkLoader.getMetrics();
+
+                resultsDiv.innerHTML = `
+                    <h3>Lazy Loading Result</h3>
+                    <div class="api-function">
+                        <div>
+                            <strong>Module Type:</strong> ${moduleType}<br>
+                            <strong>Load Time:</strong> ${loadTime.toFixed(2)}ms<br>
+                            <strong>From Cache:</strong> ${result.fromCache ? 'Yes' : 'No'}<br>
+                            <strong>Module Loaded:</strong> ${result.module ? 'Yes' : 'No'}
+                        </div>
+                        <span class="api-available">✅</span>
+                    </div>
+                    <div style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
+                        <strong>Lazy Loader Metrics:</strong><br>
+                        Total Modules: ${metrics.totalModules}<br>
+                        Loaded Modules: ${metrics.loadedModules}<br>
+                        Failed Modules: ${metrics.failedModules}<br>
+                        Cache Hit Ratio: ${(metrics.cacheHitRatio * 100).toFixed(1)}%<br>
+                        Average Load Time: ${metrics.averageLoadTime.toFixed(2)}ms
+                    </div>
+                `;
+
+                updateLazyLoadingInfo();
+
+            } catch (error) {
+                console.error('Lazy loading demo error:', error);
+                document.getElementById('lazy-demo-results').innerHTML = `
+                    <div class="error-message">Error in lazy loading demo: ${error.message}</div>
+                `;
+            }
+        };
+
+        // Event listeners
+        document.getElementById('station-search').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                enhancedStationSearch();
+            }
+        });
+
+        document.getElementById('line-search').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                enhancedLineSearch();
+            }
+        });
+
+        // Initialize the enhanced application when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Starting Enhanced Farert Railway API Browser Demo');
+            initializeEnhancedApp();
+        });
+
+        // Handle page visibility changes to manage memory
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                console.log('Page hidden - consider memory cleanup');
+            } else {
+                console.log('Page visible - refresh performance info');
+                updatePerformanceInfo();
+                updateLazyLoadingInfo();
+            }
+        });
+
+        // Global error handler
+        window.addEventListener('error', function(e) {
+            console.error('Global error:', e.error);
+            showError('', `Unexpected error: ${e.error.message}`);
+        });
+
+        // WebAssembly specific error handler
+        window.addEventListener('unhandledrejection', function(e) {
+            console.error('Unhandled promise rejection:', e.reason);
+            showError('', `Promise rejection: ${e.reason}`);
+        });
+    </script>
+</body>
+</html>
