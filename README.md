@@ -572,6 +572,25 @@ npx tsc --skipLibCheck
 npx tsc --target es2020 --module commonjs --outDir dist/cli src/cli/main.ts
 ```
 
+#### 4. Japanese Station Name Issues
+
+```bash
+❌ Station not found: 'お茶の水' or '茅ヶ崎'
+
+# Solution: Use correct database conventions
+✅ 正解: node dist/cli/cli/main.js -5 "東京" "中央線" "御茶ノ水"
+❌ 間違い: node dist/cli/cli/main.js -5 "東京" "中央線" "お茶の水"
+
+✅ 正解: node dist/cli/cli/main.js -5 "藤沢" "東海道線" "茅ケ崎"
+❌ 間違い: node dist/cli/cli/main.js -5 "藤沢" "東海道線" "茅ヶ崎"
+
+# Key Rules:
+# - 御茶ノ水 (not お茶の水)
+# - 茅ケ崎 (not 茅ヶ崎)
+# - 櫛ケ浜 (not 櫛ヶ浜)
+# Reference: https://farert.blogspot.com/p/detail.html
+```
+
 ### Debug Mode
 
 ```bash
