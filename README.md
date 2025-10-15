@@ -1,3 +1,5 @@
+**本リポジトリは多くはAIによりコーディングされ、ドキュメントを出力しています。そのため、一部の情報について、ハルシネーションがあることをご了承の上、ご参照ください.**
+
 # Farert WebAssembly -  経路運賃営業キロ計算アプリ
 
 Complete WebAssembly implementation of C++ railway fare calculation engine with modern TypeScript SDK. Provides CLI tools and frontend framework integrations for building 経路運賃営業キロ計算アプリ.
