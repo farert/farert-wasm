@@ -17,6 +17,15 @@
 | [`line-operations.js`](basic/line-operations.js) | 路線操作、駅リスト、分岐駅検出 | `getLineId`, `getLineName`, `getStationIdsOfLine`, `getJunctionIdsOfLine` |
 | [`route-building.js`](basic/route-building.js) | 経路構築、運賃計算、経路検証 | `addRouteBegin`, `addRoute`, `calculateFare`, `routeScript` |
 
+### 🌐 Browser Integration (`browser/`)
+ブラウザ向け包括的WebAssembly統合：
+
+| ファイル | 説明 | 主要機能 |
+|---------|------|---------|
+| [`browser-integration.html`](browser/browser-integration.html) | 完全なインタラクティブWebアプリケーション | リアルタイム検索、経路構築、運賃計算、UI/UX |
+| [`README.md`](browser/README.md) | ブラウザ統合ドキュメント | セットアップ、使用方法、互換性情報 |
+| [`test-compatibility.js`](browser/test-compatibility.js) | ブラウザ互換性テストスクリプト | ファイル検証、機能チェック |
+
 ### 📄 Comprehensive Example
 | ファイル | 説明 |
 |---------|------|
@@ -44,14 +53,24 @@ node examples/api/basic/line-operations.js
 node examples/api/basic/route-building.js
 ```
 
-### 3. Comprehensive Example の実行
+### 3. Browser Integration の実行
+
+```bash
+# ローカルHTTPサーバーを起動
+npx serve . -p 8080
+
+# ブラウザで以下のURLを開く:
+# http://localhost:8080/examples/api/browser/browser-integration.html
+```
+
+### 4. Comprehensive Example の実行
 
 ```bash
 # 包括的なデモンストレーション（従来版）
 node examples/api/railway_query_examples.js
 ```
 
-### 4. 個別機能のテスト
+### 5. 個別機能のテスト
 
 ```bash
 # Basic Examples から個別機能を実行

@@ -267,6 +267,11 @@ export LC_ALL=en_US.UTF-8
 chcp 65001
 ```
 
+### Station Name Conventions
+- Use exact database conventions: 御茶ノ水 (not お茶の水)
+- Must input ケ not ヶ: 茅ケ崎 (not 茅ヶ崎), 櫛ケ浜 (not 櫛ヶ浜)
+- **Reference**: [Farert詳細仕様](https://farert.blogspot.com/p/detail.html)
+
 ### Memory Issues
 ```bash
 # Run with increased memory limit
@@ -323,7 +328,7 @@ When adding new examples:
 4. Add proper error handling examples
 5. Include performance considerations
 6. Update this README with new example descriptions
-7. Test examples with real Japanese station/line names
+7. Test examples with real Japanese station/line names (follow database conventions: 御茶ノ水, 茅ケ崎)
 
 ## 🎉 Success Stories
 
