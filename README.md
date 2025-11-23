@@ -12,9 +12,10 @@ FARERT WASMは、JR運賃計算を行うC++20ライブラリをWebAssemblyにコ
 - ✅ **運賃計算**: 特別ルールを含む正確なJR運賃計算
 - ✅ **駅・路線検索**: 10,000以上の駅を検索・参照
 - ✅ **型安全API**: 完全なTypeScript型定義
-- ✅ **埋め込みデータベース**: コンパイル時にSQLite3データベースを埋め込み
+- ✅ **埋め込みデータベース**: コンパイル時にSQLite3データベースを埋め込み（bundled SQLite3使用）
 - ✅ **PWA対応**: Progressive Web Appsに最適化
 - ✅ **フレームワーク非依存**: Svelte、React、Vue、vanilla JSで動作
+- ✅ **外部依存なし**: SQLite3がC++ソースとして組み込まれているため、システムライブラリ不要
 
 ## 📦 インストール
 
@@ -108,6 +109,13 @@ console.log(JSON.parse(routeJson));
    bash scripts/copy-sources.sh
    ```
 
+   このスクリプトは以下をコピーします：
+   - `sqlite3.c`, `sqlite3.h`, `sqlite3ext.h` - bundled SQLite3ソース
+   - `db.cpp`, `db.h` - データベース操作層
+   - `alpdb.cpp`, `alpdb.h` - JR運賃計算ロジック
+   - `azusa.cpp`, `azusa.h` - メインAPI
+   - `jrdbNewest.db` - JRデータベース
+
 5. **WASMのビルド**
    ```bash
    npm run build:wasm
@@ -191,13 +199,16 @@ npm run build
 **エラー: `fatal error: 'sqlite3.h' file not found`**
 
 ```bash
-# システムにSQLite3開発ライブラリをインストール
+# bundled SQLite3ソースが不足しています
+# ソースファイルコピースクリプトを実行
+bash scripts/copy-sources.sh
 
-# macOS
-brew install sqlite3
-
-# Ubuntu/Debian
-sudo apt-get install libsqlite3-dev
+# これにより以下がコピーされます：
+# - sqlite3.c, sqlite3.h, sqlite3ext.h (bundled SQLite3)
+# - db.cpp, db.h
+# - alpdb.cpp, alpdb.h
+# - azusa.cpp, azusa.h
+# - jrdbNewest.db
 
 # その後、再ビルド
 npm run build:wasm
