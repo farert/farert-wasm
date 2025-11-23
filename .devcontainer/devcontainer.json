@@ -1,0 +1,35 @@
+{
+  "name": "FARERT WASM Development",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "[typescript]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[cpp]": {
+          "editor.defaultFormatter": "ms-vscode.cpptools"
+        }
+      },
+      "extensions": [
+        "ms-vscode.cpptools",
+        "ms-vscode.cmake-tools",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "ms-vscode.vscode-typescript-next"
+      ]
+    }
+  },
+  "forwardPorts": [3000, 8080],
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "remoteUser": "vscode",
+  "mounts": [
+    "source=${localWorkspaceFolder}/../emsdk,target=/emsdk,type=bind,consistency=cached"
+  ]
+}

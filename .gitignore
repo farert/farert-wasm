@@ -36,5 +36,27 @@ test_validation
 test_route_item_binding.*
 route_interface.o
 
+# CMake build files
+/build/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# Emscripten outputs
+*.data
+*.js.map
+*.wasm.map
+
+# WASM distribution (tracked selectively)
+# /dist/*.wasm
+# /dist/*.js
+# /dist/*.data
+
+# Database files (temporary)
+*.db-journal
+*.db-shm
+*.db-wal
+
 # Performance test outputs
 test_performance_optimization.js
