@@ -1,7 +1,0 @@
-<script>import Icon from '../Icon.svelte';
-const iconNode = [["polygon", { "points": "5 3 19 12 5 21 5 3" }]];
-</script>
-
-<Icon name="play" {...$$props} iconNode={iconNode}>
-  <slot/>
-</Icon>

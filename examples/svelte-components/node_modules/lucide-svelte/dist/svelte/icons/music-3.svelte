@@ -1,7 +1,0 @@
-<script>import Icon from '../Icon.svelte';
-const iconNode = [["circle", { "cx": "12", "cy": "18", "r": "4" }], ["path", { "d": "M16 18V2" }]];
-</script>
-
-<Icon name="music-3" {...$$props} iconNode={iconNode}>
-  <slot/>
-</Icon>
