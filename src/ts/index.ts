@@ -5,19 +5,21 @@
  * @packageDocumentation
  */
 
+// Main initialization and class
 export {
-  // Main initialization
   initFarert,
-
-  // Main class
   Farert,
+} from './wrapper/Farert.js';
 
-  // Database operations
+// Database operations
+export {
   openDatabase,
   closeDatabase,
   databaseInfo,
+} from './wrapper/Farert.js';
 
-  // UI Helper functions
+// UI Helper functions
+export {
   getPrefects,
   getCompanys,
   getLinesByPrefect,
@@ -32,11 +34,11 @@ export {
   getStationsByLine,
   getPrefectId,
   getCompanyId,
+} from './wrapper/Farert.js';
 
-  // Developer tools
-  executeSql,
-} from './wrapper/Farert';
+// Developer tools
+export { executeSql } from './wrapper/Farert.js';
 
 // Re-export types
 export type { Farert as FaretClass } from './types/farert';
-export type { SqlResult, DatabaseInfo } from './wrapper/Farert';
+export type { SqlResult, DatabaseInfo } from './wrapper/Farert.js';

@@ -568,6 +568,7 @@ std::string fare_ui::search_station_by_keyword(std::string key)
 		while (dbo.moveNext()) {
             stations.push_back(dbo.getText(0));
         }
+        oss << "{";
         oss << json_encoder::begin_array("stations");
         for (std::string& line : stations) {
             if (0 < num++) {
@@ -578,6 +579,7 @@ std::string fare_ui::search_station_by_keyword(std::string key)
             }
         }
         oss << json_encoder::end_array();
+        oss << "}";
         return oss.str();
     }
     return "";

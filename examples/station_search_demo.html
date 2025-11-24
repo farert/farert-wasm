@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FARERT WASM - 駅検索デモ</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .search-box {
+            margin-bottom: 30px;
+        }
+
+        .search-input-wrapper {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .quick-search {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .quick-btn {
+            padding: 8px 16px;
+            background: #f5f5f5;
+            color: #333;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .quick-btn:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+            transform: translateY(-1px);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(102, 126, 234, 0.2);
+            border-radius: 50%;
+            border-top-color: #667eea;
+            animation: spin 1s ease-in-out infinite;
+            margin-bottom: 15px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .results {
+            margin-top: 20px;
+        }
+
+        .result-header {
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .result-count {
+            font-weight: 600;
+            color: #667eea;
+            font-size: 18px;
+        }
+
+        .result-time {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .station-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .station-card {
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            transition: all 0.3s;
+            cursor: pointer;
+            background: white;
+        }
+
+        .station-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .station-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .station-kana {
+            color: #999;
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+
+        .station-details {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .detail-badge {
+            padding: 4px 12px;
+            background: #f0f0f0;
+            border-radius: 12px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .detail-badge.prefecture {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .detail-badge.line {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .no-results-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .error {
+            padding: 20px;
+            background: #ffebee;
+            border-left: 4px solid #f44336;
+            border-radius: 8px;
+            color: #c62828;
+        }
+
+        .code-block {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            margin-top: 10px;
+            overflow-x: auto;
+        }
+
+        @media (max-width: 600px) {
+            .search-input-wrapper {
+                flex-direction: column;
+            }
+
+            .header h1 {
+                font-size: 22px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚉 駅検索デモ (リアルタイム検索)</h1>
+            <p>searchStationByKeyword() を使用したインクリメンタルサーチ</p>
+        </div>
+
+        <div class="content">
+            <div class="search-box">
+                <div class="search-input-wrapper">
+                    <input
+                        type="text"
+                        id="searchInput"
+                        placeholder="駅名を入力（漢字・ひらがな対応）例: 東京、とうきょう"
+                        disabled
+                    >
+                    <button id="searchButton" disabled>検索</button>
+                </div>
+
+                <div class="quick-search">
+                    <strong style="margin-right: 10px;">クイック検索:</strong>
+                    <button class="quick-btn" data-keyword="東京">東京</button>
+                    <button class="quick-btn" data-keyword="新宿">新宿</button>
+                    <button class="quick-btn" data-keyword="渋谷">渋谷</button>
+                    <button class="quick-btn" data-keyword="大阪">大阪</button>
+                    <button class="quick-btn" data-keyword="京都">京都</button>
+                    <button class="quick-btn" data-keyword="横浜">横浜</button>
+                    <button class="quick-btn" data-keyword="とうきょう">とうきょう</button>
+                    <button class="quick-btn" data-keyword="しんじゅく">しんじゅく</button>
+                    <button class="quick-btn" data-keyword="おおさか">おおさか</button>
+                </div>
+            </div>
+
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <p>WASM モジュールを読み込み中...</p>
+            </div>
+
+            <div id="results" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initFarert, searchStationByKeyword } from '../dist/index.js';
+
+        const searchInput = document.getElementById('searchInput');
+        const searchButton = document.getElementById('searchButton');
+        const loadingDiv = document.getElementById('loading');
+        const resultsDiv = document.getElementById('results');
+        const quickBtns = document.querySelectorAll('.quick-btn');
+
+        let isInitialized = false;
+
+        // 初期化
+        async function initialize() {
+            try {
+                console.log('WASM初期化開始...');
+                await initFarert();
+                console.log('WASM初期化成功');
+                isInitialized = true;
+
+                // UI を有効化
+                searchInput.disabled = false;
+                searchButton.disabled = false;
+                loadingDiv.style.display = 'none';
+                resultsDiv.style.display = 'block';
+                resultsDiv.innerHTML = '<div class="no-results"><div class="no-results-icon">🔍</div><p>駅名を入力して検索してください</p></div>';
+
+                // リアルタイム検索（入力のたびに検索）
+                let debounceTimer;
+                searchInput.addEventListener('input', () => {
+                    // デバウンス処理：300ms待ってから検索を実行
+                    clearTimeout(debounceTimer);
+                    debounceTimer = setTimeout(() => {
+                        performSearch();
+                    }, 300);
+                });
+
+                // Enter キーで即座に検索
+                searchInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        clearTimeout(debounceTimer);
+                        performSearch();
+                    }
+                });
+
+                // 検索ボタン
+                searchButton.addEventListener('click', () => {
+                    clearTimeout(debounceTimer);
+                    performSearch();
+                });
+
+                // クイック検索ボタン
+                quickBtns.forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        searchInput.value = btn.dataset.keyword;
+                        performSearch();
+                    });
+                });
+
+            } catch (error) {
+                console.error('初期化エラー詳細:', error);
+                loadingDiv.innerHTML = `
+                    <div class="error">
+                        <h3>初期化エラー</h3>
+                        <p><strong>エラーメッセージ:</strong> ${error.message}</p>
+                        <p><strong>エラー詳細:</strong></p>
+                        <pre>${error.stack || 'スタックトレースなし'}</pre>
+                        <p style="margin-top: 20px;">
+                            <strong>トラブルシューティング:</strong><br>
+                            1. ブラウザのコンソール (F12) を開いて詳細を確認してください<br>
+                            2. HTTPサーバーが起動しているか確認してください<br>
+                            3. デバッグページを開いてください:
+                            <a href="station_search_debug.html" style="color: #1976d2;">station_search_debug.html</a>
+                        </p>
+                    </div>
+                `;
+            }
+        }
+
+        // 検索実行
+        function performSearch() {
+            const keyword = searchInput.value.trim();
+
+            if (!keyword) {
+                resultsDiv.innerHTML = '<div class="no-results"><div class="no-results-icon">🔍</div><p>駅名を入力して検索してください</p></div>';
+                return;
+            }
+
+            // 検索中の表示
+            resultsDiv.innerHTML = '<div class="loading"><div class="spinner"></div><p>検索中...</p></div>';
+
+            const startTime = performance.now();
+
+            try {
+                // searchStationByKeyword を実行
+                const result = searchStationByKeyword(keyword);
+                const stations = JSON.parse(result);
+
+                const endTime = performance.now();
+                const duration = (endTime - startTime).toFixed(2);
+
+                displayResults(stations, keyword, duration);
+
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">検索エラー: ${error.message}</div>`;
+            }
+        }
+
+        // 結果表示
+        function displayResults(stations, keyword, duration) {
+            if (!stations || !stations.stations || stations.stations.length === 0) {
+                resultsDiv.innerHTML = `
+                    <div class="no-results">
+                        <div class="no-results-icon">🚫</div>
+                        <p>"${keyword}" に一致する駅が見つかりませんでした</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = `
+                <div class="result-header">
+                    <div class="result-count">${stations.stations.length} 件の駅が見つかりました</div>
+                    <div class="result-time">${duration}ms</div>
+                </div>
+                <div class="station-list">
+            `;
+
+            stations.stations.forEach(stationName => {
+                html += `
+                    <div class="station-card">
+                        <div class="station-name">${stationName}</div>
+                        <div class="station-kana">駅名: ${stationName}</div>
+                    </div>
+                `;
+            });
+
+            html += `</div>`;
+
+            // 実行されたコードを表示
+            html += `
+                <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #e0e0e0;">
+                    <h3 style="margin-bottom: 10px; color: #333;">実行されたコード:</h3>
+                    <div class="code-block">const result = searchStationByKeyword("${keyword}");<br>const stations = JSON.parse(result);<br><br>// 結果:<br>${JSON.stringify(stations, null, 2)}</div>
+                </div>
+            `;
+
+            resultsDiv.innerHTML = html;
+        }
+
+        // 初期化実行
+        initialize();
+    </script>
+</body>
+</html>
