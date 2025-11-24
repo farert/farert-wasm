@@ -9,8 +9,10 @@ using namespace emscripten;
 
 EMSCRIPTEN_BINDINGS(farert_module) {
     // Global functions - Database operations
-    function("openDatabase", &open_database);
-    function("closeDatabase", &close_database);
+    // Use emscripten:: prefix to avoid ambiguity with std::function
+    emscripten::function("openDatabase", &open_database);
+    emscripten::function("closeDatabase", &close_database);
+    emscripten::function("databaseInfo", &database_info);
 
     // Main Route Class: az_route -> Farert
     class_<az_route>("Farert")
@@ -62,26 +64,29 @@ EMSCRIPTEN_BINDINGS(farert_module) {
 
     // fare_ui namespace functions
     // Global UI functions
-    function("getPrefects", &fare_ui::get_prefects);
-    function("getCompanys", &fare_ui::get_companys);
+    emscripten::function("getPrefects", &fare_ui::get_prefects);
+    emscripten::function("getCompanys", &fare_ui::get_companys);
 
     // Line selection functions
-    function("getLinesByPrefect", &fare_ui::get_lines_by_prefect);
-    function("getLinesByCompany", &fare_ui::get_lines_by_company);
-    function("getLinesByStation", &fare_ui::get_lines_by_station);
-    function("getStationsByCompanyAndLine", &fare_ui::get_stations_by_company_and_line);
-    function("getStationsByPrefectureAndLine", &fare_ui::get_stations_by_prefecture_and_line);
+    emscripten::function("getLinesByPrefect", &fare_ui::get_lines_by_prefect);
+    emscripten::function("getLinesByCompany", &fare_ui::get_lines_by_company);
+    emscripten::function("getLinesByStation", &fare_ui::get_lines_by_station);
+    emscripten::function("getStationsByCompanyAndLine", &fare_ui::get_stations_by_company_and_line);
+    emscripten::function("getStationsByPrefectureAndLine", &fare_ui::get_stations_by_prefecture_and_line);
 
     // Station/Prefecture queries
-    function("getPrefectureByStation", &fare_ui::get_prefecture_by_station);
-    function("getKanaByStation", &fare_ui::get_kana_by_station);
+    emscripten::function("getPrefectureByStation", &fare_ui::get_prefecture_by_station);
+    emscripten::function("getKanaByStation", &fare_ui::get_kana_by_station);
 
     // Search functions
-    function("searchStationByKeyword", &fare_ui::search_station_by_keyword);
-    function("getBranchStationsByLine", &fare_ui::get_branch_stations_by_line);
-    function("getStationsByLine", &fare_ui::get_stations_by_line);
+    emscripten::function("searchStationByKeyword", &fare_ui::search_station_by_keyword);
+    emscripten::function("getBranchStationsByLine", &fare_ui::get_branch_stations_by_line);
+    emscripten::function("getStationsByLine", &fare_ui::get_stations_by_line);
 
     // ID getters
-    function("getPrefectId", &fare_ui::get_prefect_id);
-    function("getCompanyId", &fare_ui::get_company_id);
+    emscripten::function("getPrefectId", &fare_ui::get_prefect_id);
+    emscripten::function("getCompanyId", &fare_ui::get_company_id);
+
+    // Developer tools
+    emscripten::function("executeSql", &dev::execute_sql);
 }

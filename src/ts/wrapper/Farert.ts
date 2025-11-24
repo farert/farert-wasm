@@ -4,12 +4,14 @@
  */
 
 import type { Farert as FaretClass } from '../types/farert';
+import type { EmscriptenModule } from '../types/emscripten';
 
 // Emscripten module interface
 interface FaretModule extends EmscriptenModule {
   Farert: new () => FaretClass;
   openDatabase: () => string;
   closeDatabase: () => void;
+  databaseInfo: () => string;
 
   // UI functions
   getPrefects: () => string;
@@ -26,6 +28,9 @@ interface FaretModule extends EmscriptenModule {
   getStationsByLine: (lineName: string) => string;
   getPrefectId: (prefecture: string) => number;
   getCompanyId: (company: string) => number;
+
+  // Developer tools
+  executeSql: (sql: string) => string;
 }
 
 let wasmModule: FaretModule | null = null;
@@ -227,6 +232,24 @@ export function closeDatabase(): void {
 }
 
 /**
+ * Get database information
+ * Returns JSON string with database name and creation date
+ *
+ * @returns JSON string with database metadata
+ *
+ * @example
+ * ```typescript
+ * const info = databaseInfo();
+ * const data = JSON.parse(info);
+ * console.log('DB Name:', data.dbName);
+ * console.log('Created:', data.createdate);
+ * ```
+ */
+export function databaseInfo(): string {
+  return getModule().databaseInfo();
+}
+
+/**
  * UI Helper Functions
  */
 export function getPrefects(): string {
@@ -283,4 +306,46 @@ export function getPrefectId(prefecture: string): number {
 
 export function getCompanyId(company: string): number {
   return getModule().getCompanyId(company);
+}
+
+/**
+ * Developer Tools
+ */
+
+/**
+ * Execute arbitrary SQL query and return results as JSON
+ * For debugging and development only
+ *
+ * @param sql - SQL query to execute
+ * @returns JSON string with query results
+ *
+ * @example
+ * ```typescript
+ * const result = executeSql("SELECT * FROM t_station WHERE name='東京'");
+ * const data = JSON.parse(result);
+ * console.log(data.rows);
+ * ```
+ */
+export function executeSql(sql: string): string {
+  return getModule().executeSql(sql);
+}
+
+/**
+ * Type definition for SQL query result
+ */
+export interface SqlResult {
+  columns: string[];
+  rows: any[][];
+  rowCount: number;
+  error?: string;
+}
+
+/**
+ * Type definition for database information
+ */
+export interface DatabaseInfo {
+  result: boolean;
+  dbName?: string;
+  createdate?: string;
+  reason?: string;
 }

@@ -3,6 +3,8 @@
 #include <sstream>
 #include <azusa.h>
 
+int g_tax = 10; // Default 10% tax rate (can be changed at runtime)
+
 // open database
 // return JSON string with DB info
 std::string open_database()
@@ -10,7 +12,7 @@ std::string open_database()
     DBsys dbsys;
 
 #if defined(__EMSCRIPTEN__)
-    const char* dbpath = "/data/jrdbnewest.db"; // for WASM default path
+    const char* dbpath = "/data/jrdbNewest.db"; // for WASM default path (case-sensitive in MEMFS)
 #else
 	char* dbpath = getenv("farertDB");
 
@@ -32,6 +34,19 @@ void close_database()
 {
     DBS::getInstance()->close();
 }
+
+std::string database_info()
+{
+    DBsys dbsys;
+
+    if (RouteUtil::DbVer(&dbsys)) {
+        return "{ \"result\": true, \"dbName\": \"" + std::string(dbsys.name)
+         + "\", \"createdate\": \"" + std::string(dbsys.createdate) + "\" }"  ;
+    } else {
+        return "{ \"result\": false, \"reson\": \"failued to open database.\" }";
+    }
+}
+
 
 // fare info object to JSON
 std::string az_route::get_fare_info_object_json() {
@@ -627,4 +642,77 @@ std::string fare_ui::get_stations_by_line(std::string line_name)
 std::string fare_ui::get_kana_by_station(const std::string& station_name)
 {
     return RouteUtil::GetKanaFromStationId(RouteUtil::GetStationId(station_name.c_str()));
+}
+
+// Developer tools implementation
+std::string dev::execute_sql(const std::string& sql)
+{
+    DBO dbo = DBS::getInstance()->compileSql(sql.c_str(), false); // no cache for dev queries
+
+    if (!dbo.isvalid()) {
+        std::ostringstream oss;
+        oss << "{\"error\":\"" << DBS::getInstance()->errmsg() << "\"}";
+        return oss.str();
+    }
+
+    std::ostringstream oss;
+    std::vector<std::string> rows;
+
+    // Get column count
+    int colCount = dbo.getNumOfCol();
+
+    // Build JSON array of results
+    oss << "{\"columns\":[";
+    // Note: SQLite doesn't provide column names easily from sqlite3_stmt
+    // We'll use column indices instead
+    for (int i = 0; i < colCount; i++) {
+        if (i > 0) oss << ",";
+        oss << "\"col" << i << "\"";
+    }
+    oss << "],\"rows\":[";
+
+    int rowNum = 0;
+    while (dbo.moveNext()) {
+        if (rowNum > 0) oss << ",";
+        oss << "[";
+        for (int i = 0; i < colCount; i++) {
+            if (i > 0) oss << ",";
+
+            int colType = dbo.colType(i);
+            if (colType == SQLITE_INTEGER) {
+                oss << dbo.getInt(i);
+            } else if (colType == SQLITE_NULL) {
+                oss << "null";
+            } else {
+                // TEXT or BLOB - treat as string
+                std::string text = dbo.getText(i);
+                // Escape quotes in JSON
+                oss << "\"";
+                for (char c : text) {
+                    if (c == '"') oss << "\\\"";
+                    else if (c == '\\') oss << "\\\\";
+                    else if (c == '\n') oss << "\\n";
+                    else if (c == '\r') oss << "\\r";
+                    else if (c == '\t') oss << "\\t";
+                    else oss << c;
+                }
+                oss << "\"";
+            }
+        }
+        oss << "]";
+        rowNum++;
+    }
+
+    oss << "],\"rowCount\":" << rowNum << "}";
+    return oss.str();
+}
+
+/* build route from string - returns JSON with result code */
+std::string az_route::build_route(std::string route_str)
+{
+    std::ostringstream oss;
+    int rc = setup_route(route_str.c_str());
+
+    oss << "{ \"rc\": " << rc << " }";
+    return oss.str();
 }

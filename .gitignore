@@ -60,3 +60,61 @@ Makefile
 
 # Performance test outputs
 test_performance_optimization.js
+
+# ========================================
+# Copied source files from ../farert
+# These files are copied by scripts/copy-sources.sh
+# and should NOT be committed to git
+# ========================================
+
+# SQLite3 bundled sources (8.9MB total)
+src/cpp/core/sqlite3.c
+src/cpp/core/sqlite3.h
+src/cpp/core/sqlite3ext.h
+
+# Database layer (DO NOT MODIFY - see CLAUDE.md)
+src/cpp/core/db.cpp
+src/cpp/core/db.h
+
+# ALPS database layer (DO NOT MODIFY - see CLAUDE.md)
+src/cpp/core/alpdb.cpp
+src/cpp/core/alpdb.h
+
+# Database file
+src/assets/jrdbNewest.db
+
+# Note: azusa.cpp and azusa.h are tracked in git
+# because they contain WASM-specific modifications
+# (build_route argument change from reference to value)
+
+# ========================================
+# OS-specific files
+# ========================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*~
+
+# ========================================
+# IDE and Editor files
+# ========================================
+.idea/
+.vscode/settings.json
+.vscode/launch.json
+*.swp
+*.swo
+*.swn
+.project
+.classpath
+.settings/
+
+# ========================================
+# Backup and temporary directories
+# ========================================
+old-claude/
+backup/
+*.backup

@@ -294,6 +294,37 @@ const stations = JSON.parse(searchStationByKeyword("東京"));
 const stationsOnLine = JSON.parse(getStationsByLine("山手線"));
 ```
 
+### 開発者ツール
+
+#### SQL実行インターフェース
+
+開発・デバッグ用にSQLを直接実行できます：
+
+```typescript
+import { executeSql, type SqlResult } from 'farert-wasm';
+
+// SQL実行
+const result = executeSql("SELECT * FROM t_station WHERE name='東京'");
+const data: SqlResult = JSON.parse(result);
+
+console.log('Columns:', data.columns);  // ["col0", "col1", "col2", ...]
+console.log('Rows:', data.rows);        // [[value1, value2, ...], ...]
+console.log('Row count:', data.rowCount);
+
+// エラーハンドリング
+if (data.error) {
+  console.error('SQL Error:', data.error);
+}
+```
+
+**主要テーブル:**
+- `t_station` - 駅マスタ
+- `t_line` - 路線マスタ
+- `t_company` - 会社マスタ
+- `t_prefecture` - 都道府県マスタ
+
+**注意:** この機能は開発・デバッグ専用です。本番環境では使用を避けてください。
+
 ## 🔧 開発
 
 ### プロジェクト構造

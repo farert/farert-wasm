@@ -8,6 +8,10 @@
 
 ### Added
 - 初期リリース
+- 開発者向けSQL実行インターフェース (`executeSql()`)
+  - データベースへの直接SQLクエリ実行
+  - JSON形式での結果取得
+  - エラーハンドリング対応
 - C++20からWebAssemblyへのコンパイル対応
 - 完全なTypeScriptバインディング
 - bundled SQLite3サポート（システムライブラリ不要）

@@ -9,6 +9,7 @@
 
 std::string open_database();
 void close_database();
+std::string database_info();
 
 class az_route : public Route {
 public:
@@ -23,7 +24,8 @@ public:
     std::string departure_station_name() const { return RouteUtil::StationName(RouteList::departureStationId()); }
     std::string arriveval_station_name() const { return RouteUtil::StationName(RouteList::arriveStationId()); }    
 
-    int build_route(std::string& route_str) { return setup_route(route_str.c_str());}
+    // Changed from std::string& to std::string for WASM binding compatibility
+    std::string build_route(std::string route_str);
     std::string route_script() { return RouteList::route_script(); }
 
     void remove_all() { Route::removeAll(); }
@@ -104,6 +106,13 @@ namespace fare_ui {
 
     int get_prefect_id(std::string prefecture);
     int get_company_id(std::string company);
+}
+
+// Developer tools namespace
+namespace dev {
+    // Execute arbitrary SQL and return results as JSON
+    // For debugging and development only
+    std::string execute_sql(const std::string& sql);
 }
 
 namespace json_encoder {

@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FARERT WASM - executeSql Test</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            max-width: 1000px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        .test {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-left: 4px solid #007bff;
+        }
+        .test h3 {
+            margin-top: 0;
+            color: #007bff;
+        }
+        .sql {
+            background-color: #e9ecef;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+        }
+        .result {
+            background-color: #ffffff;
+            padding: 10px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .success {
+            color: #28a745;
+        }
+        .error {
+            color: #dc3545;
+        }
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        #loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 18px;
+            color: #666;
+        }
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0,0,0,.1);
+            border-radius: 50%;
+            border-top-color: #007bff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚄 FARERT WASM - executeSql Test</h1>
+        <div id="loading">
+            <div class="spinner"></div>
+            <p>Loading WASM module...</p>
+        </div>
+        <div id="tests" style="display: none;"></div>
+    </div>
+
+    <script type="module">
+        import { initFarert, executeSql } from '../dist/index.js';
+
+        const testsDiv = document.getElementById('tests');
+        const loadingDiv = document.getElementById('loading');
+
+        function addTest(title, sql, description = '') {
+            const testDiv = document.createElement('div');
+            testDiv.className = 'test';
+            testDiv.innerHTML = `
+                <h3>${title}</h3>
+                ${description ? `<p>${description}</p>` : ''}
+                <div class="sql"><strong>SQL:</strong> ${sql}</div>
+                <div class="result" id="${title.replace(/\s+/g, '_')}"></div>
+            `;
+            testsDiv.appendChild(testDiv);
+        }
+
+        function showResult(testId, content, isError = false) {
+            const resultDiv = document.getElementById(testId.replace(/\s+/g, '_'));
+            resultDiv.innerHTML = `<pre class="${isError ? 'error' : 'success'}">${content}</pre>`;
+        }
+
+        async function runTests() {
+            try {
+                // 初期化
+                console.log('Initializing FARERT WASM...');
+                await initFarert();
+                console.log('✓ Initialized');
+
+                loadingDiv.style.display = 'none';
+                testsDiv.style.display = 'block';
+
+                // テスト1: t_station テーブルから東京駅を検索
+                addTest('テスト1', "SELECT * FROM t_station WHERE name='東京' LIMIT 3",
+                        't_station テーブルから東京駅を検索');
+                try {
+                    const result1 = executeSql("SELECT * FROM t_station WHERE name='東京' LIMIT 3");
+                    const data1 = JSON.parse(result1);
+                    const output1 = `Columns: ${JSON.stringify(data1.columns)}
+Rows: ${JSON.stringify(data1.rows, null, 2)}
+Row count: ${data1.rowCount}`;
+                    showResult('テスト1', output1);
+                } catch (e) {
+                    showResult('テスト1', `Error: ${e.message}`, true);
+                }
+
+                // テスト2: テーブル一覧を取得
+                addTest('テスト2', "SELECT name FROM sqlite_master WHERE type='table' LIMIT 10",
+                        'データベース内のテーブル一覧を取得');
+                try {
+                    const result2 = executeSql("SELECT name FROM sqlite_master WHERE type='table' LIMIT 10");
+                    const data2 = JSON.parse(result2);
+                    const tables = data2.rows.map(row => `  - ${row[0]}`).join('\n');
+                    showResult('テスト2', `テーブル一覧:\n${tables}\n\nTotal: ${data2.rowCount} テーブル`);
+                } catch (e) {
+                    showResult('テスト2', `Error: ${e.message}`, true);
+                }
+
+                // テスト3: t_station のレコード数を確認
+                addTest('テスト3', "SELECT COUNT(*) FROM t_station",
+                        't_station テーブルのレコード数を確認');
+                try {
+                    const result3 = executeSql("SELECT COUNT(*) FROM t_station");
+                    const data3 = JSON.parse(result3);
+                    showResult('テスト3', `t_station レコード数: ${data3.rows[0][0]}`);
+                } catch (e) {
+                    showResult('テスト3', `Error: ${e.message}`, true);
+                }
+
+                // テスト4: 路線情報を取得
+                addTest('テスト4', "SELECT * FROM t_line LIMIT 5",
+                        '路線テーブルから最初の5件を取得');
+                try {
+                    const result4 = executeSql("SELECT * FROM t_line LIMIT 5");
+                    const data4 = JSON.parse(result4);
+                    showResult('テスト4', JSON.stringify(data4, null, 2));
+                } catch (e) {
+                    showResult('テスト4', `Error: ${e.message}`, true);
+                }
+
+                // テスト5: エラーケース（不正なSQL）
+                addTest('テスト5', "SELEC * FROM t_station",
+                        'エラーハンドリングのテスト（不正なSQL）');
+                try {
+                    const result5 = executeSql("SELEC * FROM t_station");
+                    const data5 = JSON.parse(result5);
+                    if (data5.error) {
+                        showResult('テスト5', `✓ エラーが正しく返されました:\n${data5.error}`, true);
+                    } else {
+                        showResult('テスト5', '✗ エラーが返されませんでした', true);
+                    }
+                } catch (e) {
+                    showResult('テスト5', `Unexpected error: ${e.message}`, true);
+                }
+
+                console.log('All tests completed');
+
+            } catch (error) {
+                loadingDiv.innerHTML = `<p class="error">Failed to initialize: ${error.message}</p>`;
+                console.error('Initialization failed:', error);
+            }
+        }
+
+        // テスト実行
+        runTests();
+    </script>
+</body>
+</html>

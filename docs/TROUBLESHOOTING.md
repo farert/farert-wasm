@@ -580,3 +580,35 @@ if (performance.memory) {
   console.log('Total:', performance.memory.totalJSHeapSize);
 }
 ```
+
+### SQLデバッグ（開発者向け）
+
+データベースの内容を直接確認できます：
+
+```typescript
+import { executeSql } from 'farert-wasm';
+
+// テーブル一覧を確認
+const tables = executeSql("SELECT name FROM sqlite_master WHERE type='table'");
+console.log(JSON.parse(tables));
+
+// 駅データを確認
+const stations = executeSql("SELECT * FROM t_station WHERE name='東京'");
+console.log(JSON.parse(stations));
+
+// テーブルスキーマを確認
+const schema = executeSql("PRAGMA table_info(t_station)");
+console.log(JSON.parse(schema));
+
+// レコード数を確認
+const count = executeSql("SELECT COUNT(*) FROM t_station");
+console.log('Total stations:', JSON.parse(count).rows[0][0]);
+```
+
+**主要テーブル:**
+- `t_station` - 駅マスタ
+- `t_line` - 路線マスタ
+- `t_company` - JR会社マスタ
+- `t_prefecture` - 都道府県マスタ
+
+詳細は [docs/API.md](API.md#開発者ツール) を参照してください。

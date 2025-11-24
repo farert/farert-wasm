@@ -12,7 +12,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Optimization flags
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+# -fno-char8_t: Disable char8_t to keep u8"" as const char* for compatibility
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -fno-char8_t")
+
+# SQLite3 compile flags (for bundled sqlite3.c)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_ENABLE_FTS5")
 
 # Define platform for conditional compilation
 add_compile_definitions(
@@ -23,6 +27,7 @@ add_compile_definitions(
 
 # Source files
 set(FARERT_SOURCES
+    src/cpp/core/sqlite3.c
     src/cpp/core/db.cpp
     src/cpp/core/alpdb.cpp
     src/cpp/core/azusa.cpp
@@ -36,12 +41,10 @@ add_executable(farert ${FARERT_SOURCES})
 target_include_directories(farert PRIVATE
     ${CMAKE_SOURCE_DIR}/src/cpp/core
     ${CMAKE_SOURCE_DIR}/src/cpp/bindings
+    ${CMAKE_SOURCE_DIR}/src/cpp/stubs
 )
 
-# SQLite3 linking
-target_link_libraries(farert
-    sqlite3
-)
+# No external SQLite3 library needed - using bundled sqlite3.c
 
 # Emscripten-specific settings
 set_target_properties(farert PROPERTIES
@@ -52,17 +55,17 @@ set_target_properties(farert PROPERTIES
 # Emscripten link flags
 target_link_options(farert PRIVATE
     -lembind
-    -s WASM=1
-    -s MODULARIZE=1
-    -s EXPORT_ES6=1
-    -s EXPORT_NAME=createFaretModule
-    -s ALLOW_MEMORY_GROWTH=1
-    -s INITIAL_MEMORY=33554432
-    -s MAXIMUM_MEMORY=2147483648
+    -sWASM=1
+    -sMODULARIZE=1
+    -sEXPORT_ES6=1
+    -sEXPORT_NAME=createFaretModule
+    -sALLOW_MEMORY_GROWTH=1
+    -sINITIAL_MEMORY=33554432
+    -sMAXIMUM_MEMORY=2147483648
     --bind
     --preload-file ${CMAKE_SOURCE_DIR}/src/assets/jrdbNewest.db@/data/jrdbNewest.db
-    -s EXPORTED_RUNTIME_METHODS=['ccall','cwrap']
-    -s ENVIRONMENT=web,worker
+    -sEXPORTED_RUNTIME_METHODS=['ccall','cwrap']
+    -sENVIRONMENT=web,worker
 )
 
 # Output to dist directory

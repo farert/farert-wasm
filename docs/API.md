@@ -511,3 +511,131 @@ async function calculateFare() {
 
 calculateFare().catch(console.error);
 ```
+
+---
+
+## 開発者ツール
+
+### executeSql()
+
+SQLを直接実行してデータベースをデバッグ・検索できます。
+
+**シグネチャ:**
+```typescript
+function executeSql(sql: string): string
+```
+
+**パラメータ:**
+- `sql` (string) - 実行するSQL文
+
+**戻り値:**
+- JSON文字列（`SqlResult` 型）
+
+**型定義:**
+```typescript
+interface SqlResult {
+  columns: string[];   // カラム名の配列（"col0", "col1", ...）
+  rows: any[][];       // データ行の配列
+  rowCount: number;    // 行数
+  error?: string;      // エラーメッセージ（エラー時のみ）
+}
+```
+
+**使用例:**
+
+```typescript
+import { initFarert, executeSql, type SqlResult } from 'farert-wasm';
+
+await initFarert();
+
+// 基本的な使用
+const result = executeSql("SELECT * FROM t_station WHERE name='東京'");
+const data: SqlResult = JSON.parse(result);
+
+if (data.error) {
+  console.error('SQL Error:', data.error);
+} else {
+  console.log('Columns:', data.columns);
+  console.log('Rows:', data.rows);
+  console.log('Row count:', data.rowCount);
+}
+
+// テーブル一覧を取得
+const tables = executeSql("SELECT name FROM sqlite_master WHERE type='table'");
+const tableList: SqlResult = JSON.parse(tables);
+tableList.rows.forEach(row => {
+  console.log('Table:', row[0]);
+});
+
+// レコード数を確認
+const count = executeSql("SELECT COUNT(*) FROM t_station");
+const countData: SqlResult = JSON.parse(count);
+console.log('Total stations:', countData.rows[0][0]);
+```
+
+**主要テーブル:**
+
+| テーブル名 | 説明 |
+|-----------|------|
+| `t_station` | 駅マスタ（name, kana, prefecture_id, etc.） |
+| `t_line` | 路線マスタ（name, company_id, etc.） |
+| `t_company` | JR会社マスタ（name, code, etc.） |
+| `t_prefecture` | 都道府県マスタ（name, code, etc.） |
+| `t_fare` | 運賃テーブル |
+| `t_section` | 区間情報 |
+
+**使用例: スキーマ確認**
+
+```typescript
+// テーブルのカラム情報を取得
+const schema = executeSql("PRAGMA table_info(t_station)");
+const schemaData: SqlResult = JSON.parse(schema);
+
+schemaData.rows.forEach(col => {
+  console.log(`Column: ${col[1]}, Type: ${col[2]}`);
+});
+```
+
+**注意事項:**
+
+1. **読み取り専用**: データベースは読み取り専用です。INSERT/UPDATE/DELETE は使用できません。
+2. **開発専用**: この機能は開発・デバッグ目的です。本番環境での使用は避けてください。
+3. **パフォーマンス**: 大量のデータを取得すると遅くなる可能性があります。LIMIT句を使用してください。
+4. **SQLインジェクション**: ユーザー入力を直接SQLに埋め込まないでください。
+
+**エラーハンドリング:**
+
+```typescript
+function safeExecuteSql(sql: string): SqlResult | null {
+  try {
+    const result = executeSql(sql);
+    const data: SqlResult = JSON.parse(result);
+
+    if (data.error) {
+      console.error('SQL Error:', data.error);
+      return null;
+    }
+
+    return data;
+  } catch (e) {
+    console.error('Failed to execute SQL:', e);
+    return null;
+  }
+}
+
+// 使用例
+const stations = safeExecuteSql("SELECT * FROM t_station LIMIT 10");
+if (stations) {
+  console.log('Found', stations.rowCount, 'stations');
+}
+```
+
+---
+
+## セキュリティ考慮事項
+
+1. **SQLインジェクション**: `executeSql()` はプリペアドステートメントを使用していません。ユーザー入力を直接使用しないでください。
+2. **データベースアクセス**: データベースは読み取り専用です。
+3. **WASM サンドボックス**: WASMはブラウザのサンドボックス内で実行されます。
+
+---
