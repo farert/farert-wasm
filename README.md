@@ -429,6 +429,12 @@ onMounted(async () => {
 </template>
 ```
 
+## デモ（途中）
+
+- リアルタイム駅検索デモ
+ - http://localhost:8000/examples/station_search_demo.html
+
+
 ## 📄 ライセンス
 
 GPL-3.0 - 詳細はLICENSEファイルを参照してください
