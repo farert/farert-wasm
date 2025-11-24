@@ -317,7 +317,7 @@ describe('Farert', () => {
   it('should calculate fare correctly', () => {
     const farert = new Farert();
     farert.addStartRoute('東京');
-    farert.addRoute('東海道本線', '大阪');
+    farert.addRoute('東海道線', '大阪');
 
     const fare = farert.showFare();
     expect(fare).toContain('円');

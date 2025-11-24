@@ -36,7 +36,7 @@ const farert = new Farert();
 
 // 経路の構築: 東京 → 大阪
 farert.addStartRoute("東京");
-farert.addRoute("東海道本線", "大阪");
+farert.addRoute("東海道線", "大阪");
 
 // 運賃計算
 const fare = farert.showFare();
@@ -258,7 +258,7 @@ const farert = new Farert();
 
 // 経路セグメントの追加
 farert.addStartRoute("東京");
-farert.addRoute("東海道本線", "新大阪");
+farert.addRoute("東海道線", "新大阪");
 
 // 自動経路探索
 farert.autoRoute(1, "博多"); // 1 = 新幹線を使用
@@ -376,7 +376,7 @@ function FareCalculator() {
     initFarert().then(() => {
       const farert = new Farert();
       farert.addStartRoute("東京");
-      farert.addRoute("東海道本線", "大阪");
+      farert.addRoute("東海道線", "大阪");
       setFare(farert.showFare());
     });
   }, []);
@@ -398,7 +398,7 @@ function FareCalculator() {
     await initFarert();
     const farert = new Farert();
     farert.addStartRoute("東京");
-    farert.addRoute("東海道本線", "大阪");
+    farert.addRoute("東海道線", "大阪");
     fare = farert.showFare();
   });
 </script>
@@ -419,7 +419,7 @@ onMounted(async () => {
   await initFarert();
   const farert = new Farert();
   farert.addStartRoute("東京");
-  farert.addRoute("東海道本線", "大阪");
+  farert.addRoute("東海道線", "大阪");
   fare.value = farert.showFare();
 });
 </script>

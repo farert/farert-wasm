@@ -82,7 +82,7 @@ await initFarert();
 
 const farert = new Farert();
 farert.addStartRoute("東京");
-farert.addRoute("東海道本線", "大阪");
+farert.addRoute("東海道線", "大阪");
 
 console.log(farert.showFare());
 ```

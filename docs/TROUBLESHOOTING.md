@@ -274,7 +274,7 @@ const stations = JSON.parse(searchStationByKeyword('東京'));
 console.log(stations);
 
 // 路線の駅一覧を確認
-const lineStations = JSON.parse(getStationsByLine('東海道本線'));
+const lineStations = JSON.parse(getStationsByLine('東海道線'));
 console.log(lineStations);
 
 // 正確な駅名を使用
@@ -343,7 +343,7 @@ farert.addStartRoute(stations[0]); // 検索結果から取得
 function calculateFare(from: string, to: string) {
   const farert = new Farert(); // 毎回作成
   farert.addStartRoute(from);
-  farert.addRoute('東海道本線', to);
+  farert.addRoute('東海道線', to);
   return farert.showFare();
 }
 
@@ -358,7 +358,7 @@ class FareCalculator {
   calculateFare(from: string, to: string) {
     this.farert.removeAll(); // 再利用
     this.farert.addStartRoute(from);
-    this.farert.addRoute('東海道本線', to);
+    this.farert.addRoute('東海道線', to);
     return this.farert.showFare();
   }
 }
@@ -500,11 +500,11 @@ await initFarert();
 
 const route1 = new Farert();
 route1.addStartRoute('東京');
-route1.addRoute('東海道本線', '大阪');
+route1.addRoute('東海道線', '大阪');
 
 const route2 = new Farert();
 route2.addStartRoute('大阪');
-route2.addRoute('東海道本線', '東京');
+route2.addRoute('東海道線', '東京');
 
 console.log(route1.showFare());
 console.log(route2.showFare());

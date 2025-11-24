@@ -59,14 +59,14 @@ farert.addStartRoute("東京");
 Adds a line and station to the route.
 
 **Parameters:**
-- `line` - Line name (e.g., "東海道本線")
+- `line` - Line name (e.g., "東海道線")
 - `station` - Station name
 
 **Returns:** Status code (0 = success)
 
 **Example:**
 ```typescript
-farert.addRoute("東海道本線", "新大阪");
+farert.addRoute("東海道線", "新大阪");
 ```
 
 #### `autoRoute(useBulletTrain: number, destinationStation: string): number`
@@ -429,7 +429,7 @@ const results = JSON.parse(searchStationByKeyword("新宿"));
 ```json
 {
   "index": 0,
-  "line": "東海道本線",
+  "line": "東海道線",
   "station": "品川",
   "lineType": 1,
   "distance": 6.8
@@ -459,7 +459,7 @@ const results = JSON.parse(searchStationByKeyword("新宿"));
     "name": "東京",
     "kana": "とうきょう",
     "prefecture": "東京",
-    "lines": ["山手線", "中央線", "東海道本線"]
+    "lines": ["山手線", "中央線", "東海道線"]
   }
 ]
 ```
@@ -494,7 +494,7 @@ async function calculateFare() {
   }
 
   farert.addRoute("東海道新幹線", "新大阪");
-  farert.addRoute("東海道本線", "京都");
+  farert.addRoute("東海道線", "京都");
 
   // Get fare
   const fare = farert.showFare();
