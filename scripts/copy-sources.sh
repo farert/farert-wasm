@@ -52,8 +52,8 @@ echo -e "\n${GREEN}[3/7] Copying alpdb.cpp and alpdb.h (no modifications)${NC}"
 copy_file "$FARERT_ROOT/app/alps/alpdb.cpp" "$PROJECT_ROOT/src/cpp/core/alpdb.cpp"
 copy_file "$FARERT_ROOT/app/alps/alpdb.h" "$PROJECT_ROOT/src/cpp/core/alpdb.h"
 
-# Copy azusa.* (may need modifications)
-echo -e "\n${GREEN}[4/7] Copying azusa.cpp and azusa.h (may need modifications)${NC}"
+# Copy azusa.* (no modifications - use wrappers instead)
+echo -e "\n${GREEN}[4/7] Copying azusa.cpp and azusa.h (no modifications)${NC}"
 copy_file "$FARERT_ROOT/app/alps/azusa.cpp" "$PROJECT_ROOT/src/cpp/core/azusa.cpp"
 copy_file "$FARERT_ROOT/app/alps/azusa.h" "$PROJECT_ROOT/src/cpp/core/azusa.h"
 
@@ -86,6 +86,6 @@ echo -e "${YELLOW}Files copied:${NC}"
 echo -e "  - sqlite3.c, sqlite3.h, sqlite3ext.h (bundled SQLite3)"
 echo -e "  - db.cpp, db.h (DO NOT MODIFY)"
 echo -e "  - alpdb.cpp, alpdb.h (DO NOT MODIFY)"
-echo -e "  - azusa.cpp, azusa.h (can be adjusted for WASM)"
+echo -e "  - azusa.cpp, azusa.h (DO NOT MODIFY - use wrappers)"
 echo -e "  - test files and documentation"
 echo -e "  - jrdbNewest.db (database)"

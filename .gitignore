@@ -80,12 +80,12 @@ src/cpp/core/db.h
 src/cpp/core/alpdb.cpp
 src/cpp/core/alpdb.h
 
+# AZUSA core logic (DO NOT MODIFY - see CLAUDE.md)
+src/cpp/core/azusa.cpp
+src/cpp/core/azusa.h
+
 # Database file
 src/assets/jrdbNewest.db
-
-# Note: azusa.cpp and azusa.h are tracked in git
-# because they contain WASM-specific modifications
-# (build_route argument change from reference to value)
 
 # ========================================
 # OS-specific files
