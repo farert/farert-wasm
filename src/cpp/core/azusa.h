@@ -25,7 +25,7 @@ public:
     std::string arriveval_station_name() const { return RouteUtil::StationName(RouteList::arriveStationId()); }    
 
     // Changed from std::string& to std::string for WASM binding compatibility
-    std::string build_route(std::string route_str);
+    std::string build_route(const std::string& route_str);
     std::string route_script() { return RouteList::route_script(); }
 
     void remove_all() { Route::removeAll(); }
