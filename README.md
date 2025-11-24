@@ -1,6 +1,6 @@
 # FARERT WASM
 
-JR運賃計算ライブラリのWebAssembly版
+Farert Library for WebAssembly
 
 ## 🎯 概要
 
@@ -429,10 +429,78 @@ onMounted(async () => {
 </template>
 ```
 
-## デモ（途中）
+## 🌐 Webデモの実行
 
-- リアルタイム駅検索デモ
- - http://localhost:8000/examples/station_search_demo.html
+ビルド後、Webブラウザでデモを実行できます。
+
+### HTTPサーバーの起動
+
+WebAssemblyはセキュリティ上の理由から、HTTPサーバー経由でのみ動作します（`file://` プロトコルでは動作しません）。
+
+**Python 3を使用（推奨）:**
+
+```bash
+# プロジェクトルートで実行
+python3 -m http.server 8000
+```
+
+または
+
+```bash
+# macOS/Linuxの場合
+python -m http.server 8000
+```
+
+**Node.jsを使用:**
+
+```bash
+# グローバルインストール
+npm install -g http-server
+
+# サーバー起動
+http-server -p 8000
+```
+
+### デモページにアクセス
+
+サーバー起動後、ブラウザで以下のURLを開きます：
+
+- **リアルタイム駅検索デモ**: http://localhost:8000/examples/station_search_demo.html
+  - 駅名を入力すると、インクリメンタルサーチで駅を検索
+  - 漢字・ひらがな対応
+  - 各駅の都道府県を表示
+
+- **シンプルなテスト**: http://localhost:8000/test_from_index.html
+  - 基本的なWASM読み込みと関数呼び出しのテスト
+
+### トラブルシューティング
+
+**問題: ブラウザで404エラーが表示される**
+
+HTTPサーバーが起動しているか確認：
+```bash
+lsof -ti:8000
+```
+
+出力がない場合は、サーバーが起動していません。再度 `python3 -m http.server 8000` を実行してください。
+
+**問題: WASMファイルが読み込めない**
+
+1. ビルドが完了しているか確認：
+   ```bash
+   ls -la dist/farert.wasm dist/farert.data dist/farert.js
+   ```
+
+2. すべてのファイルが存在する必要があります。存在しない場合は再ビルド：
+   ```bash
+   npm run build
+   ```
+
+**問題: ブラウザキャッシュの問題**
+
+- **ハードリフレッシュ**（Mac）: `Cmd + Shift + R`
+- **ハードリフレッシュ**（Windows/Linux）: `Ctrl + Shift + F5`
+- または、ブラウザを完全に閉じて再度開く
 
 
 ## 📄 ライセンス

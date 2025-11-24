@@ -3,7 +3,6 @@
 // Maps C++ azusa API to TypeScript Farert API
 
 #include <emscripten/bind.h>
-#include <sstream>
 #include "../core/azusa.h"
 
 using namespace emscripten;
@@ -21,36 +20,8 @@ int g_tax = 10; // Default 10% tax rate
 // to add JSON formatting required by the WASM API
 // ============================================================
 
-namespace wasm_wrappers {
-    /**
-     * Wrapper for fare_ui::search_station_by_keyword
-     * Adds JSON object wrapping: { "stations": [...] }
-     */
-    std::string search_station_by_keyword(std::string key) {
-        std::string inner_json = fare_ui::search_station_by_keyword(key);
-        if (inner_json.empty()) {
-            return "{\"stations\":[]}";
-        }
-        // The original function returns: "stations":[...]
-        // We need to wrap it with { }
-        std::ostringstream oss;
-        oss << "{" << inner_json << "}";
-        return oss.str();
-    }
-
-    std::string getPrefectureByStation(std::string station) {
-        std::string inner_json = getPrefectureByStation(station);
-        if (inner_json.empty()) {
-            return "{}";
-        }
-        // The original function returns: "stations":[...]
-        // We need to wrap it with { }
-        std::ostringstream oss;
-        oss << "{" << inner_json << "}";
-        return oss.str();
-    }
-
-}
+// Note: Currently no wrappers needed - all azusa.cpp functions
+// already return properly formatted data
 
 EMSCRIPTEN_BINDINGS(farert_module) {
     // Global functions - Database operations
@@ -124,7 +95,7 @@ EMSCRIPTEN_BINDINGS(farert_module) {
     emscripten::function("getKanaByStation", &fare_ui::get_kana_by_station);
 
     // Search functions
-    emscripten::function("searchStationByKeyword", &wasm_wrappers::search_station_by_keyword);
+    emscripten::function("searchStationByKeyword", &fare_ui::search_station_by_keyword);
     emscripten::function("getBranchStationsByLine", &fare_ui::get_branch_stations_by_line);
     emscripten::function("getStationsByLine", &fare_ui::get_stations_by_line);
 

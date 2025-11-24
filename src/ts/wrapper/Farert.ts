@@ -68,13 +68,9 @@ export async function initFarert(): Promise<void> {
             const baseUrl = typeof window !== 'undefined'
               ? window.location.origin
               : '';
-            const fullPath = `${baseUrl}/dist/${path}`;
-            console.log('[FARERT locateFile]', { path, prefix, fullPath });
-            return fullPath;
+            return `${baseUrl}/dist/${path}`;
           }
-          const fullPath = prefix + path;
-          console.log('[FARERT locateFile]', { path, prefix, fullPath });
-          return fullPath;
+          return prefix + path;
         }
       });
       wasmModule = module as FaretModule;
