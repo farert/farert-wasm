@@ -100,10 +100,6 @@ EMSCRIPTEN_BINDINGS(farert_module) {
     emscripten::function("getBranchStationsByLine", &fare_ui::get_branch_stations_by_line);
     emscripten::function("getStationsByLine", &fare_ui::get_stations_by_line);
 
-    // ID getters
-    emscripten::function("getPrefectId", &fare_ui::get_prefect_id);
-    emscripten::function("getCompanyId", &fare_ui::get_company_id);
-
     // Developer tools
     emscripten::function("executeSql", &dev::execute_sql);
 }
