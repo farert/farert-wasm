@@ -311,7 +311,7 @@
     </div>
 
     <script type="module">
-        import { initFarert, searchStationByKeyword, getPrefectureByStation } from '../dist/index.js';
+        import { initFarert, searchStationByKeyword, getPrefectureByStation, getKanaByStation } from '../dist/index.js';
 
         const searchInput = document.getElementById('searchInput');
         const searchButton = document.getElementById('searchButton');
@@ -440,16 +440,22 @@
             stations.stations.forEach(stationName => {
                 // Get prefecture for this station (returns plain string, not JSON)
                 let prefecture = '';
+                let kana = '';
                 try {
                     prefecture = getPrefectureByStation(stationName);
                 } catch (e) {
                     console.warn('Failed to get prefecture for', stationName, e);
                 }
+                try {
+                    kana = getKanaByStation(stationName);
+                } catch (e) {
+                    console.warn('Failed to get kana for', stationName, e);
+                }
 
                 html += `
                     <div class="station-card">
                         <div class="station-name">${stationName}</div>
-                        <div class="station-kana">駅名: ${stationName}</div>
+                        <div class="station-kana">${kana ? kana : '(ひらがな情報なし)'}</div>
                         ${prefecture ? `<div class="station-details">
                             <span class="detail-badge prefecture">${prefecture}</span>
                         </div>` : ''}
