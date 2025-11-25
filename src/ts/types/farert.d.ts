@@ -78,6 +78,14 @@ export declare class Farert {
    */
   reverse(): number;
 
+  /**
+   * Assign route from another Farert instance
+   * Used for result details page and try auto route
+   * @param sourceRoute - Source route to copy from
+   * @param count - Number of route items to copy (-1 for all)
+   */
+  assign(sourceRoute: Farert, count: number): void;
+
   // Route configuration
   /**
    * Get type of passed line at offset

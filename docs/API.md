@@ -100,6 +100,30 @@ Reverses the route direction (swaps departure and arrival).
 
 **Returns:** Status code (0 = success, -1 = cannot reverse)
 
+#### `assign(sourceRoute: Farert, count: number): void`
+
+Assigns (copies) route data from another Farert instance to this instance. Used for result details page and try auto route functionality.
+
+**Parameters:**
+- `sourceRoute` - The source Farert instance to copy from
+- `count` - Number of route items to copy (-1 to copy all)
+
+**Example:**
+```typescript
+const route1 = new Farert();
+route1.addStartRoute("東京");
+route1.addRoute("東海道本線", "品川");
+route1.addRoute("東海道本線", "横浜");
+
+const route2 = new Farert();
+// Copy all routes from route1 to route2
+route2.assign(route1, -1);
+
+// Copy only first 2 route items
+const route3 = new Farert();
+route3.assign(route1, 2);
+```
+
 ### Fare Calculation
 
 #### `showFare(): string`

@@ -49,6 +49,7 @@ EMSCRIPTEN_BINDINGS(farert_module) {
         .function("removeAll", &az_route::remove_all)
         .function("removeTail", &az_route::remove_tail)
         .function("reverse", &az_route::reverse)
+        .function("assign", &az_route::assign)
 
         // Route configuration
         .function("typeOfPassedLine", &az_route::type_of_passed_line)

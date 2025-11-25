@@ -260,6 +260,12 @@ const farert = new Farert();
 farert.addStartRoute("東京");
 farert.addRoute("東海道線", "新大阪");
 
+// 一括経路作成(インポート)
+farert.buildRoute("武蔵小杉 南武線 府中本町 武蔵野線 西船橋 総武線 東京 東海道新幹線 品川")
+
+// 経路エクスポート
+farert.routeScript()
+
 // 自動経路探索
 farert.autoRoute(1, "博多"); // 1 = 新幹線を使用
 
@@ -270,6 +276,10 @@ const fare = farert.showFare();
 farert.reverse();      // 往復反転
 farert.removeTail();   // 末尾削除
 farert.removeAll();    // 全削除
+
+// 経路のコピー
+const route2 = new Farert();
+route2.assign(farert, -1);  // 全ルートをコピー
 ```
 
 ### ヘルパー関数
