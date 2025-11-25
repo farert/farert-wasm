@@ -264,7 +264,7 @@ farert.addRoute("東海道線", "新大阪");
 farert.buildRoute("武蔵小杉 南武線 府中本町 武蔵野線 西船橋 総武線 東京 東海道新幹線 品川")
 
 // 経路エクスポート
-farert.routeScript()
+routeString = farert.routeScript()
 
 // 自動経路探索
 farert.autoRoute(1, "博多"); // 1 = 新幹線を使用
@@ -528,8 +528,8 @@ GPL-3.0 - 詳細はLICENSEファイルを参照してください
 
 ## 📖 関連プロジェクト
 
-- [farert-pwa](../farert-pwa) - このライブラリを使用したPWAアプリケーション
-- [farert](../farert) - オリジナルのC++実装
+- [farert-pwa](https://github.com/farert/farert-pwa) - このライブラリを使用したPWAアプリケーション
+- [farert](https://github.com/farert/farert) - オリジナルのC++実装
 
 ## ⚠️ 重要な注意事項
 
