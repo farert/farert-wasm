@@ -434,15 +434,24 @@ const results = JSON.parse(searchStationByKeyword("新宿"));
 ---
 
 ## Error Codes
+- addRoute()
+- addStartRoute()
+- buildRoute()
 
 | Code | Description |
 |------|-------------|
-| 0 | Success |
-| -1 | General error |
-| -2 | Invalid station name |
-| -3 | Invalid line name |
-| -4 | Route not found |
+| 0 | Success(終端到達-追加不可) |
+| 1 | Success(OK-継続可能) |
+| 2 | 
+| 4 | Success(会社線制限により終端) |
+| 5 | Success(すでに終了している) |
+| -1 | 復乗エラー（重複エラー） |
+| -2 | 不正な駅指定 |
+| -3 | 開始駅未設定 |
+| -4 | 会社線通過連絡不許可 |
 | -5 | Cannot reverse route |
+|-200|駅名不正|
+|-300|路線名不正|
 
 ---
 
