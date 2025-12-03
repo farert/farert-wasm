@@ -545,6 +545,98 @@ async function calculateFare() {
 calculateFare().catch(console.error);
 ```
 
+### FareInfo
+
+- getFareInfoObjectJson() が返すオブジェクト
+
+```typescript
+interface FareInfo {
+  // --- 計算結果ステータス ---
+  fareResultCode: 0 | 1 | -2; // 0: 成功, 1: KOKURA-pending, -2: 失敗/空
+
+  // --- 経路のキロ程 ---
+  totalSalesKm: number;          // 営業キロ合計
+  jrSalesKm: number;             // JR営業キロ
+  jrCalcKm: number;              // JR計算キロ
+  companySalesKm: number;        // 会社線営業キロ
+  brtSalesKm: number;            // BRT営業キロ
+  salesKmForHokkaido: number;    // 北海道内の営業キロ
+  calcKmForHokkaido: number;     // 北海道内の計算キロ
+  salesKmForShikoku: number;     // 四国内の営業キロ
+  calcKmForShikoku: number;      // 四国内の計算キロ
+  salesKmForKyusyu: number;      // 九州内の営業キロ
+  calcKmForKyusyu: number;       // 九州内の計算キロ
+
+  // --- 基本運賃 ---
+  fare: number;                  // 表示運賃（各種割引適用後）
+  fareForCompanyline: number;    // 会社線運賃
+  fareForBRT: number;            // BRT運賃
+  fareForIC: number;             // ICカード運賃
+
+  // --- 有効日数 ---
+  ticketAvailDays: number;       // 有効日数
+
+  // --- 割引・割増運賃 ---
+  childFare: number;             // 小児運賃
+  roundtripChildFare: number;    // 小児往復運賃
+
+  academicFare: number;          // 学割運賃
+  isAcademicFare: boolean;       // 学割が適用可能か
+  roundtripAcademicFare: number; // 学割往復運賃
+
+  roundTripFareWithCompanyLine: number; // 会社線運賃を含む往復運賃
+  isRoundtripDiscount: boolean;  // 往復割引が適用されているか
+
+  stockDiscounts: {              // 株主優待割引の配列
+    rule114StockFare?: number;
+    stockDiscountFare: number;
+    stockDiscountTitle: string;
+  }[];
+
+  // --- 規程114条関連 ---
+  isRule114Applied: boolean;     // 規程114条が適用されたか
+  rule114SalesKm: number;        // 規程114条適用時の営業キロ
+  rule114CalcKm: number;         // 規程114条適用時の計算キロ
+  rule114ApplyTerminal: string;  // 規程114条適用時の計算駅
+  farePriorRule114: number;      // 規程114条適用前の運賃
+  roundTripFareWithCompanyLinePriorRule114?: number; // 規程114条適用前の会社線運賃を含む往復運賃
+
+  // --- 各種フラグ ---
+  isMeihanCityStartTerminalEnable: boolean; // 名阪地区都区市内発着選択（大高-杉本町)
+  isMeihanCityStart: boolean;    // 発駅を都区市内に
+  isMeihanCityTerminal: boolean; // 着駅を都区市内に
+  isRuleAppliedEnable: boolean;  // 特例有効か？
+  isRuleApplied: boolean;        // 特例適用
+  isJRCentralStockEnable: boolean; // JR東海株主優待が利用可能か
+  isJRCentralStock: boolean;     // JR東海株主優待が適用されたか
+  isEnableLongRoute: boolean;    // 大都市近郊区間 遠回り 有効か
+  isLongRoute: boolean;          // 大都市近郊区間 遠回り
+  isRule115specificTerm: boolean; // 規程115条関連
+  isEnableRule115: boolean;      // 規程115条関連
+  isResultCompanyBeginEnd: boolean; // 会社線発着か
+  isResultCompanyMultipassed: boolean; // 複数の会社線を跨いでいるか
+  isEnableTokaiStockSelect: boolean; //JR東海株主優待適用可否
+  isBeginInCity: boolean;        // 発駅が都区市内か
+  isEndInCity: boolean;          // 着駅が都区市内か
+  isSpecificFare: boolean;       // 特定特別運賃
+  isRoundtrip: boolean;          // 往復か
+  isBRTdiscount: boolean;        // BRT割引が適用されているか
+  isFareOptEnabled: boolean;     // オプションメニューが有効か
+
+  // --- 駅ID ---
+  beginStation: string;        // 発駅(86/87適用後)
+  endStation: string;          // 着駅(86/87適用後)
+
+  // --- 経路文字列 ---
+  routeList: string;             // 経路文字列
+  routeListForTOICA: string;     // TOICA用計算経路文字列
+
+  // --- 表示メッセージ ---
+  messages: string[];            // 運賃計算に関する注記メッセージの配列
+}
+
+```
+
 ---
 
 ## 開発者ツール
