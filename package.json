@@ -11,9 +11,10 @@
     "LICENSE"
   ],
   "scripts": {
+    "build:copy": "bash scripts/copy-sources.sh",
     "build:wasm": "bash scripts/build.sh",
     "build:ts": "tsc",
-    "build": "npm run build:wasm && npm run build:ts",
+    "build": "npm run build:copy && npm run build:wasm && npm run build:ts",
     "test": "jest",
     "clean": "rm -rf dist build node_modules",
     "typecheck": "tsc --noEmit"
