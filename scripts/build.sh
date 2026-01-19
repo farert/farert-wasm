@@ -15,6 +15,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 BUILD_DIR="$PROJECT_ROOT/build"
 EMSDK_PATH="${EMSDK_PATH:-$PROJECT_ROOT/../emsdk}"
+EM_CACHE_DIR="$PROJECT_ROOT/.emscripten_cache"
 
 echo -e "${GREEN}=== FARERT WASM Build Script ===${NC}\n"
 
@@ -32,6 +33,8 @@ fi
 # Activate Emscripten
 echo -e "${BLUE}[1/5] Activating Emscripten SDK...${NC}"
 source "$EMSDK_PATH/emsdk_env.sh"
+mkdir -p "$EM_CACHE_DIR"
+export EM_CACHE="$EM_CACHE_DIR"
 
 # Check if emcmake is available
 if ! command -v emcmake &> /dev/null; then

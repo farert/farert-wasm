@@ -62,7 +62,7 @@ Adds a line and station to the route.
 - `line` - Line name (e.g., "東海道線")
 - `station` - Station name
 
-**Returns:** Status code (0 = success)
+**Returns:** Status code (1 = success), see `Error Codes`
 
 **Example:**
 ```typescript
@@ -77,10 +77,18 @@ Automatically calculates the optimal route to a destination.
 - `useBulletTrain` - 0 = don't use, 1 = use bullet trains
 - `destinationStation` - Destination station name
 
-**Returns:** Status code (0 = success)
+| useBulletTrain|description|
+|--------------|-----------|
+|0|在来線のみ|
+|1|新幹線利用|
+|2|会社線利用|
+|3|新幹線・会社線利用|
+
+**Returns:** Status code (see `Error codes`)
 
 **Example:**
 ```typescript
+farert.addStartRoute("東京");
 farert.autoRoute(1, "博多");
 ```
 
@@ -280,6 +288,19 @@ Opens the embedded database. Called automatically by `initFarert()`.
 
 Closes the database. Generally not needed as cleanup is automatic.
 
+#### `databaseInfo(): string`
+
+**Returns:** Status message
+
+```json
+  {
+    "result": true,
+    "dbName": "2025",
+    "createdate": "2025-11-12 13:11:18",
+    "tax" : 10
+  }
+```
+
 ### Prefecture Functions
 
 #### `getPrefects(): string`
@@ -442,7 +463,7 @@ const results = JSON.parse(searchStationByKeyword("新宿"));
 |------|-------------|
 | 0 | Success(終端到達-追加不可) |
 | 1 | Success(OK-継続可能) |
-| 2 | 
+| 2 | N/A |
 | 4 | Success(会社線制限により終端) |
 | 5 | Success(すでに終了している) |
 | -1 | 復乗エラー（重複エラー） |
@@ -522,7 +543,7 @@ async function calculateFare() {
   const farert = new Farert();
 
   // Build route: Tokyo -> Osaka -> Kyoto
-  if (farert.addStartRoute("東京") !== 0) {
+  if (farert.addStartRoute("東京") < 0) {
     throw new Error("Invalid starting station");
   }
 
