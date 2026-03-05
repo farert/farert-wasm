@@ -59,6 +59,7 @@ copy_file "$FARERT_ROOT/app/alps/azusa.h" "$PROJECT_ROOT/src/cpp/core/azusa.h"
 
 # Copy database
 echo -e "\n${GREEN}[5/5] Copying database file${NC}"
+mkdir -p "$PROJECT_ROOT/src/assets"
 if [ -f "$FARERT_ROOT/db/jrdbNewest.db" ]; then
     copy_file "$FARERT_ROOT/db/jrdbNewest.db" "$PROJECT_ROOT/src/assets/jrdbNewest.db"
 else

@@ -583,6 +583,8 @@ interface FareInfo {
   brtSalesKm: number;            // BRT営業キロ
   salesKmForHokkaido: number;    // 北海道内の営業キロ
   calcKmForHokkaido: number;     // 北海道内の計算キロ
+  salesKmForEast: number;        // 東日本営業キロ
+  calcKmForEast: number;         // 東日本計算キロ
   salesKmForShikoku: number;     // 四国内の営業キロ
   calcKmForShikoku: number;      // 四国内の計算キロ
   salesKmForKyusyu: number;      // 九州内の営業キロ
