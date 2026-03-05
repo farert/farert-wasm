@@ -97,6 +97,7 @@ EMSCRIPTEN_BINDINGS(farert_module) {
 
     // Search functions
     emscripten::function("searchStationByKeyword", &fare_ui::search_station_by_keyword);
+    emscripten::function("searchStationFuzzy", &fare_ui::search_station_fuzzy);
     emscripten::function("getBranchStationsByLine", &fare_ui::get_branch_stations_by_line);
     emscripten::function("getStationsByLine", &fare_ui::get_stations_by_line);
 
