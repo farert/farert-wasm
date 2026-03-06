@@ -365,6 +365,39 @@ npm run clean           # ビルド成果物をクリーン
 npm run typecheck       # 型チェックのみ
 ```
 
+### GitHub Actionsの代替（ローカル実行）
+
+`git push` で自動実行されていた CI・デモページ構築は削除したため、  
+同等の作業はローカルで実施してください。
+
+```bash
+npm install
+bash scripts/copy-sources.sh
+# Emscriptenを使う場合のみ事前に有効化
+source ../emsdk/emsdk_env.sh
+npm run build
+npm test
+```
+
+※ `../farert-pwa/` へのコピーやデプロイは、このリポジトリ側の設定では行いません。
+
+必要なら「CI相当」を都度まとめて回す場合は、次を推奨します。
+
+```bash
+source ../emsdk/emsdk_env.sh
+npm ci
+npm run build
+npm test
+```
+
+デモ確認をローカルで再現する場合は、`dist/` と `docs/demo/` を配信できる
+HTTPサーバーを起動します（`file://` では確認不可）。
+
+```bash
+python3 -m http.server 8000
+# 例: http://localhost:8000/docs/demo/index.html
+```
+
 ### テスト
 
 ```bash
