@@ -452,6 +452,37 @@ const results = JSON.parse(searchStationByKeyword("新宿"));
 // ["新宿", "西新宿", "東新宿", ...]
 ```
 
+#### `searchStationFuzzy(keyword: string, limit?: number): string`
+
+Searches stations with normalization-aware fuzzy matching (orthographic variants, kana variants, and typo-tolerant candidates).
+
+**Parameters:**
+- `keyword` - Search keyword
+- `limit` - Maximum number of results (default: 50)
+
+**Returns:** JSON string
+
+```json
+{
+  "results": [
+    {
+      "name": "御茶ノ水",
+      "kana": "おちゃのみず",
+      "samename": [],
+      "score": 0,
+      "matchedBy": "name"
+    }
+  ]
+}
+```
+
+**Example:**
+```typescript
+const payload = searchStationFuzzy("おち ゃの水", 20);
+const data = JSON.parse(payload);
+console.log(data.results[0].name); // "御茶ノ水" など
+```
+
 ---
 
 ## Error Codes
