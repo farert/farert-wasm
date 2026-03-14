@@ -52,9 +52,9 @@ export declare class Farert {
   /**
    * Build route from script string
    * @param routeStr - Route script string
-   * @returns Status code
+   * @returns JSON string with BuildRouteResult
    */
-  buildRoute(routeStr: string): number;
+  buildRoute(routeStr: string): string;
 
   /**
    * Get route as script string

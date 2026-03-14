@@ -180,14 +180,51 @@ Returns the arrival station name.
 
 Returns the route as a script string (for serialization).
 
-#### `buildRoute(routeStr: string): number`
+#### `buildRoute(routeStr: string): string`
 
 Builds a route from a script string.
 
 **Parameters:**
 - `routeStr` - Route script (from `routeScript()`)
 
-**Returns:** Status code
+**Returns:** JSON string with `BuildRouteResult`
+
+```typescript
+interface BuildRouteResult {
+  rc: number;       // Result code (see table below)
+  failItem: string; // Failed item (station/line name that caused error)
+  offset: number;   // Offset of word in route string where error occurred (0-based)
+}
+```
+
+**rc values:**
+
+| rc | Description |
+|----|-------------|
+| 0 | Success (終端到達 - 追加不可) |
+| 1 | Success (OK - 継続可能) |
+| 4 | Success (会社線制限により終端) |
+| 5 | Success (すでに終了している) |
+| -1 | 復乗エラー（重複エラー） |
+| -2 | 不正な駅指定 |
+| -3 | 開始駅未設定 |
+| -4 | 会社線通過連絡不許可 |
+| -200 | 駅名不正 |
+| -300 | 路線名不正 |
+
+**Example:**
+```typescript
+const script = farert.routeScript();
+// later...
+const resultJson = farert.buildRoute(script);
+const result: BuildRouteResult = JSON.parse(resultJson);
+
+if (result.rc < 0) {
+  console.error(`Error at offset ${result.offset}: ${result.failItem}`);
+} else {
+  console.log('Route built successfully');
+}
+```
 
 #### `getRoutesJson(): string`
 

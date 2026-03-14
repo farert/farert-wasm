@@ -139,7 +139,7 @@ export class Farert {
     return this.instance.arrivevalStationName();
   }
 
-  buildRoute(routeStr: string): number {
+  buildRoute(routeStr: string): string {
     return this.instance.buildRoute(routeStr);
   }
 
@@ -362,4 +362,16 @@ export interface DatabaseInfo {
   dbName?: string;
   createdate?: string;
   reason?: string;
+}
+
+/**
+ * Type definition for buildRoute result
+ */
+export interface BuildRouteResult {
+  /** Result code (0 = success, negative = error) */
+  rc: number;
+  /** Failed item (station/line name that caused error) */
+  failItem: string;
+  /** Offset of word in route string where error occurred (0-based) */
+  offset: number;
 }

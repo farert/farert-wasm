@@ -41,4 +41,4 @@ export { executeSql } from './wrapper/Farert.js';
 
 // Re-export types
 export type { Farert as FaretClass } from './types/farert';
-export type { SqlResult, DatabaseInfo } from './wrapper/Farert.js';
+export type { SqlResult, DatabaseInfo, BuildRouteResult } from './wrapper/Farert.js';
