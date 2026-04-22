@@ -24,7 +24,7 @@ interface FaretModule extends EmscriptenModule {
   getPrefectureByStation: (stationName: string) => string;
   getKanaByStation: (stationName: string) => string;
   searchStationByKeyword: (keyword: string) => string;
-  getBranchStationsByLine: (lineName: string, stationName: string) => string;
+  getBranchStationsByLine: (lineName: string, includeStationName: string) => string;
   getStationsByLine: (lineName: string) => string;
   getPrefectId: (prefecture: string) => number;
   getCompanyId: (company: string) => number;
@@ -306,8 +306,8 @@ export function searchStationByKeyword(keyword: string): string {
   return getModule().searchStationByKeyword(keyword);
 }
 
-export function getBranchStationsByLine(lineName: string, stationName: string): string {
-  return getModule().getBranchStationsByLine(lineName, stationName);
+export function getBranchStationsByLine(lineName: string, includeStationName: string): string {
+  return getModule().getBranchStationsByLine(lineName, includeStationName);
 }
 
 export function getStationsByLine(lineName: string): string {

@@ -265,9 +265,9 @@ export declare function searchStationByKeyword(keyword: string): string;
 /**
  * Get branch stations on a line
  * @param lineName - Line name
- * @param stationName - Station name
+ * @param includeStationName - Station name to include in the result context
  */
-export declare function getBranchStationsByLine(lineName: string, stationName: string): string;
+export declare function getBranchStationsByLine(lineName: string, includeStationName: string): string;
 
 /**
  * Get all stations on a line

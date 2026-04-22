@@ -408,13 +408,13 @@ Returns all lines serving a station.
 
 **Returns:** JSON array of line names
 
-#### `getBranchStationsByLine(lineName: string, stationName: string): string`
+#### `getBranchStationsByLine(lineName: string, includeStationName: string): string`
 
 Returns branch stations on a line.
 
 **Parameters:**
 - `lineName` - Line name
-- `stationName` - Starting station
+- `includeStationName` - Station name that should always be included in the result context
 
 **Returns:** JSON array of station names
 
