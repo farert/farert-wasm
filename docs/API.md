@@ -682,6 +682,9 @@ interface FareInfo {
     rule114StockFare?: number;
     stockDiscountFare: number;
     stockDiscountTitle: string;
+    company: string;             // 会社名 (例: JR東海)
+    discountRate: number;        // 割引率 (例: 10, 20, 40, 50)
+    discountKind: "single" | "double"; // single=通常優待, double=2枚利用など
   }[];
 
   // --- 規程114条関連 ---
