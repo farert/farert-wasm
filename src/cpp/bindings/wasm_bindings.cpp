@@ -36,7 +36,7 @@ EMSCRIPTEN_BINDINGS(farert_module) {
         .constructor<>()
 
         // Main view - Route building
-        .function("addStartRoute", &az_route::add_start_route)
+        .function("addStartRoute", static_cast<int (az_route::*)(std::string)>(&az_route::add_start_route))
         .function("addRoute", &az_route::add_route)
         .function("autoRoute", &az_route::auto_route)
         .function("getRouteCount", &az_route::get_route_count)
