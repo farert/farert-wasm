@@ -198,16 +198,13 @@ backup/
 
 **理由**:
 - オリジナル（`../farert`）から**コピー後に修正**
-- `build_route` メソッドの引数を `std::string&` → `std::string` に変更（Emscripten embind互換性）
+- `build_route` メソッドは現在 `std::string build_route(const std::string& route_str)` を返し、結果は JSON 文字列で扱う
 - この修正はWASM化に必須のため、Gitで管理
 
 **変更履歴**:
 ```cpp
-// 元のコード（../farert）
-void build_route(std::string& line, std::string station);
-
-// WASM版（このプロジェクト）
-void build_route(std::string line, std::string station);
+// 現在の build_route シグネチャ
+std::string build_route(const std::string& route_str);
 ```
 
 詳細: [CHANGELOG.md](../CHANGELOG.md), [CLAUDE.md](../CLAUDE.md)
