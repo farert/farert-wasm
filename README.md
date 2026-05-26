@@ -1,10 +1,11 @@
 # FARERT WASM
 
-[![npm version](https://img.shields.io/npm/v/farert-wasm.svg)](https://www.npmjs.com/package/farert-wasm)
+[![npm package](https://img.shields.io/github/package-json/v/farert/farert-wasm?label=npm%20package&color=cb3837)](package.json)
 [![license](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](package.json)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-339933.svg)](package.json)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6.svg)](tsconfig.json)
 [![WebAssembly](https://img.shields.io/badge/WebAssembly-Emscripten-654ff0.svg)](https://emscripten.org/)
+[![Docker](https://img.shields.io/badge/Docker-supported-2496ed.svg)](.devcontainer/Dockerfile)
 
 Farert Library for WebAssembly
 
@@ -61,6 +62,7 @@ console.log(JSON.parse(routeJson));
 - Emscripten SDK 3.1以上
 - CMake 3.20+
 - Git
+- Docker Desktop（Dev Containerを使用する場合）
 
 ### セットアップ方法（2つのオプション）
 
