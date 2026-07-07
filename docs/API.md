@@ -644,12 +644,13 @@ interface FareInfo {
   fareResultCode: 0 | 1 | -2; // 0: 成功, 1: KOKURA-pending, -2: 失敗/空
 
   // --- 経路のキロ程 ---
-  totalSalesKm: number;          // 営業キロ合計
-  jrSalesKm: number;             // JR営業キロ
-  jrCalcKm: number;              // JR計算キロ
-  companySalesKm: number;        // 会社線営業キロ
-  brtSalesKm: number;            // BRT営業キロ
-  salesKmForHokkaido: number;    // 北海道内の営業キロ
+  // Distances are in kilometers with 0.1 km precision (e.g. 104.6)
+  totalSalesKm: number;          // 営業キロ合計 [km]
+  jrSalesKm: number;             // JR営業キロ [km]
+  jrCalcKm: number;              // JR計算キロ [km]
+  companySalesKm: number;        // 会社線営業キロ [km]
+  brtSalesKm: number;            // BRT営業キロ [km]
+  salesKmForHokkaido: number;    // 北海道内の営業キロ [km]
   calcKmForHokkaido: number;     // 北海道内の計算キロ
   salesKmForEast: number;        // 東日本営業キロ
   calcKmForEast: number;         // 東日本計算キロ

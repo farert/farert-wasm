@@ -6,6 +6,12 @@
 
 ## [Unreleased]
 
+### Changed
+- `getFareInfoObjectJson()` の距離系フィールド（`totalSalesKm` など15項目）を
+  1/10km 単位の整数から km 単位の小数（0.1km 精度）に変更
+  - 例: `1046` -> `104.6`
+  - クライアント側の ÷10 換算が不要になる破壊的変更
+
 ### Added
 - 初期リリース
 - 開発者向けSQL実行インターフェース (`executeSql()`)
