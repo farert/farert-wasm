@@ -74,6 +74,16 @@ cp farert.js "$PROJECT_ROOT/dist/" 2>/dev/null || echo -e "${YELLOW}Warning: far
 cp farert.wasm "$PROJECT_ROOT/dist/" 2>/dev/null || echo -e "${YELLOW}Warning: farert.wasm not found${NC}"
 cp farert.data "$PROJECT_ROOT/dist/" 2>/dev/null || echo -e "${YELLOW}Warning: farert.data not found${NC}"
 
+# Strip the build machine's absolute path that emcc embeds as the .data
+# package name (PACKAGE_NAME / run-dependency ids). dist/farert.js is
+# published as-is, so local paths must not leak into it. Runtime fetching
+# uses REMOTE_PACKAGE_BASE ("farert.data"), so this is metadata-only.
+perl -i -pe "s|\Q$PROJECT_ROOT/dist/\E||g" "$PROJECT_ROOT/dist/farert.js"
+if grep -q "$PROJECT_ROOT" "$PROJECT_ROOT/dist/farert.js"; then
+    echo -e "${RED}ERROR: local absolute path still present in dist/farert.js${NC}"
+    exit 1
+fi
+
 # List generated files
 echo -e "\n${GREEN}=== Build artifacts ===${NC}"
 ls -lh "$PROJECT_ROOT/dist/"
