@@ -6,6 +6,13 @@
 
 ## [Unreleased]
 
+### Fixed
+- `getFareInfoObjectJson()` の `messages` に大都市近郊区間の注記
+  （「近郊区間内ですので最安運賃の経路にしました(途中下車不可、有効日数当日限り)」等）が
+  特例適用時に含まれなかった問題を修正（判定条件が `no_rule` で反転していた。iOS/Android と同じ
+  `isRuleApplied` 基準に統一）
+- 上記注記の文言を alpdb（showFare）と同じ「(途中下車不可、有効日数当日限り)」付きに変更
+
 ### Changed
 - `getFareInfoObjectJson()` の距離系フィールド（`totalSalesKm` など15項目）を
   1/10km 単位の整数から km 単位の小数（0.1km 精度）に変更
