@@ -680,8 +680,8 @@ interface FareInfo {
   isRoundtripDiscount: boolean;  // 往復割引が適用されているか
 
   stockDiscounts: {              // 株主優待割引の配列
-    rule114StockFare?: number;
-    stockDiscountFare: number;
+    rule114StockFare?: number;   // 規程114条適用後の株主優待運賃（会社線運賃を含む。isRule114Applied 時のみ）
+    stockDiscountFare: number;   // 株主優待運賃（会社線運賃を含む。114条適用時は適用前の額）
     stockDiscountTitle: string;
     company: string;             // 会社名 (例: JR東海)
     discountRate: number;        // 割引率 (例: 10, 20, 40, 50)

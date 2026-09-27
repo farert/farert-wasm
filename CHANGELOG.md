@@ -14,6 +14,8 @@
 - 上記注記の文言を alpdb（showFare）と同じ「(途中下車不可、有効日数当日限り)」付きに変更
 - 会社線を含む経路では上記注記を出さないよう修正（最安経路の再計算対象外のため。
   alpdb の showFare と同じく `isIncludeCompanyLine()` で除外）
+- `stockDiscounts[].rule114StockFare` に会社線運賃が含まれていなかった問題を修正
+  （`stockDiscountFare` および alpdb の showFare と同じく会社線運賃を加算）
 
 ### Changed
 - `getFareInfoObjectJson()` の距離系フィールド（`totalSalesKm` など15項目）を
