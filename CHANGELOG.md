@@ -12,6 +12,8 @@
   特例適用時に含まれなかった問題を修正（判定条件が `no_rule` で反転していた。iOS/Android と同じ
   `isRuleApplied` 基準に統一）
 - 上記注記の文言を alpdb（showFare）と同じ「(途中下車不可、有効日数当日限り)」付きに変更
+- 会社線を含む経路では上記注記を出さないよう修正（最安経路の再計算対象外のため。
+  alpdb の showFare と同じく `isIncludeCompanyLine()` で除外）
 
 ### Changed
 - `getFareInfoObjectJson()` の距離系フィールド（`totalSalesKm` など15項目）を
